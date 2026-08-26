@@ -22,10 +22,6 @@ const CATEGORIES_ICONS: Record<string, string> = {
   "كاميرات": "📷",
 };
 
-const PLATFORM_ICONS: Record<string, string> = {
-  aliexpress: "🇨🇳", amazon: "📦", noon: "🌙", jumia: "🛒", ebay: "🔨", shein: "👗", temu: "🛍️", other: "🌐",
-};
-
 export default function HomeScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
@@ -36,7 +32,6 @@ export default function HomeScreen() {
 
   const { data: productsData } = useQuery({ queryKey: ["products"], queryFn: () => api.get("/products") });
   const { data: categories } = useQuery({ queryKey: ["categories"], queryFn: () => api.get("/categories") });
-  const { data: partnerDeals = [] } = useQuery<any[]>({ queryKey: ["partner-products"], queryFn: () => api.get("/partner-products") });
 
   const products = productsData?.data || [];
   const featured = products.slice(0, 4);
@@ -133,48 +128,6 @@ export default function HomeScreen() {
           contentContainerStyle={{ paddingHorizontal: 16, gap: 12 }}
         />
       </View>
-
-      {/* Partner Deals / Affiliate Section */}
-      {(partnerDeals as any[]).length > 0 && (
-        <View style={styles.section}>
-          <View style={[styles.sectionHeader, { flexDirection: isRTL ? "row" : "row-reverse" }]}>
-            <Text style={[styles.sectionTitle, { color: colors.foreground }]}>
-              {language === "ar" ? "🌐 متاجر عالمية" : language === "zh" ? "🌐 全球商店" : language === "fr" ? "🌐 Boutiques Mondiales" : language === "tr" ? "🌐 Dünya Mağazaları" : "🌐 Global Stores"}
-            </Text>
-            <View style={[styles.adLabel, { backgroundColor: colors.primary + "22", borderColor: colors.primary + "44" }]}>
-              <Text style={{ color: colors.primary, fontSize: 10, fontWeight: "700" }}>AD</Text>
-            </View>
-          </View>
-          <View style={{ paddingHorizontal: 16, gap: 8 }}>
-            {(partnerDeals as any[]).map((deal: any) => (
-              <TouchableOpacity
-                key={deal.id}
-                onPress={() => Linking.openURL(deal.url)}
-                activeOpacity={0.85}
-                style={[styles.dealCard, { backgroundColor: (deal.color || "#f59e0b") + "15", borderColor: (deal.color || "#f59e0b") + "40" }]}
-              >
-                <View style={{ flex: 1, flexDirection: isRTL ? "row" : "row-reverse", alignItems: "center", gap: 10 }}>
-                  <View style={[styles.dealDot, { backgroundColor: deal.color || "#f59e0b" }]}>
-                    <Text style={{ fontSize: 16 }}>{PLATFORM_ICONS[deal.platform] || "🌐"}</Text>
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={[styles.dealTitle, { color: colors.foreground, textAlign: isRTL ? "right" : "left" }]}>{deal.title}</Text>
-                    {deal.subtitle ? <Text style={[styles.dealSub, { color: colors.mutedForeground, textAlign: isRTL ? "right" : "left" }]}>{deal.subtitle}</Text> : null}
-                  </View>
-                </View>
-                <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                  {deal.badge ? (
-                    <View style={[styles.dealBadge, { backgroundColor: deal.color || "#f59e0b" }]}>
-                      <Text style={styles.dealBadgeText}>{deal.badge}</Text>
-                    </View>
-                  ) : null}
-                  <Feather name={isRTL ? "chevron-left" : "chevron-right"} size={18} color={deal.color || "#f59e0b"} />
-                </View>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
-      )}
 
       {/* AdMob Banner — Middle */}
       <View style={{ marginVertical: 8 }}>
