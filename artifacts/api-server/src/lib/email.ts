@@ -78,19 +78,27 @@ export function getDefaultTransporter(): nodemailer.Transporter | null {
   return transporter;
 }
 
-export async function getTransporter(): Promise<nodemailer.Transporter | null> {
-  // Priority 1: existing transporter
-  if (transporter) return transporter;
-
-  // Priority 2: DB settings
+export async function getActiveEmailConfig(): Promise<{ transporter: nodemailer.Transporter; from: string } | null> {
+  // 1. Try DB settings
   const dbConfig = await getSmtpConfigFromDb();
   if (dbConfig) {
-    transporter = createTransporter(dbConfig);
-    return transporter;
+    const t = createTransporter(dbConfig);
+    return { transporter: t, from: dbConfig.from || dbConfig.user || "emadyayah@gmail.com" };
   }
 
-  // Priority 3: env variables
-  return getDefaultTransporter();
+  // 2. Try environment / default
+  const envT = getDefaultTransporter();
+  if (envT) {
+    const from = process.env.SMTP_FROM || process.env.SMTP_USER || "emadyayah@gmail.com";
+    return { transporter: envT, from };
+  }
+
+  return null;
+}
+
+export async function getTransporter(): Promise<nodemailer.Transporter | null> {
+  const active = await getActiveEmailConfig();
+  return active ? active.transporter : null;
 }
 
 export async function sendVerificationEmail(
@@ -99,17 +107,18 @@ export async function sendVerificationEmail(
   code: string,
   customTransporter?: nodemailer.Transporter
 ): Promise<boolean> {
-  const mailer = customTransporter || await getTransporter();
+  const active = await getActiveEmailConfig();
+  const mailer = customTransporter || active?.transporter;
   if (!mailer) {
     logger.warn({ to }, "Cannot send verification email - SMTP not configured");
     return false;
   }
 
-  const from = process.env.SMTP_FROM || process.env.SMTP_USER || "no-reply@emadexpress.com";
+  const fromAddress = active?.from || "emadyayah@gmail.com";
 
   try {
     await mailer.sendMail({
-      from: `"عماد إكسبرس" <${from}>`,
+      from: `"عماد إكسبرس" <${fromAddress}>`,
       to,
       subject: "كود التحقق من البريد الإلكتروني 🔐",
       html: `
@@ -138,14 +147,14 @@ export async function sendVerificationEmail(
           </div>
 
           <div style="text-align: center; margin-top: 20px;">
-            <p style="color: #94a3b8; font-size: 12px;">© 2024 عماد إكسبرس. جميع الحقوق محفوظة.</p>
+            <p style="color: #94a3b8; font-size: 12px;">© عماد إكسبرس. جميع الحقوق محفوظة.</p>
           </div>
         </div>
       `,
       text: `مرحباً ${name}،\n\nكود التحقق الخاص بك هو: ${code}\n\nصالح لمدة 15 دقيقة.\n\nعماد إكسبرس`,
     });
 
-    logger.info({ to }, "Verification email sent successfully");
+    logger.info({ to, from: fromAddress }, "Verification email sent successfully");
     return true;
   } catch (err: any) {
     logger.error({ err: err.message, to }, "Failed to send verification email");
