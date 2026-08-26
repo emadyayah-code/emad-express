@@ -337,15 +337,27 @@
   }
 }
 
-/* Emad Express admin visual system */
+/* Emad Express Luxury Admin Visual System */
+@keyframes ambientGlow {
+  0%, 100% { opacity: 0.6; transform: scale(1); }
+  50% { opacity: 0.85; transform: scale(1.05); }
+}
+
+@keyframes buttonShine {
+  0% { transform: translateX(-100%) rotate(45deg); }
+  100% { transform: translateX(200%) rotate(45deg); }
+}
+
 .admin-main {
   position: relative;
   isolation: isolate;
-  color: #172033;
-  background:
-    radial-gradient(circle at 12% 8%, rgba(245, 158, 11, .18), transparent 28%),
-    radial-gradient(circle at 88% 82%, rgba(14, 165, 233, .13), transparent 32%),
-    linear-gradient(135deg, #f8fafc 0%, #fffaf1 48%, #f1f5f9 100%) !important;
+  color: #f8fafc;
+  background: 
+    radial-gradient(circle at 10% 15%, rgba(245, 158, 11, 0.12) 0%, transparent 40%),
+    radial-gradient(circle at 90% 85%, rgba(217, 119, 6, 0.09) 0%, transparent 45%),
+    radial-gradient(circle at 50% 50%, rgba(180, 83, 9, 0.05) 0%, transparent 60%),
+    linear-gradient(145deg, #09090b 0%, #120e03 40%, #0c0a06 100%) !important;
+  min-height: 100%;
 }
 
 .admin-main::before {
@@ -354,75 +366,165 @@
   inset: 0;
   z-index: -1;
   pointer-events: none;
-  opacity: .32;
-  background-image: linear-gradient(rgba(15, 23, 42, .045) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(15, 23, 42, .045) 1px, transparent 1px);
-  background-size: 28px 28px;
-  mask-image: linear-gradient(to bottom, black, transparent 90%);
+  opacity: 0.25;
+  background-image: 
+    radial-gradient(rgba(245, 158, 11, 0.18) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0,0,0,0.2) 0%, transparent 100%);
+  background-size: 32px 32px;
 }
 
-/* A distinct accent atmosphere for each major section. */
-.admin-main.page-products,
-.admin-main.page-categories { background:
-  radial-gradient(circle at 8% 10%, rgba(16, 185, 129, .18), transparent 27%),
-  radial-gradient(circle at 90% 75%, rgba(6, 182, 212, .16), transparent 30%),
-  linear-gradient(135deg, #f0fdfa, #f8fafc 52%, #ecfeff) !important; }
-.admin-main.page-orders,
-.admin-main.page-customers { background:
-  radial-gradient(circle at 90% 8%, rgba(99, 102, 241, .18), transparent 28%),
-  radial-gradient(circle at 12% 82%, rgba(168, 85, 247, .13), transparent 30%),
-  linear-gradient(135deg, #eef2ff, #f8fafc 55%, #faf5ff) !important; }
-.admin-main.page-accounting,
-.admin-main.page-reports { background:
-  radial-gradient(circle at 12% 12%, rgba(245, 158, 11, .2), transparent 28%),
-  radial-gradient(circle at 88% 82%, rgba(234, 88, 12, .13), transparent 32%),
-  linear-gradient(135deg, #fff7ed, #fffbeb 52%, #fef2f2) !important; }
-.admin-main.page-settings,
-.admin-main.page-my-commission { background:
-  radial-gradient(circle at 88% 8%, rgba(236, 72, 153, .16), transparent 30%),
-  radial-gradient(circle at 10% 82%, rgba(139, 92, 246, .14), transparent 30%),
-  linear-gradient(135deg, #fdf2f8, #faf5ff 55%, #eef2ff) !important; }
+/* Glassmorphic luxury cards */
+.admin-main .bg-white,
+.admin-main .bg-card,
+.admin-main .bg-slate-900,
+.admin-main .bg-gray-900,
+.admin-main [class*="rounded-lg border"],
+.admin-main [class*="rounded-xl border"] {
+  background: rgba(18, 15, 10, 0.78) !important;
+  border: 1px solid rgba(245, 158, 11, 0.18) !important;
+  box-shadow: 0 12px 35px -5px rgba(0, 0, 0, 0.65), 0 0 15px -3px rgba(245, 158, 11, 0.06) !important;
+  backdrop-filter: blur(16px);
+  color: #f8fafc;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease, transform 0.25s ease;
+}
 
-.admin-main .bg-white {
-  background: rgba(255, 255, 255, .82) !important;
-  border-color: rgba(148, 163, 184, .24) !important;
-  box-shadow: 0 14px 35px rgba(15, 23, 42, .07) !important;
-  backdrop-filter: blur(14px);
+.admin-main .bg-white:hover,
+.admin-main [class*="rounded-lg border"]:hover,
+.admin-main [class*="rounded-xl border"]:hover {
+  border-color: rgba(245, 158, 11, 0.35) !important;
+  box-shadow: 0 16px 40px -5px rgba(0, 0, 0, 0.8), 0 0 25px rgba(245, 158, 11, 0.12) !important;
 }
 
 .admin-main .bg-gray-50,
-.admin-main .bg-gray-100 {
-  background: rgba(241, 245, 249, .72) !important;
+.admin-main .bg-gray-100,
+.admin-main .bg-slate-800,
+.admin-main .bg-muted {
+  background: rgba(30, 24, 15, 0.65) !important;
+  border-color: rgba(245, 158, 11, 0.15) !important;
 }
 
-.admin-main button {
-  border-radius: .75rem;
-  transition: transform .2s ease, box-shadow .2s ease, filter .2s ease;
+/* Attractive Glowing Primary Buttons */
+.admin-main button,
+.admin-main .btn {
+  position: relative;
+  overflow: hidden;
+  border-radius: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
+
 .admin-main button:hover:not(:disabled) {
-  transform: translateY(-1px);
-  filter: saturate(1.08);
-  box-shadow: 0 8px 18px rgba(15, 23, 42, .12);
-}
-.admin-main button:focus-visible,
-.admin-main input:focus-visible,
-.admin-main select:focus-visible,
-.admin-main textarea:focus-visible {
-  outline: 3px solid rgba(245, 158, 11, .24);
-  outline-offset: 2px;
+  transform: translateY(-2px);
+  filter: brightness(1.08);
 }
 
+.admin-main button:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+/* Primary Gold Action Buttons */
+.admin-main button.bg-amber-500,
+.admin-main button.bg-amber-600,
+.admin-main button.bg-primary,
+.admin-main button[class*="bg-amber-"],
+.admin-main button[class*="bg-yellow-"] {
+  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 50%, #d97706 100%) !important;
+  color: #09090b !important;
+  font-weight: 700;
+  border: 1px solid rgba(254, 240, 138, 0.4) !important;
+  box-shadow: 0 4px 18px rgba(245, 158, 11, 0.38), inset 0 1px 1px rgba(255, 255, 255, 0.5) !important;
+}
+
+.admin-main button.bg-amber-500:hover,
+.admin-main button.bg-amber-600:hover,
+.admin-main button.bg-primary:hover {
+  background: linear-gradient(135deg, #fcd34d 0%, #fbbf24 50%, #f59e0b 100%) !important;
+  box-shadow: 0 8px 25px rgba(245, 158, 11, 0.55), 0 0 15px rgba(245, 158, 11, 0.3) !important;
+}
+
+/* Secondary / Outline buttons */
+.admin-main button.border,
+.admin-main button.bg-transparent,
+.admin-main button.bg-slate-800 {
+  background: rgba(26, 21, 14, 0.8) !important;
+  border: 1px solid rgba(245, 158, 11, 0.25) !important;
+  color: #fef3c7 !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35) !important;
+}
+
+.admin-main button.border:hover,
+.admin-main button.bg-transparent:hover {
+  background: rgba(245, 158, 11, 0.15) !important;
+  border-color: rgba(245, 158, 11, 0.5) !important;
+  color: #fbbf24 !important;
+  box-shadow: 0 4px 15px rgba(245, 158, 11, 0.2) !important;
+}
+
+/* Text colors */
+.admin-main .text-gray-900,
+.admin-main .text-slate-900,
+.admin-main .text-gray-800 {
+  color: #fef3c7 !important;
+}
+
+.admin-main .text-gray-600,
+.admin-main .text-gray-500,
+.admin-main .text-slate-600 {
+  color: #d1b88a !important;
+}
+
+.admin-main .text-gray-400 {
+  color: #a89470 !important;
+}
+
+/* Tables */
+.admin-main table {
+  border-collapse: separate;
+  border-spacing: 0;
+  width: 100%;
+}
+
+.admin-main table th {
+  background: rgba(30, 23, 12, 0.85) !important;
+  color: #fbbf24 !important;
+  font-weight: 700;
+  border-bottom: 1px solid rgba(245, 158, 11, 0.25) !important;
+  padding: 0.85rem 1rem;
+}
+
+.admin-main table td {
+  border-bottom: 1px solid rgba(245, 158, 11, 0.08) !important;
+  padding: 0.85rem 1rem;
+  color: #f8fafc;
+}
+
+.admin-main table tr:hover td {
+  background: rgba(245, 158, 11, 0.06) !important;
+}
+
+/* Luxury Input Fields */
 .admin-main input,
 .admin-main select,
 .admin-main textarea {
-  background: rgba(255, 255, 255, .88) !important;
-  border-radius: .7rem;
-  border-color: rgba(148, 163, 184, .42) !important;
-  transition: border-color .2s ease, box-shadow .2s ease;
+  background: rgba(14, 12, 8, 0.85) !important;
+  border: 1px solid rgba(245, 158, 11, 0.25) !important;
+  color: #f8fafc !important;
+  border-radius: 0.75rem;
+  padding: 0.65rem 0.95rem;
+  transition: all 0.2s ease;
 }
+
 .admin-main input:focus,
 .admin-main select:focus,
 .admin-main textarea:focus {
-  border-color: #f59e0b !important;
-  box-shadow: 0 0 0 4px rgba(245, 158, 11, .12);
+  border-color: #fbbf24 !important;
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.2), 0 0 15px rgba(245, 158, 11, 0.15) !important;
+  outline: none;
+}
+
+/* Badges */
+.admin-main [class*="badge"],
+.admin-main .rounded-full {
+  backdrop-filter: blur(8px);
 }
