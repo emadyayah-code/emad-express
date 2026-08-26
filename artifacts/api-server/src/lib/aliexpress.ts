@@ -115,17 +115,21 @@ export async function searchAliExpressProducts(
   keywords: string,
   creds: AliExpressCredentials,
   page = 1,
-  pageSize = 20,
+  pageSize = 50,
+  categoryId?: string,
 ): Promise<AliExpressProduct[]> {
   try {
-    const url = buildApiUrl("aliexpress.affiliate.product.query", {
-      keywords,
+    const params: Record<string, string> = {
       page_no: String(page),
       page_size: String(Math.min(pageSize, 50)),
       target_currency: "USD",
       target_language: "AR",
       ...(creds.trackingId ? { tracking_id: creds.trackingId } : {}),
-    }, creds);
+    };
+    if (keywords && keywords.trim()) params.keywords = keywords.trim();
+    if (categoryId && categoryId.trim()) params.category_ids = categoryId.trim();
+
+    const url = buildApiUrl("aliexpress.affiliate.product.query", params, creds);
 
     const response = await fetch(url, {
       method: "GET",
@@ -137,7 +141,7 @@ export async function searchAliExpressProducts(
     });
 
     if (!response.ok) {
-      logger.error({ status: response.status, keywords }, "AliExpress search error");
+      logger.error({ status: response.status, keywords, categoryId }, "AliExpress search error");
       return [];
     }
 
@@ -156,7 +160,7 @@ export async function searchAliExpressProducts(
       return { ...p, product_main_image_url: img };
     }) as AliExpressProduct[];
   } catch (err: any) {
-    logger.error({ err: err.message, keywords }, "AliExpress search failed");
+    logger.error({ err: err.message, keywords, categoryId }, "AliExpress search failed");
     return [];
   }
 }

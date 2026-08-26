@@ -1009,193 +1009,159 @@ const SAMPLE_CATALOG = [
   { name_ar: "محطة عمل وشاشة عرض محمولة 15.6 بوصة بدقة Full HD IPS Type-C", name_en: "15.6-Inch Portable Monitor FHD IPS Type-C HDMI Display", price: 310, category: "كمبيوتر", rating: 4.8, orders: 2750 },
 ];
 
+const ALIEXPRESS_DEPARTMENTS = [
+  { id: "1511", name_ar: "ساعات وإكسسوارات", name_en: "Watches & Accessories" },
+  { id: "44", name_ar: "إلكترونيات استهلاكية", name_en: "Consumer Electronics" },
+  { id: "509", name_ar: "هواتف وملحقاتها", name_en: "Phones & Telecommunications" },
+  { id: "15", name_ar: "أجهزة منزلية", name_en: "Home Appliances" },
+  { id: "1524", name_ar: "حقائب وأمتعة", name_en: "Luggage & Bags" },
+  { id: "1420", name_ar: "أدوات ومعدات", name_en: "Tools & Hardware" },
+  { id: "34", name_ar: "سيارات ودراجات", name_en: "Automobiles & Motorcycles" },
+  { id: "66", name_ar: "تجميل وعناية بالبشرة", name_en: "Beauty & Health" },
+  { id: "18", name_ar: "رياضة وترفيه", name_en: "Sports & Entertainment" },
+  { id: "7", name_ar: "كمبيوتر ومكتب", name_en: "Computer & Office" },
+  { id: "1509", name_ar: "مجوهرات وإكسسوارات", name_en: "Jewelry & Accessories" },
+  { id: "1501", name_ar: "ألعاب وهوايات", name_en: "Toys & Hobbies" },
+  { id: "39", name_ar: "إضاءة ومصابيح", name_en: "Lights & Lighting" },
+  { id: "30", name_ar: "أمان وحماية", name_en: "Security & Protection" },
+  { id: "322", name_ar: "أحذية رجالية ونسائية", name_en: "Shoes & Footwear" },
+];
+
 router.get("/admin/dropship/auto-fetch", requireAuth, requireRole("admin", "manager"), async (req, res, next) => {
   try {
     const platform = String(req.query.platform || "aliexpress");
     const count = parseInt(String(req.query.count || "1000"), 10) || 1000;
+    const category_id = req.query.category_id ? String(req.query.category_id) : undefined;
     const creds = await getAliExpressCreds();
     
     let realProducts: any[] = [];
     if (platform === "aliexpress" && creds) {
       try {
-        const keywords = ["ساعات", "إلكترونيات", "سماعات", "كاميرات", "أزياء", "أدوات", "watch", "earbuds", "bag", "phone", "gadgets", "home"];
-        for (const kw of keywords) {
+        const deptsToFetch = category_id ? [{ id: category_id, name_ar: "القسم المحدد", name_en: "Selected" }] : ALIEXPRESS_DEPARTMENTS;
+        
+        for (let pNum = 1; pNum <= 5; pNum++) {
           if (realProducts.length >= count) break;
-          const prods = await searchAliExpressProducts(kw, creds, 1, 50);
-          if (prods && prods.length > 0) {
-            for (const p of prods) {
-              if (p.product_id && !realProducts.some(r => r.source_id === String(p.product_id))) {
-                realProducts.push({
-                  source_id: String(p.product_id),
-                  name: p.product_title,
-                  price: parseFloat(p.target_sale_price) || parseFloat(p.target_original_price) || 25,
-                  original_price: parseFloat(p.target_original_price) || 0,
-                  image: p.product_main_image_url || getUniqueProductImage(realProducts.length, String(p.product_id)),
-                  category_name: p.first_level_category_name || "منتجات عامة",
-                  rating: parseFloat(p.evaluate_rate) || 4.8,
-                  orders_count: parseInt(p.sales_volume) || 120,
-                  platform: "aliexpress",
-                  source_url: p.product_detail_url || `https://www.aliexpress.com/item/${p.product_id}.html`,
-                  supplier_name: p.shop_name || "AliExpress Verified Seller",
-                });
+          for (const dept of deptsToFetch) {
+            if (realProducts.length >= count) break;
+            const prods = await searchAliExpressProducts("", creds, pNum, 50, dept.id);
+            if (prods && prods.length > 0) {
+              for (const p of prods) {
+                if (p.product_id && !realProducts.some(r => r.source_id === String(p.product_id))) {
+                  let img = p.product_main_image_url || "";
+                  if (img.startsWith("//")) img = `https:${img}`;
+                  realProducts.push({
+                    source_id: String(p.product_id),
+                    name: p.product_title,
+                    price: parseFloat(p.target_sale_price) || parseFloat(p.target_original_price) || 25,
+                    original_price: parseFloat(p.target_original_price) || 0,
+                    image: img,
+                    category_name: p.first_level_category_name || dept.name_ar,
+                    rating: parseFloat(p.evaluate_rate) || 4.8,
+                    orders_count: parseInt(p.sales_volume) || 120,
+                    platform: "aliexpress",
+                    source_url: p.product_detail_url || `https://www.aliexpress.com/item/${p.product_id}.html`,
+                    supplier_name: p.shop_name || "AliExpress Verified Seller",
+                  });
+                }
               }
             }
           }
         }
       } catch (err) {
-        logger.warn({ err }, "Live AliExpress search fetch error, using catalog fallback");
+        logger.warn({ err }, "Live AliExpress multi-category search error");
       }
     }
 
-    // Fill any remainder with catalog
-    const variants = ["موديل برو", "الإصدار المطور", "إصدار 2026", "فائق الجودة", "النسخة الأصلية", "سلسلة ماكس", "إصدار بلس", "الموديل الذكي"];
-    const results = [...realProducts];
-    for (let i = results.length; i < count; i++) {
-      const base = SAMPLE_CATALOG[i % SAMPLE_CATALOG.length];
-      const aliCode = `100500${(70000000 + (i * 1237))}`;
-      const id = platform === "aliexpress" ? aliCode : `${platform.slice(0, 3)}-${aliCode}`;
-      const priceVariation = Number((base.price * (0.85 + (i % 30) * 0.01)).toFixed(2));
-      const imageUnique = getUniqueProductImage(i, aliCode);
-      const vName = variants[i % variants.length];
-
-      results.push({
-        source_id: id,
-        name: `${base.name_ar} (${vName})`,
-        price: priceVariation,
-        image: imageUnique,
-        category_name: base.category,
-        rating: base.rating,
-        orders_count: base.orders + (i * 7),
-        platform,
-        source_url: `https://www.${platform}.com/item/${id}.html`,
-        supplier_name: `${platform.toUpperCase()} Official Flagship Store #${(i % 30) + 1}`,
-      });
-    }
-
-    return res.json({ success: true, count: results.length, platform, results });
+    return res.json({ success: true, count: realProducts.length, platform, results: realProducts });
   } catch (err) { next(err); }
 });
 
 router.post("/admin/dropship/bulk-import-1000", requireAuth, requireRole("admin", "manager"), async (req, res, next) => {
   try {
-    const { platform = "aliexpress", count = 1000, margin_percent = 30 } = req.body || {};
+    const { platform = "aliexpress", count = 1000, margin_percent = 30, category_id } = req.body || {};
     const importCount = Math.min(Math.max(10, count), 2000);
     const margin = (100 + (margin_percent || 30)) / 100;
     const creds = await getAliExpressCreds();
 
     let [defaultCategory] = await db.select().from(categories).limit(1);
-    const categoryId = defaultCategory ? defaultCategory.id : null;
+    const defaultCatId = defaultCategory ? defaultCategory.id : null;
 
     // Fetch existing source_ids to prevent any duplicate insertion
     const existingDropships = await db.select({ source_id: dropship_products.source_id }).from(dropship_products);
     const existingSet = new Set(existingDropships.map(d => d.source_id));
 
-    // Try fetching real products from AliExpress Live API
+    // Fetch real products across all AliExpress departments
     let liveFetched: any[] = [];
     if (platform === "aliexpress" && creds) {
       try {
-        const keywords = ["ساعات", "إلكترونيات", "سماعات", "كاميرات", "أزياء", "أدوات", "watch", "earbuds", "bag", "phone", "gadgets", "home"];
-        for (const kw of keywords) {
+        const deptsToFetch = category_id ? [{ id: String(category_id), name_ar: "القسم المحدد", name_en: "Selected" }] : ALIEXPRESS_DEPARTMENTS;
+        
+        for (let pNum = 1; pNum <= 10; pNum++) {
           if (liveFetched.length >= importCount) break;
-          const prods = await searchAliExpressProducts(kw, creds, 1, 50);
-          if (prods && prods.length > 0) {
-            for (const p of prods) {
-              const srcId = String(p.product_id);
-              if (srcId && !existingSet.has(srcId) && !liveFetched.some(l => l.source_id === srcId)) {
-                liveFetched.push({
-                  source_id: srcId,
-                  name: p.product_title,
-                  cost: parseFloat(p.target_sale_price) || parseFloat(p.target_original_price) || 25,
-                  image: p.product_main_image_url,
-                  category_name: p.first_level_category_name || "منتجات عامة",
-                  quantity: parseInt(p.sales_volume) || 500,
-                  source_url: p.product_detail_url || `https://www.aliexpress.com/item/${srcId}.html`,
-                  supplier_name: p.shop_name || "AliExpress Verified Seller",
-                });
+          for (const dept of deptsToFetch) {
+            if (liveFetched.length >= importCount) break;
+            const prods = await searchAliExpressProducts("", creds, pNum, 50, dept.id);
+            if (prods && prods.length > 0) {
+              for (const p of prods) {
+                const srcId = String(p.product_id);
+                if (srcId && !existingSet.has(srcId) && !liveFetched.some(l => l.source_id === srcId)) {
+                  let img = p.product_main_image_url || "";
+                  if (img.startsWith("//")) img = `https:${img}`;
+                  liveFetched.push({
+                    source_id: srcId,
+                    name: p.product_title,
+                    cost: parseFloat(p.target_sale_price) || parseFloat(p.target_original_price) || 25,
+                    image: img,
+                    category_name: p.first_level_category_name || dept.name_ar,
+                    quantity: 500 + ((parseInt(String(p.product_id).slice(-4)) || 100) % 1500),
+                    source_url: p.product_detail_url || `https://www.aliexpress.com/item/${srcId}.html`,
+                    supplier_name: p.shop_name || "AliExpress Verified Seller",
+                  });
+                }
               }
             }
           }
         }
       } catch (e) {
-        logger.warn({ e }, "AliExpress live bulk search failed, falling back to diverse generator");
+        logger.warn({ e }, "AliExpress live multi-category bulk fetch error");
       }
     }
 
     let importedCount = 0;
     const batchSize = 100;
     
-    for (let i = 0; i < importCount; i += batchSize) {
+    for (let i = 0; i < liveFetched.length; i += batchSize) {
+      const currentBatch = liveFetched.slice(i, i + batchSize);
       const productBatch = [];
       const dropshipMetaBatch: any[] = [];
-      const currentBatchCount = Math.min(batchSize, importCount - i);
 
-      for (let j = 0; j < currentBatchCount; j++) {
-        const index = i + j;
-        let sourceId = "";
-        let nameAr = "";
-        let nameEn = "";
-        let sourcePrice = 0;
-        let salePrice = 0;
-        let imgUrl = "";
-        let qty = 500;
-        let supplierName = `${platform.toUpperCase()} Official Verified Store`;
-        let srcUrl = "";
+      for (const item of currentBatch) {
+        if (existingSet.has(item.source_id)) continue;
+        existingSet.add(item.source_id);
 
-        if (index < liveFetched.length) {
-          const live = liveFetched[index];
-          sourceId = live.source_id;
-          nameAr = live.name;
-          nameEn = live.name;
-          sourcePrice = live.cost;
-          salePrice = Number((sourcePrice * margin).toFixed(2));
-          imgUrl = live.image;
-          qty = live.quantity || 500;
-          supplierName = live.supplier_name;
-          srcUrl = live.source_url;
-        } else {
-          const base = SAMPLE_CATALOG[index % SAMPLE_CATALOG.length];
-          const aliCode = `100500${(70000000 + (index * 1337) + (Date.now() % 10000))}`;
-          sourceId = platform === "aliexpress" ? aliCode : `${platform.slice(0, 3)}-${aliCode}`;
-          const variantsAr = ["موديل برو", "الإصدار المطور", "إصدار 2026", "فائق الجودة", "النسخة الأصلية", "سلسلة ماكس", "إصدار بلس", "الموديل الذكي"];
-          const variantsEn = ["Pro Edition", "Upgraded Version", "2026 Model", "Ultra Quality", "Original Series", "Max Edition", "Plus Model", "Smart Series"];
-          const vAr = variantsAr[index % variantsAr.length];
-          const vEn = variantsEn[index % variantsEn.length];
-
-          sourcePrice = Number((base.price * (0.85 + (index % 30) * 0.01)).toFixed(2));
-          salePrice = Number((sourcePrice * margin).toFixed(2));
-          nameAr = `${base.name_ar} - ${vAr}`;
-          nameEn = `${base.name_en} - ${vEn}`;
-          imgUrl = getUniqueProductImage(index, aliCode);
-          qty = 500 + ((index * 37) % 1500);
-          srcUrl = `https://www.${platform}.com/item/${sourceId}.html`;
-        }
-
-        if (existingSet.has(sourceId)) {
-          continue; // Strict non-duplication
-        }
-        existingSet.add(sourceId);
-
-        const skuUnique = `${platform.slice(0, 3).toUpperCase()}-${sourceId}`;
+        const sourcePrice = item.cost;
+        const salePrice = Number((sourcePrice * margin).toFixed(2));
+        const skuUnique = `ALI-${item.source_id}`;
 
         productBatch.push({
-          name_ar: nameAr,
-          name_en: nameEn,
+          name_ar: item.name,
+          name_en: item.name,
           sku: skuUnique,
           price: salePrice,
           cost: sourcePrice,
-          quantity: qty,
+          quantity: item.quantity,
           min_quantity: 5,
-          category_id: categoryId,
-          description_ar: `منتج عالي الجودة مستورد مباشرة من ${platform} (كود ${sourceId}). ضمان أصلي ومواصفات قياسية.`,
-          description_en: `Authentic ${platform} imported item (Code ${sourceId}). Standard specs and original warranty.`,
-          image: imgUrl,
+          category_id: defaultCatId,
+          description_ar: `منتج رسمي عالي الجودة مستورد مباشرة من علي إكسبرس (كود ${item.source_id}) من قسم ${item.category_name}. متجر المورد: ${item.supplier_name}.`,
+          description_en: `Authentic AliExpress item (Code ${item.source_id}) from ${item.category_name} category. Supplier: ${item.supplier_name}.`,
+          image: item.image,
           is_active: true,
         });
 
         dropshipMetaBatch.push({
-          sourceId,
-          supplierName,
-          srcUrl,
+          sourceId: item.source_id,
+          supplierName: item.supplier_name,
+          srcUrl: item.source_url,
           sourcePrice,
           salePrice,
         });
@@ -1215,7 +1181,7 @@ router.post("/admin/dropship/bulk-import-1000", requireAuth, requireRole("admin"
             source_currency: "USD",
             our_price: meta.salePrice,
             supplier_name: meta.supplierName,
-            platform_commission_rate: 5,
+            platform_commission_rate: 8,
           };
         });
 
@@ -1226,7 +1192,7 @@ router.post("/admin/dropship/bulk-import-1000", requireAuth, requireRole("admin"
 
     return res.json({
       success: true,
-      message: `تم استيراد ${importedCount} منتج بنجاح ومباشرة من خوادم علي إكسبرس الحقيقية!`,
+      message: `تم استيراد ${importedCount} منتج حقيقي بالكامل من كافة أقسام علي إكسبرس بصورها وأسعارها الأصلية بنجاح!`,
       imported: importedCount,
       platform,
     });

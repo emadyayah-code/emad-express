@@ -756,8 +756,28 @@ function UrlImportForm({ initial, sourceUrl, onImport, importing }: {
   );
 }
 
+const ALI_CATEGORIES = [
+  { id: "", name: "🌐 جميع أقسام وفئات علي إكسبرس (شامل)" },
+  { id: "1511", name: "⌚ ساعات وإكسسوارات" },
+  { id: "44", name: "📱 إلكترونيات استهلاكية وأجهزة ذكية" },
+  { id: "509", name: "🔌 هواتف وملحقاتها وشواحن" },
+  { id: "15", name: "🏠 أجهزة منزلية ومطبخ" },
+  { id: "1524", name: "🎒 حقائب ومحافظ وأمتعة" },
+  { id: "1420", name: "🔧 أدوات ومعدات صيانة" },
+  { id: "34", name: "🚗 إكسسوارات وقطع سيارات" },
+  { id: "66", name: "💄 تجميل وعناية ومكياج" },
+  { id: "18", name: "⚽ رياضة ولياقة وترفيه" },
+  { id: "7", name: "💻 كمبيوتر ومستلزمات مكتب" },
+  { id: "1509", name: "💍 مجوهرات وإكسسوارات نسائية" },
+  { id: "1501", name: "🧸 ألعاب وهدايا وأطفال" },
+  { id: "39", name: "💡 إضاءة ومصابيح LED" },
+  { id: "30", name: "🔒 كاميرات أمان وحماية" },
+  { id: "322", name: "👟 أحذية رياضية ورجالية ونسائية" },
+];
+
 function AutoFetchButton({ platform, onResults }: { platform: string; onResults: (r: any[]) => void }) {
   const qc = useQueryClient();
+  const [selectedCat, setSelectedCat] = useState("");
   const [loading, setLoading] = useState(false);
   const [importingDirect, setImportingDirect] = useState(false);
   const [error, setError] = useState("");
@@ -766,9 +786,10 @@ function AutoFetchButton({ platform, onResults }: { platform: string; onResults:
   const fetchBrowse = async () => {
     setLoading(true); setError(""); setSuccessMsg("");
     try {
-      const r = await api.get(`/admin/dropship/auto-fetch?platform=${platform}&count=1000`);
+      const catParam = selectedCat ? `&category_id=${selectedCat}` : "";
+      const r = await api.get(`/admin/dropship/auto-fetch?platform=${platform}&count=1000${catParam}`);
       onResults(r.results || []);
-      setSuccessMsg("تم جلب 1000 منتج للتصفح!");
+      setSuccessMsg(`تم جلب ${r.count || 0} منتج من سيرفرات علي إكسبرس الحقيقية للتصفح!`);
       setTimeout(() => setSuccessMsg(""), 4000);
     } catch (e: any) {
       setError(e?.message || "فشل الجلب");
@@ -780,10 +801,10 @@ function AutoFetchButton({ platform, onResults }: { platform: string; onResults:
   const import1000Directly = async () => {
     setImportingDirect(true); setError(""); setSuccessMsg("");
     try {
-      const res = await api.post("/admin/dropship/bulk-import-1000", { platform, count: 1000, margin_percent: 35 });
+      const res = await api.post("/admin/dropship/bulk-import-1000", { platform, count: 1000, margin_percent: 35, category_id: selectedCat || undefined });
       qc.invalidateQueries({ queryKey: ["dropship-products"] });
       qc.invalidateQueries({ queryKey: ["products"] });
-      setSuccessMsg(res.message || "تم استيراد 1000 منتج وحفظهم في قاعدة البيانات بنجاح!");
+      setSuccessMsg(res.message || "تم استيراد المنتجات وحفظها في قاعدة البيانات بنجاح!");
       setTimeout(() => setSuccessMsg(""), 6000);
     } catch (e: any) {
       setError(e?.message || "فشل الاستيراد المباشر");
@@ -793,15 +814,25 @@ function AutoFetchButton({ platform, onResults }: { platform: string; onResults:
   };
 
   return (
-    <div className="flex flex-col items-end gap-2">
+    <div className="flex flex-col items-end gap-2.5">
       <div className="flex items-center gap-2 flex-wrap justify-end">
+        <select
+          value={selectedCat}
+          onChange={e => setSelectedCat(e.target.value)}
+          className="bg-slate-900 border border-amber-500/40 text-amber-300 rounded-xl px-3 py-2 text-xs font-bold outline-none cursor-pointer"
+        >
+          {ALI_CATEGORIES.map(c => (
+            <option key={c.id} value={c.id}>{c.name}</option>
+          ))}
+        </select>
+
         <button
           onClick={import1000Directly}
           disabled={importingDirect || loading}
           className="flex items-center gap-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black px-4 py-2 rounded-xl text-xs font-extrabold shadow-md hover:shadow-amber-500/20 disabled:opacity-60 transition-all cursor-pointer"
         >
           {importingDirect ? (
-            <><Loader2 size={14} className="animate-spin text-black" /> جارٍ استيراد 1000 منتج لقاعدة البيانات...</>
+            <><Loader2 size={14} className="animate-spin text-black" /> جارٍ استيراد المنتجات الحقيقية لقاعدة البيانات...</>
           ) : (
             <><Database size={14} /> استيراد 1000 منتج لقاعدة البيانات فوراً 🚀</>
           )}
@@ -812,7 +843,7 @@ function AutoFetchButton({ platform, onResults }: { platform: string; onResults:
           disabled={loading || importingDirect}
           className="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/30 px-3.5 py-2 rounded-xl text-xs font-semibold disabled:opacity-60 transition-all cursor-pointer"
         >
-          {loading ? <><Loader2 size={13} className="animate-spin" /> جارٍ التحميل...</> : <><Download size={13} /> تصفح 1000 منتج</>}
+          {loading ? <><Loader2 size={13} className="animate-spin" /> جارٍ الجلب...</> : <><Download size={13} /> تصفح المنتجات الحقيقية</>}
         </button>
       </div>
 
