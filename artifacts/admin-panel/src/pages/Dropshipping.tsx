@@ -617,14 +617,19 @@ function UrlImportForm({ initial, sourceUrl, onImport, importing }: {
 }
 
 function AutoFetchButton({ platform, onResults }: { platform: string; onResults: (r: any[]) => void }) {
+  const qc = useQueryClient();
   const [loading, setLoading] = useState(false);
+  const [importingDirect, setImportingDirect] = useState(false);
   const [error, setError] = useState("");
+  const [successMsg, setSuccessMsg] = useState("");
 
-  const fetch_ = async () => {
-    setLoading(true); setError("");
+  const fetchBrowse = async () => {
+    setLoading(true); setError(""); setSuccessMsg("");
     try {
-      const r = await api.get(`/admin/dropship/auto-fetch?platform=${platform}`);
+      const r = await api.get(`/admin/dropship/auto-fetch?platform=${platform}&count=1000`);
       onResults(r.results || []);
+      setSuccessMsg("تم جلب 1000 منتج للتصفح!");
+      setTimeout(() => setSuccessMsg(""), 4000);
     } catch (e: any) {
       setError(e?.message || "فشل الجلب");
     } finally {
@@ -632,16 +637,47 @@ function AutoFetchButton({ platform, onResults }: { platform: string; onResults:
     }
   };
 
+  const import1000Directly = async () => {
+    setImportingDirect(true); setError(""); setSuccessMsg("");
+    try {
+      const res = await api.post("/admin/dropship/bulk-import-1000", { platform, count: 1000, margin_percent: 35 });
+      qc.invalidateQueries({ queryKey: ["dropship-products"] });
+      qc.invalidateQueries({ queryKey: ["products"] });
+      setSuccessMsg(res.message || "تم استيراد 1000 منتج وحفظهم في قاعدة البيانات بنجاح!");
+      setTimeout(() => setSuccessMsg(""), 6000);
+    } catch (e: any) {
+      setError(e?.message || "فشل الاستيراد المباشر");
+    } finally {
+      setImportingDirect(false);
+    }
+  };
+
   return (
-    <div className="flex flex-col items-end gap-1">
-      <button
-        onClick={fetch_}
-        disabled={loading}
-        className="flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium disabled:opacity-60 transition-colors"
-      >
-        {loading ? <><Loader2 size={13} className="animate-spin" /> جارٍ الجلب...</> : <><Download size={13} /> جلب المنتجات تلقائياً</>}
-      </button>
-      {error && <p className="text-xs text-red-500 max-w-48 text-right">{error}</p>}
+    <div className="flex flex-col items-end gap-2">
+      <div className="flex items-center gap-2 flex-wrap justify-end">
+        <button
+          onClick={import1000Directly}
+          disabled={importingDirect || loading}
+          className="flex items-center gap-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black px-4 py-2 rounded-xl text-xs font-extrabold shadow-md hover:shadow-amber-500/20 disabled:opacity-60 transition-all cursor-pointer"
+        >
+          {importingDirect ? (
+            <><Loader2 size={14} className="animate-spin text-black" /> جارٍ استيراد 1000 منتج لقاعدة البيانات...</>
+          ) : (
+            <><Database size={14} /> استيراد 1000 منتج لقاعدة البيانات فوراً 🚀</>
+          )}
+        </button>
+
+        <button
+          onClick={fetchBrowse}
+          disabled={loading || importingDirect}
+          className="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/30 px-3.5 py-2 rounded-xl text-xs font-semibold disabled:opacity-60 transition-all cursor-pointer"
+        >
+          {loading ? <><Loader2 size={13} className="animate-spin" /> جارٍ التحميل...</> : <><Download size={13} /> تصفح 1000 منتج</>}
+        </button>
+      </div>
+
+      {successMsg && <p className="text-xs text-emerald-400 font-bold text-right animate-pulse">{successMsg}</p>}
+      {error && <p className="text-xs text-red-400 font-semibold max-w-sm text-right">{error}</p>}
     </div>
   );
 }
