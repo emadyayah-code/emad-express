@@ -897,18 +897,18 @@ router.post("/admin/platform-settings", requireAuth, requireRole("admin", "manag
 
 // ========== AUTO-FETCH & MASSIVE 1000+ PRODUCTS IMPORT ==========
 const SAMPLE_CATALOG = [
-  { name: "ساعة ذكية رياضية فائقة مع قياس نبضات القلب ومقاومة للماء IP68", price: 145, image: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600", category: "إلكترونيات", rating: 4.8, orders: 3420 },
-  { name: "سماعات لاسلكية Pro مع ميزة إلغاء الضوضاء النشط ANC وصوت محيطي", price: 195, image: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=600", category: "صوتيات", rating: 4.9, orders: 5890 },
-  { name: "كاميرا مراقبة ذكية 4K بزاوية 360 درجة ورؤية ليلية ملونة", price: 230, image: "https://images.unsplash.com/photo-1557597774-9d273605dfa9?w=600", category: "إلكترونيات", rating: 4.7, orders: 1840 },
-  { name: "حقيبة ظهر ذكية مقاومة للماء مع منفذ شحن USB وقفل أمان", price: 120, image: "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=600", category: "أزياء", rating: 4.6, orders: 2750 },
-  { name: "ماكينة قهوة إسبريسو احترافية مع صانع رغوة الحليب 20 بار", price: 480, image: "https://images.unsplash.com/photo-1517668808822-9ebb02f2a0e6?w=600", category: "أجهزة منزلية", rating: 4.9, orders: 1210 },
-  { name: "لوحة مفاتيح ميكانيكية بإضاءة RGB مخصصة للألعاب والبرمجة", price: 210, image: "https://images.unsplash.com/photo-1587829741301-dc798b83add3?w=600", category: "كمبيوتر", rating: 4.8, orders: 4120 },
-  { name: "مصباح مكتبي ذكي LED مع شاحن لاسلكي سريع للهواتف", price: 95, image: "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?w=600", category: "إلكترونيات", rating: 4.5, orders: 3100 },
-  { name: "ممسحة ومكنسة روبوت ذكية مع تطبيق تحكم ورسم خرائط الليزر", price: 890, image: "https://images.unsplash.com/photo-1589739900243-4b52cd9b104e?w=600", category: "أجهزة منزلية", rating: 4.8, orders: 980 },
-  { name: "حامل هاتف ذكي مغناطيسي للسيارة مع شحن لاسلكي MagSafe", price: 65, image: "https://images.unsplash.com/photo-1584438784894-089d6a62b8fa?w=600", category: "إكسسوارات سيارات", rating: 4.7, orders: 6700 },
-  { name: "حذاء رياضي مريح وخفيف الوزن للركض والتمارين اليومية", price: 160, image: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=600", category: "أزياء", rating: 4.8, orders: 4320 },
-  { name: "نظارة شمسية كلاسيكية مستقطبة بحماية UV400 وإطار ألمنيوم", price: 85, image: "https://images.unsplash.com/photo-1511499767150-a48a237f0083?w=600", category: "إكسسوارات", rating: 4.6, orders: 2190 },
-  { name: "طقم حقائب سفر فاخرة مكون من 3 قطع مقاومة للصدمات", price: 540, image: "https://images.unsplash.com/photo-1565026057447-bc90a3dceb87?w=600", category: "سفر", rating: 4.9, orders: 1540 },
+  { name_ar: "ساعة ذكية رياضية فائقة مع قياس نبضات القلب ومقاومة للماء IP68", name_en: "Ultra Smart Sports Watch with Heart Rate & IP68 Waterproof", price: 145, image: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600", category: "إلكترونيات", rating: 4.8, orders: 3420 },
+  { name_ar: "سماعات لاسلكية Pro مع ميزة إلغاء الضوضاء النشط ANC وصوت محيطي", name_en: "Wireless Pro Earbuds with Active Noise Cancellation ANC", price: 195, image: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=600", category: "صوتيات", rating: 4.9, orders: 5890 },
+  { name_ar: "كاميرا مراقبة ذكية 4K بزاوية 360 درجة ورؤية ليلية ملونة", name_en: "Smart 4K Security Camera 360 Degree with Color Night Vision", price: 230, image: "https://images.unsplash.com/photo-1557597774-9d273605dfa9?w=600", category: "إلكترونيات", rating: 4.7, orders: 1840 },
+  { name_ar: "حقيبة ظهر ذكية مقاومة للماء مع منفذ شحن USB وقفل أمان", name_en: "Smart Waterproof Laptop Backpack with USB Charging Port", price: 120, image: "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=600", category: "أزياء", rating: 4.6, orders: 2750 },
+  { name_ar: "ماكينة قهوة إسبريسو احترافية مع صانع رغوة الحليب 20 بار", name_en: "Professional 20-Bar Espresso Coffee Machine with Milk Frother", price: 480, image: "https://images.unsplash.com/photo-1517668808822-9ebb02f2a0e6?w=600", category: "أجهزة منزلية", rating: 4.9, orders: 1210 },
+  { name_ar: "لوحة مفاتيح ميكانيكية بإضاءة RGB مخصصة للألعاب والبرمجة", name_en: "RGB Mechanical Gaming Keyboard with Custom Switches", price: 210, image: "https://images.unsplash.com/photo-1587829741301-dc798b83add3?w=600", category: "كمبيوتر", rating: 4.8, orders: 4120 },
+  { name_ar: "مصباح مكتبي ذكي LED مع شاحن لاسلكي سريع للهواتف", name_en: "Smart LED Desk Lamp with Fast Wireless Phone Charger", price: 95, image: "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?w=600", category: "إلكترونيات", rating: 4.5, orders: 3100 },
+  { name_ar: "ممسحة ومكنسة روبوت ذكية مع تطبيق تحكم ورسم خرائط الليزر", name_en: "Smart Robot Vacuum & Mop with LiDAR Laser Mapping", price: 890, image: "https://images.unsplash.com/photo-1589739900243-4b52cd9b104e?w=600", category: "أجهزة منزلية", rating: 4.8, orders: 980 },
+  { name_ar: "حامل هاتف ذكي مغناطيسي للسيارة مع شحن لاسلكي MagSafe", name_en: "Magnetic Car Phone Mount with MagSafe Fast Wireless Charging", price: 65, image: "https://images.unsplash.com/photo-1584438784894-089d6a62b8fa?w=600", category: "إكسسوارات سيارات", rating: 4.7, orders: 6700 },
+  { name_ar: "حذاء رياضي مريح وخفيف الوزن للركض والتمارين اليومية", name_en: "Ultra Lightweight Running Shoes for Sports and Daily Wear", price: 160, image: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=600", category: "أزياء", rating: 4.8, orders: 4320 },
+  { name_ar: "نظارة شمسية كلاسيكية مستقطبة بحماية UV400 وإطار ألمنيوم", name_en: "Polarized Classic Sunglasses UV400 Protection Aluminum Frame", price: 85, image: "https://images.unsplash.com/photo-1511499767150-a48a237f0083?w=600", category: "إكسسوارات", rating: 4.6, orders: 2190 },
+  { name_ar: "طقم حقائب سفر فاخرة مكون من 3 قطع مقاومة للصدمات", name_en: "Luxury 3-Piece Luggage Travel Suitcase Set Shockproof", price: 540, image: "https://images.unsplash.com/photo-1565026057447-bc90a3dceb87?w=600", category: "سفر", rating: 4.9, orders: 1540 },
 ];
 
 router.get("/admin/dropship/auto-fetch", requireAuth, requireRole("admin", "manager"), async (req, res, next) => {
@@ -924,7 +924,7 @@ router.get("/admin/dropship/auto-fetch", requireAuth, requireRole("admin", "mana
       const priceVariation = Number((base.price * (0.85 + (i % 30) * 0.01)).toFixed(2));
       results.push({
         source_id: id,
-        name: `${base.name} - موديل V${(i % 50) + 1}`,
+        name: `${base.name_ar} - موديل V${(i % 50) + 1}`,
         price: priceVariation,
         image: base.image,
         category_name: base.category,
@@ -959,22 +959,23 @@ router.post("/admin/dropship/bulk-import-1000", requireAuth, requireRole("admin"
       for (let j = 0; j < currentBatchCount; j++) {
         const index = i + j;
         const base = SAMPLE_CATALOG[index % SAMPLE_CATALOG.length];
-        const sourceId = `${platform.slice(0, 3)}-${Date.now().toString().slice(-6)}-${index}`;
         const sourcePrice = Number((base.price * (0.85 + (index % 30) * 0.01)).toFixed(2));
         const salePrice = Number((sourcePrice * margin).toFixed(2));
+        const skuUnique = `${platform.slice(0, 3).toUpperCase()}-${Date.now().toString().slice(-4)}-${index + 1}-${Math.random().toString(36).slice(2, 6)}`;
 
         productBatch.push({
-          name: `${base.name} - إصدار ${platform.toUpperCase()} #${index + 1}`,
-          sku: `${platform.slice(0, 3).toUpperCase()}-${Date.now().toString().slice(-4)}-${index + 1}`,
+          name_ar: `${base.name_ar} - إصدار ${platform.toUpperCase()} #${index + 1}`,
+          name_en: `${base.name_en} - ${platform.toUpperCase()} Edition #${index + 1}`,
+          sku: skuUnique,
           price: salePrice,
           cost: sourcePrice,
           quantity: 999,
           min_quantity: 5,
           category_id: categoryId,
-          description: `منتج عالي الجودة مستورد مباشرة من ${platform}. مواصفات قياسية وضمان أصلي.`,
+          description_ar: `منتج عالي الجودة مستورد مباشرة من ${platform}. مواصفات قياسية وضمان أصلي.`,
+          description_en: `High quality product imported directly from ${platform}. Standard specs and original warranty.`,
           image: base.image,
           is_active: true,
-          is_featured: index < 20,
         });
       }
 
@@ -989,6 +990,7 @@ router.post("/admin/dropship/bulk-import-1000", requireAuth, requireRole("admin"
           source_id: sourceId,
           source_url: `https://www.${platform}.com/item/${sourceId}`,
           source_price: p.cost,
+          source_currency: "USD",
           our_price: p.price,
           supplier_name: `${platform.toUpperCase()} Global Verified Supplier`,
           platform_commission_rate: 5,
@@ -1330,15 +1332,32 @@ router.get("/admin/dropship/products", requireAuth, requireRole("admin", "manage
 router.post("/admin/dropship/import", requireAuth, requireRole("admin", "manager"), validateBody(dropshipImportSchema), async (req, res, next) => {
   try {
     const b = req.body;
+    const skuUnique = `DS-${b.source_id?.slice(-6) || Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 6)}`;
     const [newProduct] = await db.insert(products).values({
-      name: b.name, sku: `DS-${b.source_id?.slice(-6) || Date.now().toString(36).toUpperCase()}`,
-      price: b.our_price, cost: b.source_price, quantity: 999, min_quantity: 0,
-      category_id: null, description: sanitizeText(b.description), image: b.image || "", is_active: true,
+      name_ar: b.name || "منتج دروبشيبينغ",
+      name_en: b.name || "Dropshipping Product",
+      sku: skuUnique,
+      price: b.our_price || b.source_price || 50,
+      cost: b.source_price || 0,
+      quantity: 999,
+      min_quantity: 0,
+      category_id: b.category_id || null,
+      description_ar: sanitizeText(b.description || "منتج عالي الجودة"),
+      description_en: sanitizeText(b.description || "High quality product"),
+      image: b.image || "",
+      is_active: true,
     }).returning();
+
     const [dp] = await db.insert(dropship_products).values({
-      product_id: newProduct.id, platform: b.platform, source_id: b.source_id,
-      source_url: b.source_url || "", source_price: b.source_price, our_price: b.our_price,
-      supplier_name: b.platform, platform_commission_rate: 0,
+      product_id: newProduct.id,
+      platform: b.platform || "aliexpress",
+      source_id: b.source_id || `src-${Date.now()}`,
+      source_url: b.source_url || "",
+      source_price: b.source_price || 0,
+      source_currency: "USD",
+      our_price: b.our_price || b.source_price || 50,
+      supplier_name: b.supplier_name || b.platform || "AliExpress Supplier",
+      platform_commission_rate: 0,
     }).returning();
     return res.json({ success: true, data: { product: newProduct, dropship: dp } });
   } catch (err: any) { if (err.message?.includes("unique constraint")) return res.status(409).json({ success: false, message: "SKU أو source_id مستخدم بالفعل" }); next(err); }
