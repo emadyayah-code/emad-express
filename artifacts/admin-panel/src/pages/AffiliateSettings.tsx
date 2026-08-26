@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
-import { Globe, Link, Settings, Save, ExternalLink, AlertCircle, Mail, Server, Lock, User, AtSign } from "lucide-react";
+import { Globe, Link, Settings, Save, ExternalLink, AlertCircle, Mail, Server, Lock, User, AtSign, Smartphone } from "lucide-react";
 
 const PLATFORMS = [
   { key: "google_ads", name: "إعلانات جوجل وموبايل (Google AdMob / ADV)", color: "text-emerald-600", bg: "bg-emerald-50", icon: "📱" },
