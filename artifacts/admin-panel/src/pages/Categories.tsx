@@ -77,10 +77,15 @@ export default function Categories() {
   const [editing, setEditing] = useState<Category | null>(null);
   const [form, setForm] = useState(emptyForm);
 
-  const { data: categories = [], isLoading } = useQuery<Category[]>({
+  const { data: rawCategories, isLoading } = useQuery<any>({
     queryKey: ["categories-admin"],
     queryFn: () => api.get("/admin/categories"),
   });
+  const categories: Category[] = Array.isArray(rawCategories)
+    ? rawCategories
+    : rawCategories?.data && Array.isArray(rawCategories.data)
+    ? rawCategories.data
+    : [];
 
   const createMut = useMutation({
     mutationFn: (d: any) => api.post("/admin/categories", d),

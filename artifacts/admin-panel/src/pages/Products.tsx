@@ -139,7 +139,8 @@ export default function Products() {
     else updateMut.mutate(form);
   }
 
-  const products: Product[] = data?.data || [];
+  const products: Product[] = Array.isArray(data) ? data : data?.data || [];
+  const categoriesList = Array.isArray(cats) ? cats : cats?.data || [];
 
   return (
     <div className="space-y-5">
