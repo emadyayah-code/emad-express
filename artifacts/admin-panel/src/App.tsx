@@ -49,14 +49,18 @@ function ProtectedRoutes() {
   );
 }
 
+import { I18nProvider } from "@/lib/i18n";
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-          <ProtectedRoutes />
-        </WouterRouter>
-      </AuthProvider>
+      <I18nProvider>
+        <AuthProvider>
+          <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+            <ProtectedRoutes />
+          </WouterRouter>
+        </AuthProvider>
+      </I18nProvider>
     </QueryClientProvider>
   );
 }
