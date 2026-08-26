@@ -56,18 +56,53 @@ export default function Dropshipping() {
     onSuccess: () => { setSettingsSaved(true); setTimeout(() => setSettingsSaved(false), 3000); },
   });
 
+  const [cleanModalOpen, setCleanModalOpen] = useState(false);
+  const [clearingDb, setClearingDb] = useState(false);
+  const [cleanSuccess, setCleanSuccess] = useState("");
+
+  const handleClearDatabase = async () => {
+    setClearingDb(true);
+    try {
+      const res = await api.delete("/admin/dropship/clear-products");
+      qc.invalidateQueries({ queryKey: ["dropship-products"] });
+      qc.invalidateQueries({ queryKey: ["products"] });
+      setCleanSuccess(res.message || "تم تنظيف قاعدة البيانات بنجاح!");
+      setCleanModalOpen(false);
+      setTimeout(() => setCleanSuccess(""), 6000);
+    } catch (e: any) {
+      alert(e?.message || "فشل تنظيف قاعدة البيانات");
+    } finally {
+      setClearingDb(false);
+    }
+  };
+
   const dpList = dropProducts?.data || [];
   const searchList = searchResults?.results || [];
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-3">
         <h1 className="text-2xl font-bold text-gray-800">نظام الدروبشيبينغ</h1>
-        <div className="flex items-center gap-2 text-sm text-gray-500">
-          <Globe size={16} />
-          <span>استيراد منتجات من المنصات العالمية</span>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setCleanModalOpen(true)}
+            className="flex items-center gap-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer"
+          >
+            <Trash2 size={14} /> تنظيف وتفريغ قاعدة البيانات 🧹
+          </button>
+          <div className="flex items-center gap-2 text-sm text-gray-500">
+            <Globe size={16} />
+            <span>استيراد بدون تكرار حسب أكواد المنصات</span>
+          </div>
         </div>
       </div>
+
+      {cleanSuccess && (
+        <div className="bg-emerald-950/70 border border-emerald-500/40 text-emerald-300 rounded-2xl p-4 flex items-center gap-2 text-sm font-bold animate-pulse">
+          <CheckCircle size={18} className="text-emerald-400" />
+          {cleanSuccess}
+        </div>
+      )}
 
       {/* Tabs */}
       <div className="flex gap-1 bg-gray-100 p-1 rounded-xl w-fit">
@@ -457,6 +492,46 @@ export default function Dropshipping() {
           onImport={(d) => importMut.mutate({ ...d, platform: importModal.platform, source_id: importModal.source_id, source_url: importModal.source_url || "", source_price: importModal.price })}
           loading={importMut.isPending}
         />
+      )}
+
+      {/* Database Cleanup Modal */}
+      {cleanModalOpen && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-red-500/40 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4 text-right" dir="rtl">
+            <div className="flex items-center gap-3 text-red-400">
+              <div className="p-3 bg-red-500/20 rounded-2xl border border-red-500/30">
+                <Trash2 size={24} />
+              </div>
+              <div>
+                <h3 className="font-bold text-white text-lg">تأكيد تنظيف قاعدة البيانات</h3>
+                <p className="text-xs text-red-300">إجراء تفريغ منتجات الدروبشيبينغ</p>
+              </div>
+            </div>
+
+            <p className="text-sm text-slate-300 leading-relaxed">
+              هل أنت متأكد من رغبتك في حذف وإفراغ جميع منتجات الدروبشيبينغ المستوردة من قاعدة البيانات؟
+              <br />
+              <span className="text-xs text-amber-400 font-bold mt-2 block">💡 يمكنك بعدها استيراد منتجات جديدة ونظيفة بنقرة واحدة بدون أي تكرار.</span>
+            </p>
+
+            <div className="flex items-center gap-3 pt-2">
+              <button
+                onClick={handleClearDatabase}
+                disabled={clearingDb}
+                className="flex-1 flex items-center justify-center gap-2 bg-red-600 hover:bg-red-500 text-white py-3 rounded-xl text-sm font-bold shadow-lg disabled:opacity-50 transition-all cursor-pointer"
+              >
+                {clearingDb ? <><Loader2 size={16} className="animate-spin" /> جارٍ التنظيف...</> : "نعم، نظّف قاعدة البيانات الآن"}
+              </button>
+              <button
+                onClick={() => setCleanModalOpen(false)}
+                disabled={clearingDb}
+                className="px-5 py-3 rounded-xl text-sm font-bold text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 transition-all cursor-pointer"
+              >
+                إلغاء
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
