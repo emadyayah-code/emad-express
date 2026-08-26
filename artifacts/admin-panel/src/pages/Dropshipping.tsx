@@ -76,6 +76,23 @@ export default function Dropshipping() {
     }
   };
 
+  const [syncingStock, setSyncingStock] = useState(false);
+
+  const handleSyncStock = async () => {
+    setSyncingStock(true);
+    try {
+      const res = await api.post("/admin/dropship/sync-stock", {});
+      qc.invalidateQueries({ queryKey: ["dropship-products"] });
+      qc.invalidateQueries({ queryKey: ["products"] });
+      setCleanSuccess(res.message || "تمت مزامنة المخزون والكميات بنجاح مع علي إكسبرس!");
+      setTimeout(() => setCleanSuccess(""), 6000);
+    } catch (e: any) {
+      alert(e?.message || "فشلت المزامنة");
+    } finally {
+      setSyncingStock(false);
+    }
+  };
+
   const dpList = dropProducts?.data || [];
   const searchList = searchResults?.results || [];
 
@@ -83,17 +100,20 @@ export default function Dropshipping() {
     <div className="space-y-5">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <h1 className="text-2xl font-bold text-gray-800">نظام الدروبشيبينغ</h1>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 flex-wrap">
+          <button
+            onClick={handleSyncStock}
+            disabled={syncingStock}
+            className="flex items-center gap-1.5 bg-amber-500 hover:bg-amber-600 text-black px-3.5 py-2 rounded-xl text-xs font-bold transition-all shadow-md cursor-pointer disabled:opacity-50"
+          >
+            {syncingStock ? <><Loader2 size={14} className="animate-spin" /> جارٍ المزامنة...</> : <>🔄 مزامنة المخزون والأسعار مع علي إكسبرس</>}
+          </button>
           <button
             onClick={() => setCleanModalOpen(true)}
             className="flex items-center gap-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer"
           >
             <Trash2 size={14} /> تنظيف وتفريغ قاعدة البيانات 🧹
           </button>
-          <div className="flex items-center gap-2 text-sm text-gray-500">
-            <Globe size={16} />
-            <span>استيراد بدون تكرار حسب أكواد المنصات</span>
-          </div>
         </div>
       </div>
 
