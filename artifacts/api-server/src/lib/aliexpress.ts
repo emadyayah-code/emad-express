@@ -82,21 +82,29 @@ export async function fetchAliExpressProduct(
     }
 
     const data = await response.json();
-    const resp = data?.aliexpress_affiliate_productdetail_get_response;
-    const result = resp?.resp_result;
+    logger.info({ data, productId }, "AliExpress API response");
 
-    if (!result || result.resp_code !== 200) {
-      logger.error({ resp_code: result?.resp_code, msg: result?.resp_msg, productId }, "AliExpress API returned error");
+    const resp = data?.aliexpress_affiliate_productdetail_get_response || data?.aliexpress_affiliate_product_detail_get_response;
+    const result = resp?.resp_result || resp?.result || resp;
+
+    let rawProducts = result?.result?.products?.product || result?.products?.product || result?.products || [];
+    if (!Array.isArray(rawProducts) && rawProducts && typeof rawProducts === "object") {
+      rawProducts = [rawProducts];
+    }
+
+    if (!rawProducts || !rawProducts.length) {
+      logger.warn({ productId, data }, "AliExpress product not found in response");
       return null;
     }
 
-    const products = result?.result?.products?.product || [];
-    if (!products.length) {
-      logger.warn({ productId }, "AliExpress product not found");
-      return null;
-    }
+    const prod = rawProducts[0];
+    let img = prod.product_main_image_url || prod.product_image_url || prod.image || "";
+    if (img.startsWith("//")) img = `https:${img}`;
 
-    return products[0] as AliExpressProduct;
+    return {
+      ...prod,
+      product_main_image_url: img,
+    } as AliExpressProduct;
   } catch (err: any) {
     logger.error({ err: err.message, productId }, "AliExpress fetch failed");
     return null;
@@ -135,15 +143,18 @@ export async function searchAliExpressProducts(
 
     const data = await response.json();
     const resp = data?.aliexpress_affiliate_product_query_response;
-    const result = resp?.resp_result;
+    const result = resp?.resp_result || resp?.result || resp;
 
-    if (!result || result.resp_code !== 200) {
-      logger.error({ resp_code: result?.resp_code, msg: result?.resp_msg, keywords }, "AliExpress search returned error");
-      return [];
+    let rawProducts = result?.result?.products?.product || result?.products?.product || result?.products || [];
+    if (!Array.isArray(rawProducts) && rawProducts && typeof rawProducts === "object") {
+      rawProducts = [rawProducts];
     }
 
-    const products = result?.result?.products?.product || [];
-    return products as AliExpressProduct[];
+    return (rawProducts || []).map((p: any) => {
+      let img = p.product_main_image_url || p.product_image_url || p.image || "";
+      if (img.startsWith("//")) img = `https:${img}`;
+      return { ...p, product_main_image_url: img };
+    }) as AliExpressProduct[];
   } catch (err: any) {
     logger.error({ err: err.message, keywords }, "AliExpress search failed");
     return [];

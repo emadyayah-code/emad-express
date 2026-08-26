@@ -1156,15 +1156,18 @@ router.get("/admin/dropship/fetch-url", requireAuth, requireRole("admin", "manag
       if (creds) {
         try {
           const apiProduct = await fetchAliExpressProduct(productId, creds);
-          if (apiProduct && apiProduct.product_title) {
+          if (apiProduct && (apiProduct.product_title || apiProduct.product_main_image_url)) {
+            let img = apiProduct.product_main_image_url || "";
+            if (img.startsWith("//")) img = `https:${img}`;
             return res.json({
               success: true,
               source_id: apiProduct.product_id || productId,
-              name: apiProduct.product_title,
-              price: parseFloat(apiProduct.target_sale_price) || parseFloat(apiProduct.target_original_price) || 50,
+              name: apiProduct.product_title || `منتج علي إكسبرس كود ${productId}`,
+              price: parseFloat(apiProduct.target_sale_price) || parseFloat(apiProduct.target_original_price) || 45,
               original_price: parseFloat(apiProduct.target_original_price) || 0,
-              image: apiProduct.product_main_image_url || "",
-              description: `منتج رسمي مستورد من متجر ${apiProduct.shop_name || "AliExpress"}`,
+              quantity: parseInt(apiProduct.sales_volume) || 500,
+              image: img,
+              description: `منتج رسمي أصلي مستورد من متجر ${apiProduct.shop_name || "AliExpress"}`,
               platform: "aliexpress",
               source_url: apiProduct.product_detail_url || url,
               supplier_name: apiProduct.shop_name || "AliExpress Verified Seller",
