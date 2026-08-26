@@ -42,6 +42,8 @@ function buildApiUrl(method: string, params: Record<string, string>, creds: AliE
 export interface AliExpressProduct {
   product_id: string;
   product_title: string;
+  title_ar?: string;
+  title_en?: string;
   product_main_image_url: string;
   target_sale_price: string;
   target_original_price: string;
@@ -61,48 +63,44 @@ export async function fetchAliExpressProduct(
   creds: AliExpressCredentials,
 ): Promise<AliExpressProduct | null> {
   try {
-    const url = buildApiUrl("aliexpress.affiliate.productdetail.get", {
+    const urlAr = buildApiUrl("aliexpress.affiliate.productdetail.get", {
       product_ids: productId,
-      fields: "product_id,product_title,product_main_image_url,target_sale_price,target_original_price,target_sale_price_currency,product_detail_url,commission_rate,first_level_category_name,second_level_category_name,shop_url,shop_name,evaluate_rate,sales_volume",
+      target_currency: "USD",
+      target_language: "AR",
       ...(creds.trackingId ? { tracking_id: creds.trackingId } : {}),
     }, creds);
 
-    const response = await fetch(url, {
-      method: "GET",
-      headers: {
-        "Accept": "application/json",
-        "Content-Type": "application/json",
-      },
-      signal: AbortSignal.timeout(15000),
-    });
+    const urlEn = buildApiUrl("aliexpress.affiliate.productdetail.get", {
+      product_ids: productId,
+      target_currency: "USD",
+      target_language: "EN",
+      ...(creds.trackingId ? { tracking_id: creds.trackingId } : {}),
+    }, creds);
 
-    if (!response.ok) {
-      logger.error({ status: response.status, productId }, "AliExpress API error");
+    const [resAr, resEn] = await Promise.all([
+      fetch(urlAr, { signal: AbortSignal.timeout(15000) }).then(r => r.json()).catch(() => null),
+      fetch(urlEn, { signal: AbortSignal.timeout(15000) }).then(r => r.json()).catch(() => null),
+    ]);
+
+    const prodAr = resAr?.aliexpress_affiliate_productdetail_get_response?.resp_result?.result?.products?.product?.[0] ||
+                   resAr?.aliexpress_affiliate_product_detail_get_response?.resp_result?.result?.products?.product?.[0];
+    const prodEn = resEn?.aliexpress_affiliate_productdetail_get_response?.resp_result?.result?.products?.product?.[0] ||
+                   resEn?.aliexpress_affiliate_product_detail_get_response?.resp_result?.result?.products?.product?.[0];
+
+    const baseProd = prodAr || prodEn;
+    if (!baseProd) {
+      logger.warn({ productId }, "AliExpress product not found in response");
       return null;
     }
 
-    const data = await response.json();
-    logger.info({ data, productId }, "AliExpress API response");
-
-    const resp = data?.aliexpress_affiliate_productdetail_get_response || data?.aliexpress_affiliate_product_detail_get_response;
-    const result = resp?.resp_result || resp?.result || resp;
-
-    let rawProducts = result?.result?.products?.product || result?.products?.product || result?.products || [];
-    if (!Array.isArray(rawProducts) && rawProducts && typeof rawProducts === "object") {
-      rawProducts = [rawProducts];
-    }
-
-    if (!rawProducts || !rawProducts.length) {
-      logger.warn({ productId, data }, "AliExpress product not found in response");
-      return null;
-    }
-
-    const prod = rawProducts[0];
-    let img = prod.product_main_image_url || prod.product_image_url || prod.image || "";
+    let img = baseProd.product_main_image_url || baseProd.product_image_url || baseProd.image || "";
     if (img.startsWith("//")) img = `https:${img}`;
 
     return {
-      ...prod,
+      ...baseProd,
+      product_title: prodAr?.product_title || prodEn?.product_title || "",
+      title_ar: prodAr?.product_title || prodEn?.product_title || "",
+      title_en: prodEn?.product_title || prodAr?.product_title || "",
       product_main_image_url: img,
     } as AliExpressProduct;
   } catch (err: any) {

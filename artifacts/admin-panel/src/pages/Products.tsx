@@ -1,7 +1,7 @@
 import { useState, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, getApiBase } from "@/lib/api";
-import { useI18n } from "@/lib/i18n";
+import { useI18n, getProductLocalizedName, getProductLocalizedDesc } from "@/lib/i18n";
 import { Plus, Search, Edit, Trash2, X, Upload, Image as ImageIcon } from "lucide-react";
 
 interface Product {
@@ -259,10 +259,10 @@ export default function Products() {
                         )}
                         <div>
                           <p className="font-medium text-white/90">
-                            {language === "en" ? (p.name_en || (p as any).name || p.name_ar || "Product") : (p.name_ar || (p as any).name || p.name_en || "منتج")}
+                            {getProductLocalizedName(p, language)}
                           </p>
                           <p className="text-xs text-white/40">
-                            {(language === "en" ? ((p as any).description_en || p.description || (p as any).description_ar || "") : ((p as any).description_ar || p.description || (p as any).description_en || ""))?.slice(0, 45)}...
+                            {getProductLocalizedDesc(p, language).slice(0, 50)}...
                           </p>
                         </div>
                       </div>
