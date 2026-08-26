@@ -645,28 +645,30 @@ function UrlImportForm({ initial, sourceUrl, onImport, importing }: {
     name: initial?.name || "",
     price: initial?.price || 0,
     our_price: initial?.price ? Math.ceil(initial.price * 1.5) : 0,
+    quantity: initial?.quantity || 999,
     image: initial?.image || "",
     description: initial?.description || "",
     category_id: "",
     platform: detect(sourceUrl),
+    source_id: initial?.source_id || "",
   });
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 space-y-4">
+    <div className="bg-slate-900/90 rounded-2xl shadow-xl border border-amber-500/30 p-6 space-y-4 text-right">
       <div className="flex items-center gap-2 mb-1">
-        <CheckCircle size={16} className="text-green-500" />
-        <h3 className="font-semibold text-gray-800">بيانات المنتج — راجع وأكمل قبل الاستيراد</h3>
+        <CheckCircle size={18} className="text-emerald-400" />
+        <h3 className="font-bold text-white text-base">بيانات منتج علي إكسبرس المستخرجة — راجع وأضف لقاعدة البيانات</h3>
       </div>
 
       {f.image && (
-        <div className="flex items-center gap-4 bg-gray-50 rounded-lg p-3">
-          <img src={f.image} alt="" className="w-20 h-20 object-cover rounded-lg border border-gray-200 flex-shrink-0" onError={e => (e.currentTarget.style.display = "none")} />
+        <div className="flex items-center gap-4 bg-slate-950/80 border border-slate-800 rounded-xl p-3">
+          <img src={f.image} alt="" className="w-24 h-24 object-cover rounded-xl border border-amber-500/20 flex-shrink-0" onError={e => (e.currentTarget.style.display = "none")} />
           <div className="flex-1 min-w-0">
-            <p className="text-xs text-gray-400 mb-1">معاينة الصورة المُستخرجة</p>
+            <p className="text-xs text-amber-300 font-bold mb-1">معاينة الصورة الأصلية عالية الدقة من المورد</p>
             <input
               value={f.image}
               onChange={e => setF({ ...f, image: e.target.value })}
-              className="w-full text-xs border border-gray-200 rounded px-2 py-1 outline-none text-left"
+              className="w-full text-xs border border-slate-700 bg-slate-900 text-white rounded-lg px-2.5 py-1.5 outline-none focus:border-amber-400 text-left"
               dir="ltr"
               placeholder="رابط الصورة"
             />
@@ -676,35 +678,39 @@ function UrlImportForm({ initial, sourceUrl, onImport, importing }: {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="sm:col-span-2">
-          <label className="text-sm font-medium text-gray-700">اسم المنتج *</label>
-          <input value={f.name} onChange={e => setF({ ...f, name: e.target.value })} className="w-full mt-1 border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-amber-400" placeholder="اسم المنتج في متجرك" />
+          <label className="text-xs font-bold text-amber-200/90">اسم المنتج الرسمي *</label>
+          <input value={f.name} onChange={e => setF({ ...f, name: e.target.value })} className="w-full mt-1 border border-slate-700 bg-slate-950/80 text-white rounded-xl px-3.5 py-2.5 text-sm outline-none focus:border-amber-400" placeholder="اسم المنتج في متجرك" />
         </div>
         <div>
-          <label className="text-sm font-medium text-gray-700">سعر المورد (ر) *</label>
-          <input type="number" value={f.price} onChange={e => setF({ ...f, price: parseFloat(e.target.value) || 0 })} className="w-full mt-1 border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-amber-400" />
+          <label className="text-xs font-bold text-amber-200/90">سعر المورد الفعلي (USD / ر) *</label>
+          <input type="number" value={f.price} onChange={e => setF({ ...f, price: parseFloat(e.target.value) || 0 })} className="w-full mt-1 border border-slate-700 bg-slate-950/80 text-white rounded-xl px-3.5 py-2.5 text-sm outline-none focus:border-amber-400" />
         </div>
         <div>
-          <label className="text-sm font-medium text-gray-700">سعر البيع عندك (ر) *</label>
-          <input type="number" value={f.our_price} onChange={e => setF({ ...f, our_price: parseFloat(e.target.value) || 0 })} className="w-full mt-1 border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-amber-400" />
-          {f.price > 0 && <p className="text-xs text-green-600 mt-1">ربح: {(f.our_price - f.price).toFixed(0)} ر ({f.price > 0 ? ((f.our_price - f.price) / f.price * 100).toFixed(0) : 0}%)</p>}
+          <label className="text-xs font-bold text-amber-200/90">سعر البيع عندك في المتجر (ر) *</label>
+          <input type="number" value={f.our_price} onChange={e => setF({ ...f, our_price: parseFloat(e.target.value) || 0 })} className="w-full mt-1 border border-slate-700 bg-slate-950/80 text-white rounded-xl px-3.5 py-2.5 text-sm outline-none focus:border-amber-400" />
+          {f.price > 0 && <p className="text-xs text-emerald-400 font-bold mt-1">الربح المتوقع: {(f.our_price - f.price).toFixed(2)} ر ({f.price > 0 ? (((f.our_price - f.price) / f.price) * 100).toFixed(0) : 0}%)</p>}
         </div>
         <div>
-          <label className="text-sm font-medium text-gray-700">الفئة</label>
-          <select value={f.category_id} onChange={e => setF({ ...f, category_id: e.target.value })} className="w-full mt-1 border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-amber-400">
+          <label className="text-xs font-bold text-amber-200/90">الكمية المتوفرة عند المورد بالمخزن *</label>
+          <input type="number" value={f.quantity} onChange={e => setF({ ...f, quantity: parseInt(e.target.value) || 100 })} className="w-full mt-1 border border-slate-700 bg-slate-950/80 text-white rounded-xl px-3.5 py-2.5 text-sm outline-none focus:border-amber-400" />
+        </div>
+        <div>
+          <label className="text-xs font-bold text-amber-200/90">الفئة / القسم</label>
+          <select value={f.category_id} onChange={e => setF({ ...f, category_id: e.target.value })} className="w-full mt-1 border border-slate-700 bg-slate-950/80 text-white rounded-xl px-3.5 py-2.5 text-sm outline-none focus:border-amber-400">
             <option value="">بدون فئة</option>
-            {categories.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
+            {categories.map((c: any) => <option key={c.id} value={c.id}>{c.name || c.name_ar}</option>)}
           </select>
         </div>
         <div>
-          <label className="text-sm font-medium text-gray-700">المنصة</label>
-          <select value={f.platform} onChange={e => setF({ ...f, platform: e.target.value })} className="w-full mt-1 border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-amber-400">
+          <label className="text-xs font-bold text-amber-200/90">المنصة الموردة</label>
+          <select value={f.platform} onChange={e => setF({ ...f, platform: e.target.value })} className="w-full mt-1 border border-slate-700 bg-slate-950/80 text-white rounded-xl px-3.5 py-2.5 text-sm outline-none focus:border-amber-400">
             {PLATFORMS.map(p => <option key={p.id} value={p.id}>{p.flag} {p.name}</option>)}
             <option value="other">🌐 أخرى</option>
           </select>
         </div>
         <div className="sm:col-span-2">
-          <label className="text-sm font-medium text-gray-700">وصف المنتج</label>
-          <textarea value={f.description} onChange={e => setF({ ...f, description: e.target.value })} rows={3} className="w-full mt-1 border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-amber-400 resize-none" placeholder="وصف قصير للمنتج" />
+          <label className="text-xs font-bold text-amber-200/90">وصف المنتج ومواصفاته</label>
+          <textarea value={f.description} onChange={e => setF({ ...f, description: e.target.value })} rows={3} className="w-full mt-1 border border-slate-700 bg-slate-950/80 text-white rounded-xl px-3.5 py-2.5 text-sm outline-none focus:border-amber-400 resize-none" placeholder="وصف المنتج" />
         </div>
       </div>
 
@@ -714,15 +720,17 @@ function UrlImportForm({ initial, sourceUrl, onImport, importing }: {
           name: f.name,
           price: f.price,
           our_price: f.our_price,
+          quantity: f.quantity,
           image: f.image,
           description: f.description,
           category_id: f.category_id ? parseInt(f.category_id) : null,
           platform: f.platform,
+          source_id: f.source_id || initial?.source_id,
           source_url: sourceUrl,
         })}
-        className="w-full bg-amber-500 hover:bg-amber-600 text-white py-3 rounded-lg font-semibold text-sm disabled:opacity-50 transition-colors"
+        className="w-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black py-3.5 rounded-xl font-extrabold text-sm disabled:opacity-50 transition-all shadow-xl cursor-pointer"
       >
-        {importing ? <span className="flex items-center justify-center gap-2"><Loader2 size={15} className="animate-spin" /> جارٍ الإضافة للمتجر...</span> : "✓ أضف المنتج للمتجر"}
+        {importing ? <span className="flex items-center justify-center gap-2"><Loader2 size={16} className="animate-spin text-black" /> جارٍ حفظ المنتج في قاعدة البيانات...</span> : "✓ أضف المنتج لقاعدة البيانات والمتجر الآن"}
       </button>
     </div>
   );
