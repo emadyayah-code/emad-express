@@ -103,14 +103,14 @@ app.use("/uploads", express.static(UPLOADS_DIR, {
 // API routes
 app.use("/api", router);
 
-// Serve admin panel
+// Serve admin panel & frontend directly on root domain
 const adminPanelDir = resolve(process.cwd(), env.ADMIN_PANEL_DIR);
 app.use(express.static(adminPanelDir, { maxAge: "1h" }));
-app.get("/{*splat}", (req, res, next) => {
+
+app.use((req, res, next) => {
+  if (req.method !== "GET") return next();
   if (req.path.startsWith("/api") || req.path.startsWith("/uploads")) return next();
-  res.sendFile(resolve(adminPanelDir, "index.html"), (err) => {
-    if (err) next();
-  });
+  res.sendFile(resolve(adminPanelDir, "index.html"));
 });
 
 // 404 handler
