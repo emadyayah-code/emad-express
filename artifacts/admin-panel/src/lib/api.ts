@@ -4,27 +4,32 @@ export function getApiBase() {
   return BASE;
 }
 
-let authToken: string | null = localStorage.getItem("token");
-
 export function setToken(token: string) {
-  authToken = token;
-  localStorage.setItem("token", token);
+  if (token && token !== "undefined" && token !== "null") {
+    localStorage.setItem("token", token);
+  }
 }
+
 export function clearToken() {
-  authToken = null;
   localStorage.removeItem("token");
   localStorage.removeItem("user");
 }
-export function getToken() {
-  return authToken;
+
+export function getToken(): string | null {
+  const t = localStorage.getItem("token");
+  if (!t || t === "undefined" || t === "null") return null;
+  return t;
 }
 
 async function request(path: string, opts: RequestInit = {}) {
+  const token = getToken();
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
     ...(opts.headers as Record<string, string> || {}),
   };
-  if (authToken) headers["Authorization"] = `Bearer ${authToken}`;
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
   const res = await fetch(`${BASE}${path}`, { ...opts, headers });
   if (!res.ok) {
     const err = await res.json().catch(() => ({ message: `HTTP ${res.status}` }));

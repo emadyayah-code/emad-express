@@ -322,92 +322,129 @@ export default function Dropshipping() {
             </div>
           </div>
 
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 space-y-6">
+          <div className="flex items-center justify-between bg-amber-500/10 border border-amber-500/30 rounded-2xl p-4">
+            <div>
+              <h3 className="font-bold text-amber-400 text-base">إعدادات الربط السحابي مع المنصات العالمية</h3>
+              <p className="text-xs text-amber-200/70 mt-0.5">يتم حفظ جميع المفاتيح والنسب في قاعدة بيانات Neon PostgreSQL السحابية</p>
+            </div>
+            <button
+              onClick={() => saveSettingsMut.mutate(settingsForm)}
+              disabled={saveSettingsMut.isPending}
+              className="flex items-center gap-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black px-6 py-2.5 rounded-xl text-sm font-extrabold shadow-lg disabled:opacity-60 transition-all cursor-pointer"
+            >
+              {saveSettingsMut.isPending ? <><Loader2 size={16} className="animate-spin" /> جارٍ الحفظ في قاعدة البيانات...</> : settingsSaved ? <><CheckCircle size={16} /> تم الحفظ في قاعدة البيانات بنجاح!</> : "💾 حفظ جميع الإعدادات في قاعدة البيانات"}
+            </button>
+          </div>
+
+          <div className="space-y-6">
             {PLATFORMS.map(p => {
               const isConnected = !!(settingsForm[p.apiKey]);
               return (
-                <div key={p.id} className={`rounded-xl p-4 border ${isConnected ? "border-green-200 bg-green-50/30" : "border-gray-100"}`}>
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-2">
-                      <span className="text-2xl">{p.flag}</span>
+                <div key={p.id} className={`rounded-2xl p-5 border transition-all ${isConnected ? "border-amber-500/40 bg-amber-500/5 shadow-lg" : "border-slate-800 bg-slate-900/50"}`}>
+                  <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
+                    <div className="flex items-center gap-3">
+                      <span className="text-3xl p-2 rounded-xl bg-slate-800/80 border border-amber-500/20">{p.flag}</span>
                       <div>
-                        <div className="flex items-center gap-2">
-                          <span className="font-semibold text-gray-800">{p.name}</span>
-                          <span className={`text-xs px-2 py-0.5 rounded-full font-medium flex items-center gap-1 ${isConnected ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
-                            {isConnected ? <><CheckCircle size={10} /> مربوط</> : "غير مربوط"}
+                        <div className="flex items-center gap-2.5">
+                          <span className="font-bold text-white text-base">{p.name}</span>
+                          <span className={`text-xs px-2.5 py-0.5 rounded-full font-bold flex items-center gap-1 ${isConnected ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30" : "bg-slate-800 text-slate-400 border border-slate-700"}`}>
+                            {isConnected ? <><CheckCircle size={11} /> مفعل ومربوط</> : "غير مربوط"}
                           </span>
                         </div>
-                        <p className="text-xs text-gray-400 mt-0.5">عمولة المنصة = سعر التكلفة × نسبة العمولة</p>
+                        <p className="text-xs text-amber-200/60 mt-1">الربط الرسمي المباشر وجلب المنتجات الفوري</p>
                       </div>
                     </div>
-                    {isConnected && (
-                      <AutoFetchButton platform={p.id} onResults={(results) => {
-                        setTab("search");
-                        // store results temporarily
-                        (window as any).__autoFetchResults = { platform: p.id, results };
-                      }} />
-                    )}
+                    
+                    <AutoFetchButton platform={p.id} onResults={(results) => {
+                      setTab("search");
+                      (window as any).__autoFetchResults = { platform: p.id, results };
+                    }} />
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">App Key / Access Key</label>
+                      <label className="text-xs font-bold text-amber-200/80 uppercase tracking-wide">App Key / Access Key</label>
                       <input
                         type="password"
                         value={settingsForm[p.apiKey] || ""}
                         onChange={e => setSettingsForm({ ...settingsForm, [p.apiKey]: e.target.value })}
-                        placeholder="أدخل المفتاح..."
-                        className="w-full mt-1 border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-amber-400"
+                        placeholder="أدخل المفتاح الخاص بك..."
+                        className="w-full mt-1.5 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white bg-slate-950/80 outline-none focus:border-amber-400 transition-all"
                       />
                     </div>
                     <div>
-                      <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">App Secret / Secret Key</label>
+                      <label className="text-xs font-bold text-amber-200/80 uppercase tracking-wide">App Secret / Secret Key</label>
                       <input
                         type="password"
                         value={settingsForm[`${p.apiKey}_secret`] || ""}
                         onChange={e => setSettingsForm({ ...settingsForm, [`${p.apiKey}_secret`]: e.target.value })}
-                        placeholder="أدخل السر..."
-                        className="w-full mt-1 border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-amber-400"
+                        placeholder="أدخل السر الخاص بك..."
+                        className="w-full mt-1.5 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white bg-slate-950/80 outline-none focus:border-amber-400 transition-all"
                       />
                     </div>
                     {p.id === "aliexpress" && (
                       <div>
-                        <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Tracking ID</label>
-                        <input type="text" value={settingsForm["aliexpress_tracking_id"] || ""} onChange={e => setSettingsForm({ ...settingsForm, aliexpress_tracking_id: e.target.value })} placeholder="معرّف التتبع (اختياري)" className="w-full mt-1 border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-amber-400" />
+                        <label className="text-xs font-bold text-amber-200/80 uppercase tracking-wide">Tracking ID (معرف التتبع)</label>
+                        <input
+                          type="text"
+                          value={settingsForm["aliexpress_tracking_id"] || ""}
+                          onChange={e => setSettingsForm({ ...settingsForm, aliexpress_tracking_id: e.target.value })}
+                          placeholder="default"
+                          className="w-full mt-1.5 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white bg-slate-950/80 outline-none focus:border-amber-400 transition-all"
+                        />
                       </div>
                     )}
                     {p.id === "amazon" && (
                       <div>
-                        <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Associate Tag</label>
-                        <input type="text" value={settingsForm["amazon_associate_tag"] || ""} onChange={e => setSettingsForm({ ...settingsForm, amazon_associate_tag: e.target.value })} placeholder="مثل: mystore-21" className="w-full mt-1 border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-amber-400" />
+                        <label className="text-xs font-bold text-amber-200/80 uppercase tracking-wide">Associate Tag</label>
+                        <input
+                          type="text"
+                          value={settingsForm["amazon_associate_tag"] || ""}
+                          onChange={e => setSettingsForm({ ...settingsForm, amazon_associate_tag: e.target.value })}
+                          placeholder="مثال: mystore-21"
+                          className="w-full mt-1.5 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white bg-slate-950/80 outline-none focus:border-amber-400 transition-all"
+                        />
                       </div>
                     )}
                     <div>
-                      <label className="text-xs font-medium text-gray-500 uppercase tracking-wide flex items-center gap-1">
-                        نسبة عمولتك من {p.name} <span className="text-amber-500">%</span>
+                      <label className="text-xs font-bold text-amber-200/80 uppercase tracking-wide flex items-center gap-1">
+                        نسبة عمولتك من {p.name} <span className="text-amber-400">%</span>
                       </label>
-                      <div className="relative mt-1">
+                      <div className="relative mt-1.5">
                         <input
                           type="number" min="0" max="50" step="0.5"
                           value={settingsForm[`${p.id}_commission_rate`] || ""}
                           onChange={e => setSettingsForm({ ...settingsForm, [`${p.id}_commission_rate`]: e.target.value })}
                           placeholder="مثل: 5 (أي 5% من كل بيع)"
-                          className="w-full border border-amber-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-amber-400 pr-8"
+                          className="w-full border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white bg-slate-950/80 outline-none focus:border-amber-400 pr-8 transition-all"
                         />
-                        <span className="absolute left-3 top-2.5 text-gray-400 text-sm">%</span>
+                        <span className="absolute left-3 top-2.5 text-slate-400 text-sm font-bold">%</span>
                       </div>
-                      <p className="text-xs text-amber-600 mt-1">النسبة التي تدفعها لك المنصة كعمولة إحالة</p>
                     </div>
+                  </div>
+
+                  <div className="mt-4 flex justify-end">
+                    <button
+                      onClick={() => saveSettingsMut.mutate(settingsForm)}
+                      disabled={saveSettingsMut.isPending}
+                      className="text-xs font-bold bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 px-4 py-2 rounded-xl transition-all cursor-pointer"
+                    >
+                      💾 حفظ إعدادات {p.name}
+                    </button>
                   </div>
                 </div>
               );
             })}
-            <button
-              onClick={() => saveSettingsMut.mutate(settingsForm)}
-              disabled={saveSettingsMut.isPending}
-              className="flex items-center gap-2 bg-amber-500 hover:bg-amber-600 text-white px-6 py-2.5 rounded-lg text-sm font-medium disabled:opacity-60"
-            >
-              {saveSettingsMut.isPending ? "جارٍ الحفظ..." : settingsSaved ? <><CheckCircle size={15} /> تم الحفظ!</> : "حفظ جميع الإعدادات"}
-            </button>
+
+            <div className="flex justify-end pt-2">
+              <button
+                onClick={() => saveSettingsMut.mutate(settingsForm)}
+                disabled={saveSettingsMut.isPending}
+                className="flex items-center gap-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black px-8 py-3 rounded-xl text-sm font-extrabold shadow-xl disabled:opacity-60 transition-all cursor-pointer"
+              >
+                {saveSettingsMut.isPending ? <><Loader2 size={16} className="animate-spin" /> جارٍ الحفظ...</> : settingsSaved ? <><CheckCircle size={16} /> تم الحفظ في قاعدة البيانات!</> : "💾 حفظ جميع الإعدادات في قاعدة البيانات"}
+              </button>
+            </div>
           </div>
         </div>
       )}
