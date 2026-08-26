@@ -1,7 +1,8 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const BASE = `https://${process.env.EXPO_PUBLIC_DOMAIN}/api`;
+const DOMAIN = process.env.EXPO_PUBLIC_DOMAIN || "emadexpress.ayadicmed.com";
+const BASE = `https://${DOMAIN}/api`;
 
 interface User {
   id: number;

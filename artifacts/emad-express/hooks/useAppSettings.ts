@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 
-const BASE = `https://${process.env.EXPO_PUBLIC_DOMAIN}/api`;
+const DOMAIN = process.env.EXPO_PUBLIC_DOMAIN || "emadexpress.ayadicmed.com";
+const BASE = `https://${DOMAIN}/api`;
 
 export interface AppSettings {
   whatsapp_number: string;

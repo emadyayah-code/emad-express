@@ -13,7 +13,7 @@
         "image": "latest"
       },
       "env": {
-        "EXPO_PUBLIC_DOMAIN": "e6f603e6-b46c-4e0f-99e2-2e766fca950e-00-1r5usqbtpkyyc.worf.replit.dev"
+        "EXPO_PUBLIC_DOMAIN": "emadexpress.ayadicmed.com"
       }
     },
     "production": {
@@ -25,7 +25,7 @@
         "image": "latest"
       },
       "env": {
-        "EXPO_PUBLIC_DOMAIN": "e6f603e6-b46c-4e0f-99e2-2e766fca950e-00-1r5usqbtpkyyc.worf.replit.dev"
+        "EXPO_PUBLIC_DOMAIN": "emadexpress.ayadicmed.com"
       }
     }
   },
