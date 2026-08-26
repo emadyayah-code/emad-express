@@ -263,14 +263,11 @@ export default function PaymentScreen() {
         {/* Payment Type Info */}
         <View className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4">
           <View className="flex-row items-center gap-2 mb-2">
-            {getPlatformIcon()}
+            <CreditCard size={18} color="#1d4ed8" />
             <Text className="font-bold text-blue-900">طريقة الدفع</Text>
           </View>
           <Text className="text-blue-800 text-sm">
-            {order?.items?.some((i: any) => i.source_platform) 
-              ? "الدفع مباشرةً للمنصة العالمية (AliExpress/Amazon) عبر WebView داخل التطبيق"
-              : "الدفع مباشرةً للبائع المحلي عبر Stripe Connect"
-            }
+            الدفع الإلكتروني الآمن والمشفر عبر بوابات الدفع العالمية المعتمدة
           </Text>
         </View>
 
@@ -278,20 +275,17 @@ export default function PaymentScreen() {
         <View className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4">
           <View className="flex-row items-center gap-2 mb-2">
             <Truck size={18} color="#d97706" />
-            <Text className="font-bold text-amber-900">الشحن</Text>
+            <Text className="font-bold text-amber-900">الشحن والتوصيل</Text>
           </View>
           <Text className="text-amber-800 text-sm">
-            {order?.items?.some((i: any) => i.source_platform)
-              ? "الشحن والتوصيل من قبل المنصة العالمية (AliExpress/Amazon/Alibaba)"
-              : "الشحن من قبل البائع المحلي"
-            }
+            شحن مباشر وسريع مع توفير رقم تتبع رسمي حتى استلام الطلب
           </Text>
         </View>
 
         {/* Security */}
         <View className="flex-row items-center gap-2 bg-gray-50 rounded-xl p-4">
           <Lock size={16} color="#6b7280" />
-          <Text className="text-gray-600 text-sm">دفع آمن ومشفر عبر بوابات دفع معتمدة</Text>
+          <Text className="text-gray-600 text-sm">دفع آمن ومشفر 100% مع ضمان حماية المشتري</Text>
         </View>
       </ScrollView>
 
@@ -299,16 +293,13 @@ export default function PaymentScreen() {
         <TouchableOpacity 
           onPress={initiatePayment}
           disabled={payLoading}
-          className="bg-emerald-600 py-4 rounded-xl items-center"
+          className="bg-emerald-600 py-4 rounded-xl items-center cursor-pointer shadow-md"
         >
           {payLoading ? (
             <ActivityIndicator color="white" />
           ) : (
             <Text className="text-white font-bold text-lg">
-              {order?.items?.some((i: any) => i.source_platform) 
-                ? "الدفع في WebView داخل التطبيق" 
-                : "الدفع المباشر للبائع"
-              }
+              إتمام الدفع الآمن 🔒
             </Text>
           )}
         </TouchableOpacity>

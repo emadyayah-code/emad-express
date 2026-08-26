@@ -26,19 +26,12 @@ export default function CheckoutScreen() {
 
   const isDropshipping = items.some((i: any) => i.source_platform);
 
-  const PAYMENT_METHODS = isDropshipping ? [
-    // Dropshipping: Customer pays platform directly via WebView
-    { key: "webview",     label: "الدفع المباشر للمنصة",    icon: "globe",       type: "webview", desc: "AliExpress / Amazon / Alibaba" },
-    { key: "cod",         label: t.checkout.cod,          icon: "truck",       type: "cod", desc: "الدفع عند الاستلام" },
-  ] : [
-    // Local Vendor: Stripe Connect or standard payment
-    { key: "stripe",      label: "بطاقة ائتمان (Stripe)", icon: "credit-card", type: "gateway", desc: "Visa / Mastercard" },
+  const PAYMENT_METHODS = [
+    { key: "stripe",      label: "بطاقة بنكية / فيزا / ماستركارد", icon: "credit-card", type: "gateway", desc: "Visa / Mastercard / Mada" },
     { key: "google_pay",  label: "Google Pay",            icon: "google-pay",  type: "wallet", desc: "محفظة Google" },
     { key: "apple_pay",   label: "Apple Pay",             icon: "apple",       type: "wallet", desc: "محفظة Apple" },
-    { key: "paypal",      label: "PayPal",                icon: "paypal",      type: "gateway", desc: "PayPal Checkout" },
-    { key: "split",       label: "دفع مباشر للبائع",       icon: "hand-holding-usd", type: "split", desc: "Stripe Connect - المبلغ يذهب للبائع" },
+    { key: "paypal",      label: "PayPal",                icon: "paypal",      type: "gateway", desc: "PayPal الدفع السريع" },
     { key: "cod",         label: t.checkout.cod,          icon: "truck",       type: "cod", desc: "الدفع عند الاستلام" },
-    { key: "transfer",    label: t.checkout.transfer,     icon: "refresh-cw",  type: "transfer", desc: "تحويل بنكي" },
   ];
 
   const tax = Math.round(total * 0.15);
@@ -113,22 +106,6 @@ export default function CheckoutScreen() {
       </View>
       <ScrollView showsVerticalScrollIndicator={false}>
         <View style={{ padding: 16, gap: 16 }}>
-          {/* Order Type Info */}
-          <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 8 }}>
-              <Feather name="info" size={16} color={colors.primary} />
-              <Text style={{ color: colors.primary, fontWeight: "700", fontSize: 14 }}>
-                {items.some((i: any) => i.source_platform) ? "طلب دروبشيبنج" : "طلب من بائع محلي"}
-              </Text>
-            </View>
-            <Text style={{ color: colors.mutedForeground, fontSize: 12, lineHeight: 18 }}>
-              {items.some((i: any) => i.source_platform) 
-                ? "المنتجات من منصات عالمية. الدفع يذهب مباشرةً للمنصة (AliExpress/Amazon). الشحن على المنصة."
-                : "المنتجات من بائع محلي. الدفع يذهب مباشرةً للبائع عبر Stripe Connect. الشحن على البائع."
-              }
-            </Text>
-          </View>
-
           {/* Order Summary */}
           <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <Text style={[styles.cardTitle, { color: colors.foreground }]}>ملخص الطلب</Text>
