@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
-import { Search, Globe, Settings, Package, ExternalLink, Download, X, AlertCircle, CheckCircle, Link2, Loader2, Play, Pause, RotateCcw, BarChart3, TrendingUp, Database } from "lucide-react";
+import { Search, Globe, Settings, Package, ExternalLink, Download, X, AlertCircle, CheckCircle, Link2, Loader2, Play, Pause, RotateCcw, BarChart3, TrendingUp, Database, Trash2 } from "lucide-react";
 
 const PLATFORMS = [
   { id: "aliexpress", name: "علي إكسبرس", flag: "🇨🇳", color: "text-red-600 bg-red-50", apiKey: "aliexpress_app_key" },
