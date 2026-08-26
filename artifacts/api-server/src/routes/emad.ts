@@ -208,7 +208,12 @@ router.post("/auth/login", authRateLimiter, validateBody(loginSchema), async (re
       if (customer) customerId = customer.id;
     }
     const token = signToken({ userId: user.id, customerId, role: user.role });
-    return res.json({ success: true, token, user: { id: user.id, name: user.name, email: user.email, role: user.role, email_verified: true } });
+    return res.json({
+      success: true,
+      token,
+      access_token: token,
+      user: { id: user.id, name: user.name, email: user.email, role: user.role, email_verified: true }
+    });
   } catch (err) { next(err); }
 });
 
