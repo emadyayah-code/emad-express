@@ -191,8 +191,8 @@ export default function Products() {
                           </div>
                         )}
                         <div>
-                          <p className="font-medium text-white/90">{p.name}</p>
-                          <p className="text-xs text-white/40">{p.description?.slice(0, 40)}...</p>
+                          <p className="font-medium text-white/90">{(p as any).name_ar || p.name || (p as any).name_en || "منتج"}</p>
+                          <p className="text-xs text-white/40">{((p as any).description_ar || p.description || (p as any).description_en || "")?.slice(0, 45)}...</p>
                         </div>
                       </div>
                     </td>

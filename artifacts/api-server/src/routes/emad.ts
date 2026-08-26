@@ -498,13 +498,18 @@ router.get("/admin/products", requireAuth, requireRole("admin", "manager", "sale
     const p = Math.max(1, parseInt(page) || 1);
     const pp = Math.min(100, Math.max(1, parseInt(per_page) || 20));
     const conds = [isNull(products.deleted_at)];
-    if (search) conds.push(or(like(products.name, `%${escapeLike(search)}%`), like(products.sku, `%${escapeLike(search)}%`)));
+    if (search) conds.push(or(like(products.name_ar, `%${escapeLike(search)}%`), like(products.name_en, `%${escapeLike(search)}%`), like(products.sku, `%${escapeLike(search)}%`)));
     if (category_id) conds.push(eq(products.category_id, parseInt(category_id)));
     if (status === "active") conds.push(eq(products.is_active, true));
     if (status === "inactive") conds.push(eq(products.is_active, false));
     const where = and(...conds);
     const [{ count = 0 } = {}] = await db.select({ count: sql<number>`COUNT(*)` }).from(products).where(where);
-    const data = await db.select().from(products).where(where).orderBy(desc(products.id)).limit(pp).offset((p - 1) * pp);
+    const rawData = await db.select().from(products).where(where).orderBy(desc(products.id)).limit(pp).offset((p - 1) * pp);
+    const data = rawData.map(prod => ({
+      ...prod,
+      name: prod.name_ar || prod.name_en || (prod as any).name || "منتج",
+      description: prod.description_ar || prod.description_en || (prod as any).description || "",
+    }));
     return res.json({ success: true, data, total: Number(count), page: p, per_page: pp });
   } catch (err) { next(err); }
 });
