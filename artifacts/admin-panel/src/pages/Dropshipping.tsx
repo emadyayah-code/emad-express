@@ -18,6 +18,7 @@ export default function Dropshipping() {
   const [tab, setTab] = useState<"products" | "url" | "search" | "bulk" | "settings">("products");
   const [platform, setPlatform] = useState("aliexpress");
   const [searchQ, setSearchQ] = useState("");
+  const [browseList, setBrowseList] = useState<any[]>([]);
   const [importModal, setImportModal] = useState<any>(null);
   const [settingsForm, setSettingsForm] = useState<Record<string, string>>({
     aliexpress_app_key: "540456",
@@ -328,38 +329,71 @@ export default function Dropshipping() {
             </p>
           </div>
 
-          {/* Search Results */}
-          {searchList.length > 0 && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {searchList.map((item: any) => (
-                <div key={item.source_id} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow">
-                  <img src={item.image} alt={item.name} className="w-full h-44 object-cover" referrerPolicy="no-referrer" />
-                  <div className="p-4">
-                    <p className="font-medium text-gray-800 text-sm line-clamp-2">{item.name}</p>
-                    <div className="flex items-center justify-between mt-2">
-                      <div>
-                        <p className="text-xs text-gray-400">سعر المورد</p>
-                        <p className="font-bold text-amber-600">{item.price.toLocaleString()} ر</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-xs text-gray-400">سعر مقترح</p>
-                        <p className="font-bold text-green-600">{(item.price * 1.35).toFixed(0)} ر</p>
-                      </div>
-                    </div>
-                    {item.rating && (
-                      <p className="text-xs text-gray-400 mt-1">⭐ {item.rating} · {item.orders_count?.toLocaleString()} طلب</p>
-                    )}
+          {/* Search & Browse Results */}
+          {(() => {
+            const displayList = browseList.length > 0 ? browseList : searchList;
+            if (displayList.length === 0) return null;
+            return (
+              <div className="space-y-3">
+                {browseList.length > 0 && (
+                  <div className="flex items-center justify-between bg-amber-500/10 border border-amber-500/30 rounded-xl p-3">
+                    <span className="text-xs font-bold text-amber-300">
+                      📦 معروض {browseList.length} منتج مسحوب مباشرة من علي إكسبرس للتصفح والاستيراد
+                    </span>
                     <button
-                      onClick={() => setImportModal({ ...item, platform, our_price: Math.ceil(item.price * 1.35) })}
-                      className="w-full mt-3 flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-600 text-white py-2 rounded-lg text-sm font-medium"
+                      onClick={() => setBrowseList([])}
+                      className="text-xs text-red-400 hover:text-red-300 underline font-bold"
                     >
-                      <Download size={14} /> استيراد للمتجر
+                      إلغاء التصفح
                     </button>
                   </div>
+                )}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                  {displayList.map((item: any) => (
+                    <div key={item.source_id} className="bg-slate-900/90 rounded-2xl border border-slate-800 hover:border-amber-500/40 overflow-hidden shadow-lg hover:shadow-xl transition-all flex flex-col justify-between">
+                      <div>
+                        <div className="relative w-full h-48 bg-slate-950">
+                          <img src={item.image} alt={item.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                          <span className="absolute top-2 right-2 bg-black/70 backdrop-blur-md text-amber-300 text-[10px] font-extrabold px-2 py-1 rounded-lg border border-amber-500/30">
+                            #{item.source_id}
+                          </span>
+                          {item.category_name && (
+                            <span className="absolute bottom-2 left-2 bg-amber-500/90 text-black text-[10px] font-bold px-2 py-0.5 rounded-md">
+                              {item.category_name}
+                            </span>
+                          )}
+                        </div>
+                        <div className="p-4">
+                          <p className="font-bold text-white text-xs line-clamp-2 leading-relaxed" title={item.name}>{item.name}</p>
+                          <div className="flex items-center justify-between mt-3 bg-slate-950/60 p-2.5 rounded-xl border border-slate-800/80">
+                            <div>
+                              <p className="text-[10px] text-slate-400">سعر المورد</p>
+                              <p className="font-extrabold text-amber-400 text-sm">{item.price?.toLocaleString()} $</p>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-[10px] text-slate-400">سعر مقترح بالمتجر</p>
+                              <p className="font-extrabold text-emerald-400 text-sm">{((item.price || 20) * 1.35).toFixed(1)} $</p>
+                            </div>
+                          </div>
+                          {item.supplier_name && (
+                            <p className="text-[10px] text-slate-400 mt-2 truncate">🏪 {item.supplier_name}</p>
+                          )}
+                        </div>
+                      </div>
+                      <div className="p-4 pt-0">
+                        <button
+                          onClick={() => setImportModal({ ...item, platform: item.platform || platform, our_price: Math.ceil((item.price || 20) * 1.35) })}
+                          className="w-full flex items-center justify-center gap-1.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black py-2.5 rounded-xl text-xs font-extrabold shadow-md transition-all cursor-pointer"
+                        >
+                          <Download size={14} /> استيراد هذا المنتج للمتجر
+                        </button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          )}
+              </div>
+            );
+          })()}
 
           {/* Manual Import */}
           <div className="bg-blue-50 border border-blue-200 rounded-xl p-5">
@@ -420,8 +454,8 @@ export default function Dropshipping() {
                     </div>
                     
                     <AutoFetchButton platform={p.id} onResults={(results) => {
+                      setBrowseList(results);
                       setTab("search");
-                      (window as any).__autoFetchResults = { platform: p.id, results };
                     }} />
                   </div>
 
