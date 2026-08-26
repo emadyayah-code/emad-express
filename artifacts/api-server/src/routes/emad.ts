@@ -92,40 +92,55 @@ export async function seedIfEmpty() {
     await db.update(users).set({ password: hashedAdmin, role: "admin", email_verified: true }).where(eq(users.email, "ealakhly@gmail.com"));
   }
 
-  const existingCats = await db.select().from(categories).where(isNull(categories.deleted_at)).limit(1);
-  if (existingCats.length === 0) {
-    await db.insert(categories).values([
-      { name_ar: "هواتف ذكية", name_en: "Smartphones", icon: "📱", image: "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=400", description_ar: "أحدث الهواتف الذكية", description_en: "Latest smartphones", is_active: true },
-      { name_ar: "أجهزة كمبيوتر", name_en: "Computers", icon: "💻", image: "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=400", description_ar: "لابتوبات وأجهزة مكتبية", description_en: "Laptops and desktop computers", is_active: true },
-      { name_ar: "سماعات", name_en: "Headphones", icon: "🎧", image: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400", description_ar: "سماعات لاسلكية وسلكية", description_en: "Wireless and wired headphones", is_active: true },
-      { name_ar: "تلفزيونات", name_en: "TVs", icon: "📺", image: "https://images.unsplash.com/photo-1593359677879-a4bb92f829e1?w=400", description_ar: "تلفزيونات ذكية بدقة عالية", description_en: "Smart TVs with high resolution", is_active: true },
-      { name_ar: "كاميرات", name_en: "Cameras", icon: "📷", image: "https://images.unsplash.com/photo-1502920917128-1aa500764cbd?w=400", description_ar: "كاميرات احترافية", description_en: "Professional cameras", is_active: true },
-    ]);
-  }
+  try {
+    const existingCats = await db.select().from(categories).where(isNull(categories.deleted_at)).limit(1);
+    if (existingCats.length === 0) {
+      await db.insert(categories).values([
+        { name_ar: "هواتف ذكية", name_en: "Smartphones", icon: "📱", image: "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=400", description_ar: "أحدث الهواتف الذكية", description_en: "Latest smartphones", is_active: true },
+        { name_ar: "أجهزة كمبيوتر", name_en: "Computers", icon: "💻", image: "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=400", description_ar: "لابتوبات وأجهزة مكتبية", description_en: "Laptops and desktop computers", is_active: true },
+        { name_ar: "سماعات", name_en: "Headphones", icon: "🎧", image: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400", description_ar: "سماعات لاسلكية وسلكية", description_en: "Wireless and wired headphones", is_active: true },
+        { name_ar: "تلفزيونات", name_en: "TVs", icon: "📺", image: "https://images.unsplash.com/photo-1593359677879-a4bb92f829e1?w=400", description_ar: "تلفزيونات ذكية بدقة عالية", description_en: "Smart TVs with high resolution", is_active: true },
+        { name_ar: "كاميرات", name_en: "Cameras", icon: "📷", image: "https://images.unsplash.com/photo-1502920917128-1aa500764cbd?w=400", description_ar: "كاميرات احترافية", description_en: "Professional cameras", is_active: true },
+      ]);
+    }
+  } catch {}
 
-  
-  await db.insert(customers).values([
-    { name: "أحمد محمد السعيد", email: "ahmed@example.com", phone: "0501234567", address: "الرياض، حي النخيل", total_orders: 2, total_spent: 9595, loyalty_points: 960 },
-    { name: "فاطمة علي الزهراني", email: "fatima@example.com", phone: "0557654321", address: "جدة، حي الشاطئ", total_orders: 2, total_spent: 11845, loyalty_points: 1185 },
-    { name: "خالد عبدالله القحطاني", email: "khaled@example.com", phone: "0531112233", address: "الدمام، حي الفيصلية", total_orders: 1, total_spent: 10350, loyalty_points: 1035 },
-    { name: "نورة سعد الشمري", email: "nora@example.com", phone: "0509876543", address: "الرياض، حي العليا", total_orders: 1, total_spent: 2100, loyalty_points: 210 },
-  ]);
+  try {
+    const existingCust = await db.select().from(customers).limit(1);
+    if (existingCust.length === 0) {
+      await db.insert(customers).values([
+        { name: "أحمد محمد السعيد", email: "ahmed@example.com", phone: "0501234567", address: "الرياض، حي النخيل", total_orders: 2, total_spent: 9595, loyalty_points: 960 },
+        { name: "فاطمة علي الزهراني", email: "fatima@example.com", phone: "0557654321", address: "جدة، حي الشاطئ", total_orders: 2, total_spent: 11845, loyalty_points: 1185 },
+        { name: "خالد عبدالله القحطاني", email: "khaled@example.com", phone: "0531112233", address: "الدمام، حي الفيصلية", total_orders: 1, total_spent: 10350, loyalty_points: 1035 },
+        { name: "نورة سعد الشمري", email: "nora@example.com", phone: "0509876543", address: "الرياض، حي العليا", total_orders: 1, total_spent: 2100, loyalty_points: 210 },
+      ]);
+    }
+  } catch {}
 
-  await db.insert(vendors).values([
-    { store_name: "متجر التقنية", name: "محمد العلي", email: "tech@example.com", phone: "0501112222", address: "الرياض", commission_rate: 12, balance: 5000, is_approved: true },
-    { store_name: "إلكترونيات الجنوب", name: "سالم البريك", email: "south@example.com", phone: "0503334444", address: "جدة", commission_rate: 10, balance: 3200, is_approved: true },
-    { store_name: "متجر الشمال", name: "عبدالله الفهد", email: "north@example.com", phone: "0505556666", address: "الدمام", commission_rate: 15, balance: 1500, is_approved: false },
-  ]);
+  try {
+    const existingVendors = await db.select().from(vendors).limit(1);
+    if (existingVendors.length === 0) {
+      await db.insert(vendors).values([
+        { store_name: "متجر التقنية", name: "محمد العلي", email: "tech@example.com", phone: "0501112222", address: "الرياض", commission_rate: 12, balance: 5000, is_approved: true },
+        { store_name: "إلكترونيات الجنوب", name: "سالم البريك", email: "south@example.com", phone: "0503334444", address: "جدة", commission_rate: 10, balance: 3200, is_approved: true },
+        { store_name: "متجر الشمال", name: "عبدالله الفهد", email: "north@example.com", phone: "0505556666", address: "الدمام", commission_rate: 15, balance: 1500, is_approved: false },
+      ]);
+    }
+  } catch {}
 
-  await db.insert(affiliates).values([
-    { name: "خالد العمري", email: "khaled.aff@example.com", phone: "0507778888", code: "AFF2024A", commission_rate: 5, balance: 450, total_earned: 1200, total_clicks: 342, total_conversions: 18, is_active: true },
-    { name: "سارة المطيري", email: "sara.aff@example.com", phone: "0509990000", code: "AFF2024B", commission_rate: 7, balance: 280, total_earned: 800, total_clicks: 215, total_conversions: 12, is_active: true },
-  ]);
+  try {
+    const existingAff = await db.select().from(affiliates).limit(1);
+    if (existingAff.length === 0) {
+      await db.insert(affiliates).values([
+        { name: "خالد العمري", email: "khaled.aff@example.com", phone: "0507778888", code: "AFF2024A", commission_rate: 5, balance: 450, total_earned: 1200, total_clicks: 342, total_conversions: 18, is_active: true },
+        { name: "سارة المطيري", email: "sara.aff@example.com", phone: "0509990000", code: "AFF2024B", commission_rate: 7, balance: 280, total_earned: 800, total_clicks: 215, total_conversions: 12, is_active: true },
+      ]);
+    }
+  } catch {}
 
-  
-  await seedCurrencies();
-  await seedPaymentGateways();
-  await seedShippingCarriers();
+  try { await seedCurrencies(); } catch {}
+  try { await seedPaymentGateways(); } catch {}
+  try { await seedShippingCarriers(); } catch {}
   logger.info("Database seeded successfully");
 }
 
