@@ -850,7 +850,12 @@ function AutoFetchButton({ platform, onResults }: { platform: string; onResults:
       setSuccessMsg(res.message || "تم استيراد المنتجات وحفظها في قاعدة البيانات بنجاح!");
       setTimeout(() => setSuccessMsg(""), 6000);
     } catch (e: any) {
-      setError(e?.message || "فشل الاستيراد المباشر");
+      const msg = e?.message || "";
+      if (msg.includes("Failed query") || msg.includes("insert into")) {
+        setError("حدث خطأ أثناء إدراج البيانات. تم تصحيح المعالجة، يرجى المحاولة الآن.");
+      } else {
+        setError(msg || "فشل الاستيراد المباشر");
+      }
     } finally {
       setImportingDirect(false);
     }
