@@ -53,20 +53,21 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
         {navItems.map(({ path, icon: Icon, label }) => {
           const active = path === "/" ? location === "/" : location.startsWith(path);
           return (
-            <Link key={path} href={path} onClick={onClose}>
-              <a
-                className="flex items-center gap-3 px-5 py-3 text-sm font-medium transition-all"
-                style={{
-                  color: active ? "#fbbf24" : "rgba(255,255,255,0.6)",
-                  background: active
-                    ? "linear-gradient(90deg, rgba(245,158,11,0.15) 0%, transparent 100%)"
-                    : "transparent",
-                  borderInlineStart: active ? "3px solid #f59e0b" : "3px solid transparent",
-                }}
-              >
-                <Icon size={18} className={active ? "text-amber-400" : "text-white/40"} />
-                {label}
-              </a>
+            <Link
+              key={path}
+              href={path}
+              onClick={onClose}
+              className="flex items-center gap-3 px-5 py-3 text-sm font-medium transition-all"
+              style={{
+                color: active ? "#fbbf24" : "rgba(255,255,255,0.6)",
+                background: active
+                  ? "linear-gradient(90deg, rgba(245,158,11,0.15) 0%, transparent 100%)"
+                  : "transparent",
+                borderInlineStart: active ? "3px solid #f59e0b" : "3px solid transparent",
+              }}
+            >
+              <Icon size={18} className={active ? "text-amber-400" : "text-white/40"} />
+              {label}
             </Link>
           );
         })}
