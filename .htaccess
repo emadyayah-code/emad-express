@@ -1,0 +1,12 @@
+# Apache/cPanel configuration for Passenger.
+# In cPanel, set the Node.js application startup file to server.js.
+PassengerEnabled on
+PassengerAppType node
+PassengerStartupFile server.js
+PassengerNodejs /usr/bin/node
+
+Options -MultiViews
+RewriteEngine On
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ http://127.0.0.1:3000/$1 [P,L]

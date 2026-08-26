@@ -1,0 +1,145 @@
+import crypto from "crypto";
+import { logger } from "../lib/logger";
+
+const ALIEXPRESS_API_URL = "https://api-sg.aliexpress.com/sync";
+
+export interface AliExpressCredentials {
+  appKey: string;
+  appSecret: string;
+  trackingId?: string;
+}
+
+function generateSign(params: Record<string, string>, appSecret: string): string {
+  const sortedKeys = Object.keys(params).sort();
+  const signStr = sortedKeys.map(k => `${k}${params[k]}`).join("");
+  const fullStr = appSecret + signStr + appSecret;
+  return crypto.createHmac("sha256", appSecret).update(fullStr).digest("hex").toUpperCase();
+}
+
+function buildApiUrl(method: string, params: Record<string, string>, creds: AliExpressCredentials): string {
+  const timestamp = Date.now().toString();
+  const baseParams: Record<string, string> = {
+    app_key: creds.appKey,
+    timestamp,
+    sign_method: "hmac-sha256",
+    method,
+    ...params,
+  };
+  const sign = generateSign(baseParams, creds.appSecret);
+  baseParams.sign = sign;
+
+  const url = new URL(ALIEXPRESS_API_URL);
+  Object.entries(baseParams).forEach(([k, v]) => url.searchParams.set(k, v));
+  return url.toString();
+}
+
+export interface AliExpressProduct {
+  product_id: string;
+  product_title: string;
+  product_main_image_url: string;
+  target_sale_price: string;
+  target_original_price: string;
+  target_sale_price_currency: string;
+  product_detail_url: string;
+  commission_rate: string;
+  first_level_category_name: string;
+  second_level_category_name: string;
+  shop_url: string;
+  shop_name: string;
+  evaluate_rate: string;
+  sales_volume: string;
+}
+
+export async function fetchAliExpressProduct(
+  productId: string,
+  creds: AliExpressCredentials,
+): Promise<AliExpressProduct | null> {
+  try {
+    const url = buildApiUrl("aliexpress.affiliate.productdetail.get", {
+      product_ids: productId,
+      fields: "product_id,product_title,product_main_image_url,target_sale_price,target_original_price,target_sale_price_currency,product_detail_url,commission_rate,first_level_category_name,second_level_category_name,shop_url,shop_name,evaluate_rate,sales_volume",
+      ...(creds.trackingId ? { tracking_id: creds.trackingId } : {}),
+    }, creds);
+
+    const response = await fetch(url, {
+      method: "GET",
+      headers: {
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+      },
+      signal: AbortSignal.timeout(15000),
+    });
+
+    if (!response.ok) {
+      logger.error({ status: response.status, productId }, "AliExpress API error");
+      return null;
+    }
+
+    const data = await response.json();
+    const resp = data?.aliexpress_affiliate_productdetail_get_response;
+    const result = resp?.resp_result;
+
+    if (!result || result.resp_code !== 200) {
+      logger.error({ resp_code: result?.resp_code, msg: result?.resp_msg, productId }, "AliExpress API returned error");
+      return null;
+    }
+
+    const products = result?.result?.products?.product || [];
+    if (!products.length) {
+      logger.warn({ productId }, "AliExpress product not found");
+      return null;
+    }
+
+    return products[0] as AliExpressProduct;
+  } catch (err: any) {
+    logger.error({ err: err.message, productId }, "AliExpress fetch failed");
+    return null;
+  }
+}
+
+export async function searchAliExpressProducts(
+  keywords: string,
+  creds: AliExpressCredentials,
+  page = 1,
+  pageSize = 20,
+): Promise<AliExpressProduct[]> {
+  try {
+    const url = buildApiUrl("aliexpress.affiliate.product.query", {
+      keywords,
+      page_no: String(page),
+      page_size: String(Math.min(pageSize, 50)),
+      target_currency: "USD",
+      target_language: "AR",
+      ...(creds.trackingId ? { tracking_id: creds.trackingId } : {}),
+    }, creds);
+
+    const response = await fetch(url, {
+      method: "GET",
+      headers: {
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+      },
+      signal: AbortSignal.timeout(15000),
+    });
+
+    if (!response.ok) {
+      logger.error({ status: response.status, keywords }, "AliExpress search error");
+      return [];
+    }
+
+    const data = await response.json();
+    const resp = data?.aliexpress_affiliate_product_query_response;
+    const result = resp?.resp_result;
+
+    if (!result || result.resp_code !== 200) {
+      logger.error({ resp_code: result?.resp_code, msg: result?.resp_msg, keywords }, "AliExpress search returned error");
+      return [];
+    }
+
+    const products = result?.result?.products?.product || [];
+    return products as AliExpressProduct[];
+  } catch (err: any) {
+    logger.error({ err: err.message, keywords }, "AliExpress search failed");
+    return [];
+  }
+}

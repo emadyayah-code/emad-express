@@ -1,0 +1,11 @@
+import { Router, type IRouter } from "express";
+import healthRouter from "./health";
+import emadRouter from "./emad";
+
+const router: IRouter = Router();
+
+router.use("/health", healthRouter);
+router.use("/", healthRouter);
+router.use("/v1", emadRouter);
+
+export default router;

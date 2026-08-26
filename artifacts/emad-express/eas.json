@@ -1,0 +1,35 @@
+{
+  "cli": {
+    "version": ">= 14.0.0"
+  },
+  "build": {
+    "preview": {
+      "android": {
+        "buildType": "apk",
+        "image": "latest"
+      },
+      "ios": {
+        "simulator": false,
+        "image": "latest"
+      },
+      "env": {
+        "EXPO_PUBLIC_DOMAIN": "e6f603e6-b46c-4e0f-99e2-2e766fca950e-00-1r5usqbtpkyyc.worf.replit.dev"
+      }
+    },
+    "production": {
+      "android": {
+        "buildType": "apk",
+        "image": "latest"
+      },
+      "ios": {
+        "image": "latest"
+      },
+      "env": {
+        "EXPO_PUBLIC_DOMAIN": "e6f603e6-b46c-4e0f-99e2-2e766fca950e-00-1r5usqbtpkyyc.worf.replit.dev"
+      }
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}
