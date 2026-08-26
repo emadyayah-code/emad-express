@@ -49,17 +49,17 @@ export default function AffiliateSettings() {
   });
 
   // Update form when settings load
-  useState(() => {
-    if (settings.length > 0) {
+  useEffect(() => {
+    if (settings && settings.length > 0) {
       setForm({
         smtp_host: getValue("smtp_host"),
         smtp_port: getValue("smtp_port"),
         smtp_user: getValue("smtp_user"),
         smtp_pass: getValue("smtp_pass"),
         smtp_from: getValue("smtp_from"),
-        aliexpress_app_key: getValue("aliexpress_app_key"),
-        aliexpress_app_key_secret: getValue("aliexpress_app_key_secret"),
-        aliexpress_tracking_id: getValue("aliexpress_tracking_id"),
+        aliexpress_app_key: getValue("aliexpress_app_key") || "540456",
+        aliexpress_app_key_secret: getValue("aliexpress_app_key_secret") || "VKz8Ppc40dGMXGbcLyjXRxBhrXw3itnT",
+        aliexpress_tracking_id: getValue("aliexpress_tracking_id") || "default",
         amazon_access_key: getValue("amazon_access_key"),
         amazon_secret_key: getValue("amazon_secret_key"),
         amazon_partner_tag: getValue("amazon_partner_tag"),
@@ -67,7 +67,7 @@ export default function AffiliateSettings() {
         alibaba_app_key_secret: getValue("alibaba_app_key_secret"),
       });
     }
-  });
+  }, [settings]);
 
   const handleSave = () => {
     const updates = Object.entries(form).map(([key, value]) => ({ key, value }));

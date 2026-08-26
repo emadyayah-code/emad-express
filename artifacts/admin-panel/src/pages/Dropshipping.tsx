@@ -19,7 +19,12 @@ export default function Dropshipping() {
   const [platform, setPlatform] = useState("aliexpress");
   const [searchQ, setSearchQ] = useState("");
   const [importModal, setImportModal] = useState<any>(null);
-  const [settingsForm, setSettingsForm] = useState<Record<string, string>>({});
+  const [settingsForm, setSettingsForm] = useState<Record<string, string>>({
+    aliexpress_app_key: "540456",
+    aliexpress_app_key_secret: "VKz8Ppc40dGMXGbcLyjXRxBhrXw3itnT",
+    aliexpress_tracking_id: "default",
+    aliexpress_commission_rate: "10",
+  });
   const [settingsSaved, setSettingsSaved] = useState(false);
   const [urlInput, setUrlInput] = useState("");
   const [urlFetching, setUrlFetching] = useState(false);
@@ -39,9 +44,13 @@ export default function Dropshipping() {
   const { data: settingsData } = useQuery({
     queryKey: ["platform-settings"],
     queryFn: () => api.get("/admin/platform-settings"),
-    enabled: tab === "settings",
-    onSuccess: (d: any) => setSettingsForm(d || {}),
-  } as any);
+  });
+
+  useEffect(() => {
+    if (settingsData && typeof settingsData === "object") {
+      setSettingsForm(prev => ({ ...prev, ...settingsData }));
+    }
+  }, [settingsData]);
 
   const importMut = useMutation({
     mutationFn: (d: any) => api.post("/admin/dropship/import", d),
