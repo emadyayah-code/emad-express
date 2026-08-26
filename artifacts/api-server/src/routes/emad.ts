@@ -955,13 +955,13 @@ const UNIQUE_PRODUCT_IMAGES = [
 ];
 
 function getUniqueProductImage(index: number, code: string): string {
-  const baseImg = UNIQUE_PRODUCT_IMAGES[index % UNIQUE_PRODUCT_IMAGES.length];
-  // Add unique signature parameter so CDN and browser cache treat each product image as completely unique and distinct
-  return `${baseImg}?w=600&auto=format&fit=crop&q=80&sig=${code || index}`;
+  // Uses direct distinct photo ID for each index to ensure 100% distinct visual photograph
+  const photoId = ((index * 3 + 15) % 1000) + 1;
+  return `https://picsum.photos/id/${photoId}/600/600`;
 }
 
 const SAMPLE_CATALOG = [
-  { name_ar: "ساعة ذكية رياضية فائقة مع قياس نبضات القلب ومقاومة للماء IP68", name_en: "Ultra Smart Sports Watch with Heart Rate & IP68 Waterproof", price: 145, category: "إلكترونيات", rating: 4.8, orders: 3420 },
+  { name_ar: "ساعة ذكية رياضية فائقة مع قياس نبضات القلب وشاشة AMOLED", name_en: "Ultra Smart Sports Watch with Heart Rate & AMOLED Display", price: 145, category: "إلكترونيات", rating: 4.8, orders: 3420 },
   { name_ar: "سماعات لاسلكية Pro مع ميزة إلغاء الضوضاء النشط ANC وصوت محيطي", name_en: "Wireless Pro Earbuds with Active Noise Cancellation ANC", price: 195, category: "صوتيات", rating: 4.9, orders: 5890 },
   { name_ar: "كاميرا مراقبة ذكية 4K بزاوية 360 درجة ورؤية ليلية ملونة", name_en: "Smart 4K Security Camera 360 Degree with Color Night Vision", price: 230, category: "إلكترونيات", rating: 4.7, orders: 1840 },
   { name_ar: "حقيبة ظهر ذكية مقاومة للماء مع منفذ شحن USB وقفل أمان", name_en: "Smart Waterproof Laptop Backpack with USB Charging Port", price: 120, category: "أزياء", rating: 4.6, orders: 2750 },
@@ -987,6 +987,7 @@ router.get("/admin/dropship/auto-fetch", requireAuth, requireRole("admin", "mana
   try {
     const platform = String(req.query.platform || "aliexpress");
     const count = parseInt(String(req.query.count || "1000"), 10) || 1000;
+    const variants = ["موديل برو", "الإصدار المطور", "إصدار 2026", "فائق الجودة", "النسخة الأصلية", "سلسلة ماكس", "إصدار بلس", "الموديل الذكي"];
     
     // Generate high quality distinct product items
     const results = [];
@@ -996,10 +997,11 @@ router.get("/admin/dropship/auto-fetch", requireAuth, requireRole("admin", "mana
       const id = platform === "aliexpress" ? aliCode : `${platform.slice(0, 3)}-${aliCode}`;
       const priceVariation = Number((base.price * (0.85 + (i % 30) * 0.01)).toFixed(2));
       const imageUnique = getUniqueProductImage(i, aliCode);
+      const vName = variants[i % variants.length];
 
       results.push({
         source_id: id,
-        name: `${base.name_ar} (كود #${id})`,
+        name: `${base.name_ar} (${vName})`,
         price: priceVariation,
         image: imageUnique,
         category_name: base.category,
@@ -1020,6 +1022,8 @@ router.post("/admin/dropship/bulk-import-1000", requireAuth, requireRole("admin"
     const { platform = "aliexpress", count = 1000, margin_percent = 30 } = req.body || {};
     const importCount = Math.min(Math.max(10, count), 2000);
     const margin = (100 + (margin_percent || 30)) / 100;
+    const variantsAr = ["موديل برو", "الإصدار المطور", "إصدار 2026", "فائق الجودة", "النسخة الأصلية", "سلسلة ماكس", "إصدار بلس", "الموديل الذكي"];
+    const variantsEn = ["Pro Edition", "Upgraded Version", "2026 Model", "Ultra Quality", "Original Series", "Max Edition", "Plus Model", "Smart Series"];
 
     let [defaultCategory] = await db.select().from(categories).limit(1);
     const categoryId = defaultCategory ? defaultCategory.id : null;
@@ -1052,18 +1056,20 @@ router.post("/admin/dropship/bulk-import-1000", requireAuth, requireRole("admin"
         const salePrice = Number((sourcePrice * margin).toFixed(2));
         const skuUnique = `${platform.slice(0, 3).toUpperCase()}-${sourceId}`;
         const imageUnique = getUniqueProductImage(index, aliCode);
+        const vAr = variantsAr[index % variantsAr.length];
+        const vEn = variantsEn[index % variantsEn.length];
 
         productBatch.push({
-          name_ar: `${base.name_ar} (كود #${sourceId})`,
-          name_en: `${base.name_en} (Code #${sourceId})`,
+          name_ar: `${base.name_ar} - ${vAr}`,
+          name_en: `${base.name_en} - ${vEn}`,
           sku: skuUnique,
           price: salePrice,
           cost: sourcePrice,
           quantity: 500 + ((index * 37) % 1500),
           min_quantity: 5,
           category_id: categoryId,
-          description_ar: `منتج عالي الجودة مستورد مباشرة من علي إكسبرس (كود #${sourceId}). ضمان أصلي ومواصفات قياسية.`,
-          description_en: `Authentic AliExpress imported item (Code #${sourceId}). Standard specs and original warranty.`,
+          description_ar: `منتج عالي الجودة مستورد مباشرة من علي إكسبرس (كود ${sourceId}). ضمان أصلي ومواصفات قياسية.`,
+          description_en: `Authentic AliExpress imported item (Code ${sourceId}). Standard specs and original warranty.`,
           image: imageUnique,
           is_active: true,
         });
