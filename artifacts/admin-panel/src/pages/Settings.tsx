@@ -92,7 +92,13 @@ function ProfileTab() {
 
 function EmployeesTab() {
   const qc = useQueryClient();
-  const { data: employees = [], isLoading } = useQuery({ queryKey: ["employees"], queryFn: () => api.get("/admin/employees") });
+  const [msg, setMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
+  const { data: rawEmployees, isLoading } = useQuery({ 
+    queryKey: ["employees"], 
+    queryFn: () => api.get("/admin/employees") 
+  });
+  const employees: any[] = Array.isArray(rawEmployees) ? rawEmployees : (rawEmployees?.data || []);
+
   const [showAdd, setShowAdd] = useState(false);
   const [editId, setEditId] = useState<number | null>(null);
   const [form, setForm] = useState({ name: "", email: "", password: "", phone: "", role: "sales" });
@@ -100,20 +106,38 @@ function EmployeesTab() {
 
   const deleteMut = useMutation({
     mutationFn: (id: number) => api.delete(`/admin/employees/${id}`),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["employees"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["employees"] });
+      setMsg({ type: "ok", text: "تم حذف الموظف بنجاح ✓" });
+      setTimeout(() => setMsg(null), 3000);
+    },
+    onError: (e: any) => setMsg({ type: "err", text: e.message || "حدث خطأ أثناء الحذف" }),
   });
 
   const addMut = useMutation({
     mutationFn: () => api.post("/admin/employees", form),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["employees"] }); setShowAdd(false); setForm({ name: "", email: "", password: "", phone: "", role: "sales" }); },
+    onSuccess: () => { 
+      qc.invalidateQueries({ queryKey: ["employees"] }); 
+      setShowAdd(false); 
+      setForm({ name: "", email: "", password: "", phone: "", role: "sales" });
+      setMsg({ type: "ok", text: "تمت إضافة الموظف الجديد بنجاح ✓" });
+      setTimeout(() => setMsg(null), 3000);
+    },
+    onError: (e: any) => setMsg({ type: "err", text: e.message || "حدث خطأ أثناء إضافة الموظف" }),
   });
 
   const updateMut = useMutation({
     mutationFn: ({ id, data }: { id: number; data: any }) => api.put(`/admin/employees/${id}`, data),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["employees"] }); setEditId(null); },
+    onSuccess: () => { 
+      qc.invalidateQueries({ queryKey: ["employees"] }); 
+      setEditId(null);
+      setMsg({ type: "ok", text: "تم تحديث بيانات الموظف بنجاح ✓" });
+      setTimeout(() => setMsg(null), 3000);
+    },
+    onError: (e: any) => setMsg({ type: "err", text: e.message || "حدث خطأ أثناء التحديث" }),
   });
 
-  const inp = "w-full px-3 py-2 rounded-lg text-white text-sm outline-none border";
+  const inp = "w-full px-3 py-2.5 rounded-xl text-white text-sm outline-none border transition-all";
   const inpStyle = { background: "rgba(255,255,255,0.05)", borderColor: "rgba(245,158,11,0.2)" };
 
   const ROLES = [
@@ -126,29 +150,58 @@ function EmployeesTab() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h3 className="text-white font-bold text-lg">إدارة الموظفين والصلاحيات</h3>
-        <button onClick={() => setShowAdd(true)} className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold text-black" style={{ background: "linear-gradient(135deg,#f59e0b,#d97706)" }}>
-          <Plus size={16} /> إضافة موظف
+        <div>
+          <h3 className="text-white font-bold text-lg">إدارة الموظفين والصلاحيات</h3>
+          <p className="text-white/40 text-xs mt-0.5">إضافة وتعيين صلاحيات المدراء وفريق العمل</p>
+        </div>
+        <button onClick={() => setShowAdd(true)} className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold text-black cursor-pointer shadow-md" style={{ background: "linear-gradient(135deg,#f59e0b,#d97706)" }}>
+          <Plus size={16} /> إضافة موظف جديد
         </button>
       </div>
+
+      {msg && (
+        <div className={`mb-4 px-4 py-3 rounded-xl text-sm font-medium ${msg.type === "ok" ? "bg-green-500/20 text-green-400 border border-green-500/30" : "bg-red-500/20 text-red-400 border border-red-500/30"}`}>
+          {msg.text}
+        </div>
+      )}
 
       {showAdd && (
         <div className="mb-6 p-5 rounded-2xl" style={{ background: "rgba(245,158,11,0.06)", border: "1px solid rgba(245,158,11,0.2)" }}>
           <div className="flex items-center justify-between mb-4">
-            <p className="text-white font-bold">موظف جديد</p>
-            <button onClick={() => setShowAdd(false)}><X size={18} className="text-white/40" /></button>
+            <p className="text-white font-bold">إضافة موظف وصلاحية جديدة</p>
+            <button onClick={() => setShowAdd(false)} className="text-white/40 hover:text-white cursor-pointer"><X size={18} /></button>
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <input className={inp} style={inpStyle} placeholder="الاسم" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
-            <input className={inp} style={inpStyle} placeholder="البريد الإلكتروني" type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} dir="ltr" />
-            <input className={inp} style={inpStyle} placeholder="كلمة المرور" type="password" value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))} dir="ltr" />
-            <input className={inp} style={inpStyle} placeholder="رقم الهاتف" value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} />
-            <select className={inp} style={{ ...inpStyle, gridColumn: "1/-1" }} value={form.role} onChange={e => setForm(f => ({ ...f, role: e.target.value }))}>
-              {ROLES.map(r => <option key={r.value} value={r.value} style={{ background: "#1a1000" }}>{r.label}</option>)}
-            </select>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="text-white/60 text-xs mb-1 block">اسم الموظف *</label>
+              <input className={inp} style={inpStyle} placeholder="الاسم الكامل" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
+            </div>
+            <div>
+              <label className="text-white/60 text-xs mb-1 block">البريد الإلكتروني *</label>
+              <input className={inp} style={inpStyle} placeholder="example@mail.com" type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} dir="ltr" />
+            </div>
+            <div>
+              <label className="text-white/60 text-xs mb-1 block">كلمة المرور *</label>
+              <input className={inp} style={inpStyle} placeholder="••••••••" type="password" value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))} dir="ltr" />
+            </div>
+            <div>
+              <label className="text-white/60 text-xs mb-1 block">رقم الهاتف</label>
+              <input className={inp} style={inpStyle} placeholder="+966..." value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} dir="ltr" />
+            </div>
+            <div className="sm:col-span-2">
+              <label className="text-white/60 text-xs mb-1 block">الصلاحية / الدور *</label>
+              <select className={inp} style={inpStyle} value={form.role} onChange={e => setForm(f => ({ ...f, role: e.target.value }))}>
+                {ROLES.map(r => <option key={r.value} value={r.value} style={{ background: "#1a1000", color: "#fff" }}>{r.label}</option>)}
+              </select>
+            </div>
           </div>
-          <button onClick={() => addMut.mutate()} disabled={addMut.isPending} className="mt-4 w-full py-2 rounded-xl text-black font-bold" style={{ background: "linear-gradient(135deg,#f59e0b,#d97706)" }}>
-            {addMut.isPending ? "جارٍ الإضافة..." : "إضافة"}
+          <button 
+            onClick={() => addMut.mutate()} 
+            disabled={addMut.isPending || !form.name || !form.email || !form.password} 
+            className="mt-4 w-full py-3 rounded-xl text-black font-bold cursor-pointer disabled:opacity-50 transition-all" 
+            style={{ background: "linear-gradient(135deg,#f59e0b,#d97706)" }}
+          >
+            {addMut.isPending ? "جارٍ إضافة الموظف..." : "حفظ الموظف الجديد"}
           </button>
         </div>
       )}
@@ -157,48 +210,74 @@ function EmployeesTab() {
         <div className="text-white/40 text-center py-10">جارٍ التحميل...</div>
       ) : (
         <div className="space-y-3">
-          {(employees as any[]).map((emp: any) => (
+          {employees.length === 0 && (
+            <div className="text-center py-10 text-white/40 border border-white/5 rounded-2xl">
+              لا يوجد موظفون مضافون حالياً
+            </div>
+          )}
+          {employees.map((emp: any) => (
             <div key={emp.id} className="p-4 rounded-2xl" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(245,158,11,0.12)" }}>
               {editId === emp.id ? (
                 <div className="space-y-3">
-                  <div className="grid grid-cols-2 gap-2">
-                    <input className={inp} style={inpStyle} placeholder="الاسم" value={editForm.name} onChange={e => setEditForm(f => ({ ...f, name: e.target.value }))} />
-                    <input className={inp} style={inpStyle} placeholder="البريد" type="email" value={editForm.email} onChange={e => setEditForm(f => ({ ...f, email: e.target.value }))} dir="ltr" />
-                    <input className={inp} style={inpStyle} placeholder="كلمة مرور جديدة (اختياري)" type="password" value={editForm.password} onChange={e => setEditForm(f => ({ ...f, password: e.target.value }))} dir="ltr" />
-                    <input className={inp} style={inpStyle} placeholder="الهاتف" value={editForm.phone} onChange={e => setEditForm(f => ({ ...f, phone: e.target.value }))} />
-                    <select className={inp} style={{ ...inpStyle, gridColumn: "1/-1" }} value={editForm.role} onChange={e => setEditForm(f => ({ ...f, role: e.target.value }))}>
-                      {ROLES.map(r => <option key={r.value} value={r.value} style={{ background: "#1a1000" }}>{r.label}</option>)}
-                    </select>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-white/60 text-xs mb-1 block">الاسم</label>
+                      <input className={inp} style={inpStyle} placeholder="الاسم" value={editForm.name} onChange={e => setEditForm(f => ({ ...f, name: e.target.value }))} />
+                    </div>
+                    <div>
+                      <label className="text-white/60 text-xs mb-1 block">البريد الإلكتروني</label>
+                      <input className={inp} style={inpStyle} placeholder="البريد" type="email" value={editForm.email} onChange={e => setEditForm(f => ({ ...f, email: e.target.value }))} dir="ltr" />
+                    </div>
+                    <div>
+                      <label className="text-white/60 text-xs mb-1 block">كلمة مرور جديدة (اختياري)</label>
+                      <input className={inp} style={inpStyle} placeholder="اتركها فارغة لعدم التغيير" type="password" value={editForm.password} onChange={e => setEditForm(f => ({ ...f, password: e.target.value }))} dir="ltr" />
+                    </div>
+                    <div>
+                      <label className="text-white/60 text-xs mb-1 block">الهاتف</label>
+                      <input className={inp} style={inpStyle} placeholder="الهاتف" value={editForm.phone} onChange={e => setEditForm(f => ({ ...f, phone: e.target.value }))} dir="ltr" />
+                    </div>
+                    <div className="sm:col-span-2">
+                      <label className="text-white/60 text-xs mb-1 block">الصلاحية</label>
+                      <select className={inp} style={inpStyle} value={editForm.role} onChange={e => setEditForm(f => ({ ...f, role: e.target.value }))}>
+                        {ROLES.map(r => <option key={r.value} value={r.value} style={{ background: "#1a1000", color: "#fff" }}>{r.label}</option>)}
+                      </select>
+                    </div>
                   </div>
-                  <div className="flex gap-2">
-                    <button onClick={() => updateMut.mutate({ id: emp.id, data: { name: editForm.name, email: editForm.email, phone: editForm.phone, role: editForm.role, ...(editForm.password && { password: editForm.password }) } })} className="flex-1 py-2 rounded-xl text-black font-bold" style={{ background: "#f59e0b" }}>
-                      <Check size={16} className="inline me-1" /> حفظ
+                  <div className="flex gap-2 pt-2">
+                    <button 
+                      onClick={() => updateMut.mutate({ id: emp.id, data: { name: editForm.name, email: editForm.email, phone: editForm.phone, role: editForm.role, ...(editForm.password && { password: editForm.password }) } })} 
+                      disabled={updateMut.isPending}
+                      className="flex-1 py-2.5 rounded-xl text-black font-bold cursor-pointer disabled:opacity-50" 
+                      style={{ background: "#f59e0b" }}
+                    >
+                      <Check size={16} className="inline me-1" /> {updateMut.isPending ? "جارٍ الحفظ..." : "حفظ التعديلات"}
                     </button>
-                    <button onClick={() => setEditId(null)} className="px-4 py-2 rounded-xl text-white/60" style={{ background: "rgba(255,255,255,0.05)" }}>
-                      <X size={16} />
+                    <button onClick={() => setEditId(null)} className="px-5 py-2.5 rounded-xl text-white/60 hover:text-white cursor-pointer" style={{ background: "rgba(255,255,255,0.05)" }}>
+                      <X size={16} /> إلغاء
                     </button>
                   </div>
                 </div>
               ) : (
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between flex-wrap gap-3">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold text-black" style={{ background: ROLE_COLORS[emp.role] || "#6b7280" }}>
-                      {emp.name.charAt(0)}
+                    <div className="w-11 h-11 rounded-full flex items-center justify-center text-sm font-bold text-black shrink-0" style={{ background: ROLE_COLORS[emp.role] || "#6b7280" }}>
+                      {(emp.name || "م").charAt(0)}
                     </div>
                     <div>
                       <p className="text-white font-medium text-sm">{emp.name}</p>
-                      <p className="text-white/40 text-xs">{emp.email}</p>
+                      <p className="text-white/40 text-xs" dir="ltr">{emp.email}</p>
+                      {emp.phone && <p className="text-white/30 text-xs" dir="ltr">{emp.phone}</p>}
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
-                    <span className="text-xs px-2 py-1 rounded-lg font-medium" style={{ background: (ROLE_COLORS[emp.role] || "#6b7280") + "22", color: ROLE_COLORS[emp.role] || "#6b7280" }}>
+                    <span className="text-xs px-3 py-1.5 rounded-xl font-bold" style={{ background: (ROLE_COLORS[emp.role] || "#6b7280") + "22", color: ROLE_COLORS[emp.role] || "#6b7280", border: `1px solid ${ROLE_COLORS[emp.role] || "#6b7280"}44` }}>
                       {ROLE_LABELS[emp.role] || emp.role}
                     </span>
                     {emp.role !== "admin" && (
-                      <>
-                        <button onClick={() => { setEditId(emp.id); setEditForm({ name: emp.name, email: emp.email, phone: emp.phone || "", role: emp.role, password: "" }); }} className="text-amber-400/60 hover:text-amber-400"><Edit2 size={15} /></button>
-                        <button onClick={() => deleteMut.mutate(emp.id)} className="text-red-400/60 hover:text-red-400"><Trash2 size={15} /></button>
-                      </>
+                      <div className="flex items-center gap-2">
+                        <button onClick={() => { setEditId(emp.id); setEditForm({ name: emp.name, email: emp.email, phone: emp.phone || "", role: emp.role, password: "" }); }} className="text-amber-400/80 hover:text-amber-400 cursor-pointer p-1.5 rounded-lg hover:bg-white/5"><Edit2 size={16} /></button>
+                        <button onClick={() => { if (confirm(`هل أنت متأكد من حذف الموظف "${emp.name}"؟`)) deleteMut.mutate(emp.id); }} className="text-red-400/80 hover:text-red-400 cursor-pointer p-1.5 rounded-lg hover:bg-white/5"><Trash2 size={16} /></button>
+                      </div>
                     )}
                   </div>
                 </div>

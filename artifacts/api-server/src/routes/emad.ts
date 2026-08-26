@@ -448,50 +448,49 @@ router.put("/admin/my-profile", requireAuth, requireRole("admin", "manager"), va
 });
 
 // ========== EMPLOYEES ==========
-router.get("/admin/employees", requireAuth, requireRole("admin"), async (_req, res, next) => {
+router.get("/admin/employees", requireAuth, requireRole("admin", "manager"), async (_req, res, next) => {
   try {
     const data = await db.select({ id: users.id, name: users.name, email: users.email, phone: users.phone, role: users.role, created_at: users.created_at }).from(users).where(and(sql`${users.role} != 'customer'`, isNull(users.deleted_at)));
     return res.json({ success: true, data });
   } catch (err) { next(err); }
 });
 
-router.post("/admin/employees", requireAuth, requireRole("admin"), validateBody(employeeSchema), async (req, res, next) => {
+router.post("/admin/employees", requireAuth, requireRole("admin", "manager"), validateBody(employeeSchema), async (req, res, next) => {
   try {
     const { name, email, password, phone, role } = req.body;
     const normalizedEmail = email.trim().toLowerCase();
     const [existing] = await db.select().from(users).where(eq(users.email, normalizedEmail));
-    if (existing) return res.status(422).json({ success: false, message: "البريد الإلكتروني مستخدم بالفعل" });
+    if (existing) return res.status(422).json({ success: false, message: "البريد الإلكتروني مستخدم بالفعل لموظف آخر" });
     const hashedPassword = await hashPassword(password);
     const [newEmp] = await db.insert(users).values({ name, email: normalizedEmail, password: hashedPassword, phone, role }).returning();
     return res.status(201).json({ success: true, data: { id: newEmp.id, name: newEmp.name, email: newEmp.email, role: newEmp.role } });
   } catch (err) { next(err); }
 });
 
-router.put("/admin/employees/:id", requireAuth, requireRole("admin"), validateParams(idParamSchema), async (req, res, next) => {
+router.put("/admin/employees/:id", requireAuth, requireRole("admin", "manager"), validateParams(idParamSchema), async (req, res, next) => {
   try {
     const session = (req as any).session;
-    const empId = req.params.id;
-    if (empId === session.userId) return res.status(400).json({ success: false, message: "لا يمكن تعديل حسابك من هنا" });
+    const empId = parseInt(req.params.id as string, 10) || req.params.id;
     const { name, email, password, phone, role } = req.body;
     const upd: any = {};
     if (name) upd.name = name;
     if (email) upd.email = email.trim().toLowerCase();
     if (password) upd.password = await hashPassword(password);
     if (phone !== undefined) upd.phone = phone;
-    if (role) { const allowed = ["manager","sales","support","accountant"]; if (allowed.includes(role)) upd.role = role; }
-    if (Object.keys(upd).length === 0) return res.status(400).json({ success: false, message: "لا توجد بيانات" });
-    await db.update(users).set(upd).where(eq(users.id, empId));
-    return res.json({ success: true, message: "تم التحديث" });
+    if (role) { const allowed = ["admin","manager","sales","support","accountant"]; if (allowed.includes(role)) upd.role = role; }
+    if (Object.keys(upd).length === 0) return res.status(400).json({ success: false, message: "لا توجد بيانات للتعديل" });
+    await db.update(users).set(upd).where(eq(users.id, empId as any));
+    return res.json({ success: true, message: "تم تحديث بيانات الموظف بنجاح" });
   } catch (err) { next(err); }
 });
 
-router.delete("/admin/employees/:id", requireAuth, requireRole("admin"), validateParams(idParamSchema), async (req, res, next) => {
+router.delete("/admin/employees/:id", requireAuth, requireRole("admin", "manager"), validateParams(idParamSchema), async (req, res, next) => {
   try {
     const session = (req as any).session;
-    const empId = req.params.id;
-    if (empId === session.userId) return res.status(400).json({ success: false, message: "لا يمكن حذف حسابك" });
-    await db.update(users).set({ deleted_at: new Date() }).where(eq(users.id, empId));
-    return res.json({ success: true, message: "تم الحذف" });
+    const empId = parseInt(req.params.id as string, 10) || req.params.id;
+    if (String(empId) === String(session.userId)) return res.status(400).json({ success: false, message: "لا يمكن حذف حسابك الحالي" });
+    await db.update(users).set({ deleted_at: new Date() }).where(eq(users.id, empId as any));
+    return res.json({ success: true, message: "تم حذف الموظف بنجاح" });
   } catch (err) { next(err); }
 });
 
