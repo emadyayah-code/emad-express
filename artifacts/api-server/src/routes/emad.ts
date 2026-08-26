@@ -1042,6 +1042,15 @@ const ALIEXPRESS_DEPARTMENTS = [
   { id: "39", name_ar: "إضاءة ومصابيح", name_en: "Lights & Lighting" },
   { id: "30", name_ar: "أمان وحماية", name_en: "Security & Protection" },
   { id: "322", name_ar: "أحذية رجالية ونسائية", name_en: "Shoes & Footwear" },
+  { id: "200000343", name_ar: "ملابس رجالية", name_en: "Men's Clothing" },
+  { id: "200000345", name_ar: "ملابس نسائية", name_en: "Women's Clothing" },
+  { id: "1503", name_ar: "المنزل والحديقة", name_en: "Home & Garden" },
+  { id: "200000787", name_ar: "مستلزمات مكتبية", name_en: "Office Supplies" },
+  { id: "200000297", name_ar: "الأم والطفل", name_en: "Mother & Kids" },
+];
+
+const POPULAR_SEARCH_KEYWORDS = [
+  "smart watch", "wireless earbuds", "phone case", "fast charger", "led light", "bluetooth speaker", "car accessory", "gaming headset", "power bank", "sports bag", "running shoes", "leather wallet", "ring jewelry", "drone 4k", "kitchen gadgets"
 ];
 
 router.get("/admin/dropship/auto-fetch", requireAuth, requireRole("admin", "manager"), async (req, res, next) => {
@@ -1055,15 +1064,21 @@ router.get("/admin/dropship/auto-fetch", requireAuth, requireRole("admin", "mana
     if (platform === "aliexpress" && creds) {
       try {
         const deptsToFetch = category_id ? [{ id: category_id, name_ar: "القسم المحدد", name_en: "Selected" }] : ALIEXPRESS_DEPARTMENTS;
-        const targetPages = category_id ? [1, 2, 3, 4, 5, 6] : [1, 2, 3, 4];
+        const targetPages = category_id ? [1, 2, 3, 4, 5, 6, 7, 8] : [1, 2, 3];
         
-        // Fetch pages across departments in parallel
+        // Fetch category pages in parallel
         const pagePromises = targetPages.flatMap(pNum => 
           deptsToFetch.map(dept => searchAliExpressProducts("", creds, pNum, 50, dept.id).catch(() => []))
         );
-        const deptResults = await Promise.all(pagePromises);
 
-        for (const prods of deptResults) {
+        // Also fetch popular keywords in parallel
+        const kwPromises = !category_id ? POPULAR_SEARCH_KEYWORDS.flatMap(kw => 
+          [1, 2].map(pNum => searchAliExpressProducts(kw, creds, pNum, 50).catch(() => []))
+        ) : [];
+
+        const allDeptBatches = await Promise.all([...pagePromises, ...kwPromises]);
+
+        for (const prods of allDeptBatches) {
           if (Array.isArray(prods)) {
             for (const p of prods) {
               if (p.product_id && !realProducts.some(r => r.source_id === String(p.product_id))) {
@@ -1129,18 +1144,21 @@ router.post("/admin/dropship/bulk-import-1000", requireAuth, requireRole("admin"
       return fallback;
     }
 
-    // Fetch real products across all AliExpress departments concurrently (1,000 to 2,000+ items)
+    // Fetch real products across all AliExpress departments concurrently (1,000 to 3,000+ items)
     let liveFetched: any[] = [];
     if (platform === "aliexpress" && creds) {
       try {
         const deptsToFetch = category_id ? [{ id: String(category_id), name_ar: "القسم المحدد", name_en: "Selected" }] : ALIEXPRESS_DEPARTMENTS;
-        const targetPages = category_id ? [1, 2, 3, 4, 5, 6, 7] : [1, 2, 3, 4];
+        const targetPages = category_id ? [1, 2, 3, 4, 5, 6, 7, 8] : [1, 2, 3];
         
         const pagePromises = targetPages.flatMap(pNum => 
           deptsToFetch.map(dept => searchAliExpressProducts("", creds, pNum, 50, dept.id).catch(() => []))
         );
+        const kwPromises = !category_id ? POPULAR_SEARCH_KEYWORDS.flatMap(kw => 
+          [1, 2].map(pNum => searchAliExpressProducts(kw, creds, pNum, 50).catch(() => []))
+        ) : [];
 
-        const allDeptBatches = await Promise.all(pagePromises);
+        const allDeptBatches = await Promise.all([...pagePromises, ...kwPromises]);
         for (const prods of allDeptBatches) {
           if (Array.isArray(prods)) {
             for (const p of prods) {
