@@ -494,9 +494,9 @@ router.get("/admin/dashboard", requireAuth, requireRole("admin", "manager", "sal
 // ========== PRODUCTS ==========
 router.get("/admin/products", requireAuth, requireRole("admin", "manager", "sales"), async (req, res, next) => {
   try {
-    const { page = "1", per_page = "20", search = "", category_id, status } = req.query as Record<string, string>;
+    const { page = "1", per_page = "50", search = "", category_id, status } = req.query as Record<string, string>;
     const p = Math.max(1, parseInt(page) || 1);
-    const pp = Math.min(100, Math.max(1, parseInt(per_page) || 20));
+    const pp = Math.min(1000, Math.max(1, parseInt(per_page) || 50));
     const conds = [isNull(products.deleted_at)];
     if (search) conds.push(or(like(products.name_ar, `%${escapeLike(search)}%`), like(products.name_en, `%${escapeLike(search)}%`), like(products.sku, `%${escapeLike(search)}%`)));
     if (category_id) conds.push(eq(products.category_id, parseInt(category_id)));
@@ -510,7 +510,15 @@ router.get("/admin/products", requireAuth, requireRole("admin", "manager", "sale
       name: prod.name_ar || prod.name_en || (prod as any).name || "منتج",
       description: prod.description_ar || prod.description_en || (prod as any).description || "",
     }));
-    return res.json({ success: true, data, total: Number(count), page: p, per_page: pp });
+    const totalCount = Number(count);
+    return res.json({
+      success: true,
+      data,
+      total: totalCount,
+      page: p,
+      per_page: pp,
+      total_pages: Math.ceil(totalCount / pp) || 1,
+    });
   } catch (err) { next(err); }
 });
 
