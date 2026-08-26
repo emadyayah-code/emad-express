@@ -31,7 +31,10 @@ export default function Dashboard() {
     { icon: Package, label: "عدد المنتجات", value: data?.total_products || 0, color: "text-amber-600 bg-amber-50" },
   ];
 
-  const chartData = (data?.top_products || []).map((p: any) => ({ name: p.name.split(" ").slice(0, 2).join(" "), sold: p.sold_count }));
+  const chartData = (data?.top_products || []).map((p: any) => ({
+    name: (p?.name_ar || p?.name || p?.name_en || "منتج").toString().split(" ").slice(0, 2).join(" "),
+    sold: p?.sold_count || 0,
+  }));
 
   return (
     <div className="space-y-6">
