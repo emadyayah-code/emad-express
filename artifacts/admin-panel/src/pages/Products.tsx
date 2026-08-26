@@ -1,12 +1,14 @@
 import { useState, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, getApiBase } from "@/lib/api";
+import { useI18n } from "@/lib/i18n";
 import { Plus, Search, Edit, Trash2, X, Upload, Image as ImageIcon } from "lucide-react";
 
 interface Product {
   id: number; name: string; sku: string; price: number; cost: number;
   quantity: number; min_quantity: number; category_id: number;
   description: string; is_active: boolean; image?: string;
+  name_ar?: string; name_en?: string; description_ar?: string; description_en?: string;
 }
 
 const emptyForm = { name: "", sku: "", price: 0, cost: 0, quantity: 0, min_quantity: 5, category_id: 1, description: "", is_active: true, image: "" };
@@ -116,6 +118,7 @@ function ImageUploader({ value, onChange }: { value: string; onChange: (url: str
 
 export default function Products() {
   const qc = useQueryClient();
+  const { t, language } = useI18n();
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(50);
@@ -255,8 +258,12 @@ export default function Products() {
                           </div>
                         )}
                         <div>
-                          <p className="font-medium text-white/90">{(p as any).name_ar || p.name || (p as any).name_en || "منتج"}</p>
-                          <p className="text-xs text-white/40">{((p as any).description_ar || p.description || (p as any).description_en || "")?.slice(0, 45)}...</p>
+                          <p className="font-medium text-white/90">
+                            {language === "en" ? (p.name_en || (p as any).name || p.name_ar || "Product") : (p.name_ar || (p as any).name || p.name_en || "منتج")}
+                          </p>
+                          <p className="text-xs text-white/40">
+                            {(language === "en" ? ((p as any).description_en || p.description || (p as any).description_ar || "") : ((p as any).description_ar || p.description || (p as any).description_en || ""))?.slice(0, 45)}...
+                          </p>
                         </div>
                       </div>
                     </td>

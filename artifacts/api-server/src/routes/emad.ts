@@ -524,7 +524,11 @@ router.get("/admin/products", requireAuth, requireRole("admin", "manager", "sale
     const rawData = await db.select().from(products).where(where).orderBy(desc(products.id)).limit(pp).offset((p - 1) * pp);
     const data = rawData.map(prod => ({
       ...prod,
+      name_ar: prod.name_ar || (prod as any).name || "",
+      name_en: prod.name_en || (prod as any).name || "",
       name: prod.name_ar || prod.name_en || (prod as any).name || "منتج",
+      description_ar: prod.description_ar || (prod as any).description || "",
+      description_en: prod.description_en || (prod as any).description || "",
       description: prod.description_ar || prod.description_en || (prod as any).description || "",
     }));
     const totalCount = Number(count);
@@ -802,19 +806,32 @@ router.get("/reports/customers", requireAuth, requireRole("admin", "manager", "s
 // ========== PUBLIC PRODUCTS & CATEGORIES ==========
 router.get("/products", async (req, res, next) => {
   try {
-    const { category_id } = req.query as Record<string, string>;
+    const { category_id, lang } = req.query as Record<string, string>;
+    const requestLang = lang || (req.headers["accept-language"]?.includes("en") ? "en" : "ar");
     const conds = [eq(products.is_active, true), isNull(products.deleted_at)];
     if (category_id) { const catId = parseInt(category_id); if (!isNaN(catId)) conds.push(eq(products.category_id, catId)); }
-    const data = await db.select().from(products).where(and(...conds)).orderBy(desc(products.id));
+    const rawData = await db.select().from(products).where(and(...conds)).orderBy(desc(products.id));
+    const data = rawData.map(p => ({
+      ...p,
+      name: requestLang === "en" ? (p.name_en || (p as any).name || p.name_ar) : (p.name_ar || (p as any).name || p.name_en),
+      description: requestLang === "en" ? (p.description_en || (p as any).description || p.description_ar) : (p.description_ar || (p as any).description || p.description_en),
+    }));
     return res.json({ success: true, data, total: data.length });
   } catch (err) { next(err); }
 });
 
 router.get("/products/:id", validateParams(idParamSchema), async (req, res, next) => {
   try {
+    const { lang } = req.query as Record<string, string>;
+    const requestLang = lang || (req.headers["accept-language"]?.includes("en") ? "en" : "ar");
     const [product] = await db.select().from(products).where(and(eq(products.id, req.params.id), eq(products.is_active, true), isNull(products.deleted_at)));
     if (!product) return res.status(404).json({ success: false, message: "المنتج غير موجود" });
-    return res.json({ success: true, data: { product } });
+    const localized = {
+      ...product,
+      name: requestLang === "en" ? (product.name_en || (product as any).name || product.name_ar) : (product.name_ar || (product as any).name || product.name_en),
+      description: requestLang === "en" ? (product.description_en || (product as any).description || product.description_ar) : (product.description_ar || (product as any).description || product.description_en),
+    };
+    return res.json({ success: true, data: { product: localized } });
   } catch (err) { next(err); }
 });
 
