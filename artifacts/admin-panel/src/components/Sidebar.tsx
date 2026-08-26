@@ -101,7 +101,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
   const [location] = useLocation();
   const { t, language, toggleLanguage, dir } = useI18n();
-  const pageName = location === "/" ? "dashboard" : location.slice(1).split("/")[0] || "dashboard";
+  const rawLoc = typeof location === "string" ? location : window.location.pathname || "/";
+  const pageName = rawLoc === "/" ? "dashboard" : (rawLoc.slice(1).split("/")[0] || "dashboard");
 
   return (
     <div className="admin-shell flex h-screen overflow-hidden" dir={dir} style={{ background: "#09090b", fontFamily: "'Cairo', 'Inter', sans-serif" }}>

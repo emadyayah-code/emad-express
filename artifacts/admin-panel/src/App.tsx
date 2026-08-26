@@ -100,9 +100,7 @@ function App() {
       <QueryClientProvider client={queryClient}>
         <I18nProvider>
           <AuthProvider>
-            <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-              <ProtectedRoutes />
-            </WouterRouter>
+            <ProtectedRoutes />
           </AuthProvider>
         </I18nProvider>
       </QueryClientProvider>
