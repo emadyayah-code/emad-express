@@ -142,13 +142,39 @@ export default function Products() {
   const products: Product[] = Array.isArray(data) ? data : data?.data || [];
   const categoriesList = Array.isArray(cats) ? cats : cats?.data || [];
 
+  const [clearing, setClearing] = useState(false);
+  const handleClearAll = async () => {
+    if (!confirm("هل أنت متأكد من حذف وتفريغ جميع المنتجات بالكامل من قاعدة البيانات؟")) return;
+    setClearing(true);
+    try {
+      await api.delete("/admin/dropship/clear-products");
+      qc.invalidateQueries({ queryKey: ["products"] });
+      qc.invalidateQueries({ queryKey: ["dropship-products"] });
+    } catch (e: any) {
+      alert(e?.message || "فشل تفريغ المنتجات");
+    } finally {
+      setClearing(false);
+    }
+  };
+
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold" style={{ color: "#f59e0b" }}>المنتجات</h1>
-        <button onClick={openAdd} className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-black transition-colors" style={{ background: "linear-gradient(135deg,#f59e0b,#d97706)" }}>
-          <Plus size={16} /> إضافة منتج
-        </button>
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <h1 className="text-2xl font-bold" style={{ color: "#f59e0b" }}>المنتجات ({products.length})</h1>
+        <div className="flex items-center gap-2.5">
+          {products.length > 0 && (
+            <button
+              onClick={handleClearAll}
+              disabled={clearing}
+              className="flex items-center gap-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer disabled:opacity-50"
+            >
+              <Trash2 size={14} /> {clearing ? "جارٍ الحذف..." : "تفريغ وحذف جميع المنتجات 🧹"}
+            </button>
+          )}
+          <button onClick={openAdd} className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold text-black transition-all cursor-pointer shadow-lg" style={{ background: "linear-gradient(135deg,#f59e0b,#d97706)" }}>
+            <Plus size={16} /> إضافة منتج
+          </button>
+        </div>
       </div>
 
       <div className="rounded-xl p-4" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(245,158,11,0.15)" }}>

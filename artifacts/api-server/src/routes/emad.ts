@@ -554,8 +554,9 @@ router.put("/admin/products/:id", requireAuth, requireRole("admin", "manager"), 
 
 router.delete("/admin/products/:id", requireAuth, requireRole("admin", "manager"), validateParams(idParamSchema), async (req, res, next) => {
   try {
-    await db.update(products).set({ deleted_at: new Date() }).where(eq(products.id, req.params.id));
-    return res.json({ success: true, message: "تم حذف المنتج بنجاح" });
+    await db.delete(dropship_products).where(eq(dropship_products.product_id, req.params.id));
+    await db.delete(products).where(eq(products.id, req.params.id));
+    return res.json({ success: true, message: "تم حذف المنتج بالكامل من قاعدة البيانات" });
   } catch (err) { next(err); }
 });
 
@@ -1108,25 +1109,18 @@ router.post("/admin/dropship/bulk-import-1000", requireAuth, requireRole("admin"
   } catch (err) { next(err); }
 });
 
-// ========== DATABASE CLEANUP & RESET (DROPSHIP PRODUCTS) ==========
+// ========== DATABASE CLEANUP & RESET (ALL PRODUCTS) ==========
 router.delete("/admin/dropship/clear-products", requireAuth, requireRole("admin", "manager"), async (_req, res, next) => {
   try {
-    // Get all dropship product IDs
-    const dpRows = await db.select({ product_id: dropship_products.product_id }).from(dropship_products);
-    const pIds = dpRows.map(r => r.product_id).filter((id): id is number => typeof id === "number");
-
-    // Delete dropship products
+    // Delete all dropship linkages
     await db.delete(dropship_products);
 
-    // Delete corresponding products if they exist
-    if (pIds.length > 0) {
-      await db.delete(products).where(inArray(products.id, pIds));
-    }
+    // Delete all products completely
+    await db.delete(products);
 
     return res.json({
       success: true,
-      message: `تم تنظيف قاعدة البيانات بنجاح وحذف ${pIds.length} منتج دروبشيبينغ بالكامل!`,
-      deleted_count: pIds.length,
+      message: "تم تنظيف وتفريغ جميع المنتجات بالكامل من قاعدة البيانات وصفحة المنتجات!",
     });
   } catch (err) { next(err); }
 });
