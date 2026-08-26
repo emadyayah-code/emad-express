@@ -297,16 +297,6 @@ function AppSettingsTab() {
     queryFn: () => api.get("/admin/platform-settings"),
   });
 
-  const FIELDS = [
-    { key: "whatsapp_number", label: "رقم الواتساب", icon: <Phone size={15} />, placeholder: "772223645", dir: "ltr" },
-    { key: "facebook_url",   label: "رابط فيسبوك",  icon: <Facebook size={15} />, placeholder: "https://www.facebook.com/...", dir: "ltr" },
-    { key: "twitter_url",    label: "رابط تويتر/X",  icon: <Twitter size={15} />, placeholder: "https://twitter.com/...", dir: "ltr" },
-    { key: "address_ar",     label: "العنوان (عربي)", icon: <MapPin size={15} />, placeholder: "اليمن، تعز، شارع جمال", dir: "rtl" },
-    { key: "address_en",     label: "العنوان (إنجليزي)", icon: <MapPin size={15} />, placeholder: "Yemen, Taiz, Jamal Street", dir: "ltr" },
-    { key: "about_ar",       label: "عن التطبيق (عربي)", icon: <Info size={15} />, placeholder: "وصف التطبيق بالعربية...", dir: "rtl", multiline: true },
-    { key: "about_en",       label: "عن التطبيق (إنجليزي)", icon: <Info size={15} />, placeholder: "App description in English...", dir: "ltr", multiline: true },
-  ];
-
   const defaults: Record<string, string> = {
     whatsapp_number: "772223645",
     facebook_url: "https://www.facebook.com",
@@ -352,7 +342,7 @@ function AppSettingsTab() {
         </div>
       )}
 
-      {FIELDS.map(({ key, label, icon, placeholder, dir, multiline }) => (
+      {APP_FIELDS.map(({ key, label, icon, placeholder, dir, multiline }) => (
         <div key={key}>
           <label className="text-white/60 text-xs mb-1 flex items-center gap-1">
             <span className="text-amber-400">{icon}</span> {label}
@@ -383,7 +373,7 @@ function AppSettingsTab() {
       <button
         onClick={() => saveMut.mutate()}
         disabled={saveMut.isPending}
-        className="w-full py-3 rounded-xl font-bold text-black transition-opacity hover:opacity-90 flex items-center justify-center gap-2"
+        className="w-full py-3 rounded-xl font-bold text-black transition-opacity hover:opacity-90 flex items-center justify-center gap-2 cursor-pointer"
         style={{ background: "linear-gradient(135deg,#f59e0b,#d97706)" }}
       >
         {saveMut.isPending ? "جارٍ الحفظ..." : <><Check size={16} /> حفظ إعدادات التطبيق</>}
@@ -392,42 +382,54 @@ function AppSettingsTab() {
   );
 }
 
+const APP_FIELDS = [
+  { key: "whatsapp_number", label: "رقم الواتساب", icon: <Phone size={15} />, placeholder: "772223645", dir: "ltr" },
+  { key: "facebook_url",   label: "رابط فيسبوك",  icon: <Facebook size={15} />, placeholder: "https://www.facebook.com/...", dir: "ltr" },
+  { key: "twitter_url",    label: "رابط تويتر/X",  icon: <Twitter size={15} />, placeholder: "https://twitter.com/...", dir: "ltr" },
+  { key: "address_ar",     label: "العنوان (عربي)", icon: <MapPin size={15} />, placeholder: "اليمن، تعز، شارع جمال", dir: "rtl" },
+  { key: "address_en",     label: "العنوان (إنجليزي)", icon: <MapPin size={15} />, placeholder: "Yemen, Taiz, Jamal Street", dir: "ltr" },
+  { key: "about_ar",       label: "عن التطبيق (عربي)", icon: <Info size={15} />, placeholder: "وصف التطبيق بالعربية...", dir: "rtl", multiline: true },
+  { key: "about_en",       label: "عن التطبيق (إنجليزي)", icon: <Info size={15} />, placeholder: "App description in English...", dir: "ltr", multiline: true },
+];
+
+const SETTINGS_TABS = [
+  { key: "profile", label: "الملف الشخصي", icon: User },
+  { key: "app", label: "إعدادات التطبيق", icon: Smartphone },
+  { key: "employees", label: "الموظفون والصلاحيات", icon: Shield },
+];
+
 export default function Settings() {
   const [tab, setTab] = useState<"profile" | "app" | "employees">("profile");
-
   const card = { background: "rgba(255,255,255,0.02)", border: "1px solid rgba(245,158,11,0.12)", borderRadius: 20 };
-
-  const TABS: [string, ReactElement, string][] = [
-    ["profile",   <User size={15} />,       "الملف الشخصي"],
-    ["app",       <Smartphone size={15} />,  "إعدادات التطبيق"],
-    ["employees", <Shield size={15} />,      "الموظفون والصلاحيات"],
-  ];
 
   return (
     <div className="p-6" dir="rtl">
       <h1 className="text-2xl font-bold text-white mb-6 flex items-center gap-2">
-        <Shield size={22} className="text-amber-400" /> الإعدادات
+        <Shield size={22} className="text-amber-400" /> الإعدادات العامة
       </h1>
 
       <div className="flex flex-wrap gap-2 mb-6">
-        {TABS.map(([key, icon, label]) => (
-          <button
-            key={key}
-            onClick={() => setTab(key as any)}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all"
-            style={{
-              background: tab === key ? "linear-gradient(135deg,#f59e0b,#d97706)" : "rgba(255,255,255,0.05)",
-              color: tab === key ? "#000" : "rgba(255,255,255,0.5)",
-            }}
-          >
-            {icon} {label}
-          </button>
-        ))}
+        {SETTINGS_TABS.map((t) => {
+          const IconComp = t.icon;
+          return (
+            <button
+              key={t.key}
+              onClick={() => setTab(t.key as any)}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all cursor-pointer"
+              style={{
+                background: tab === t.key ? "linear-gradient(135deg,#f59e0b,#d97706)" : "rgba(255,255,255,0.05)",
+                color: tab === t.key ? "#000" : "rgba(255,255,255,0.6)",
+              }}
+            >
+              <IconComp size={16} /> {t.label}
+            </button>
+          );
+        })}
       </div>
 
       <div className="p-6" style={card}>
-        {tab === "profile"   && <ProfileTab />}
-        {tab === "app"       && <AppSettingsTab />}
+        {tab === "profile" && <ProfileTab />}
+        {tab === "app" && <AppSettingsTab />}
         {tab === "employees" && <EmployeesTab />}
       </div>
     </div>
