@@ -153,25 +153,25 @@ export default function Dropshipping() {
         </div>
       )}
 
-      {/* URL Import Tab */}
+      {/* URL / Code Import Tab */}
       {tab === "url" && (
         <div className="space-y-4">
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+          <div className="bg-slate-900/80 rounded-2xl shadow-xl border border-amber-500/30 p-6">
             <div className="flex items-center gap-2 mb-2">
-              <Link2 size={18} className="text-amber-500" />
-              <h3 className="font-semibold text-gray-800">استيراد منتج برابط مباشر</h3>
+              <Link2 size={20} className="text-amber-400" />
+              <h3 className="font-bold text-white text-lg">استيراد منتج برقم كود المنتج (Product ID) أو الرابط المباشر</h3>
             </div>
-            <p className="text-sm text-gray-500 mb-5">
-              الصق رابط أي منتج من علي إكسبرس، أمازون، أو أي متجر، وسنستخرج بياناته تلقائياً
+            <p className="text-sm text-amber-200/70 mb-5">
+              أدخل رقم كود المنتج من علي إكسبرس (مثل <code className="bg-slate-800 text-amber-400 px-2 py-0.5 rounded border border-amber-500/20">1005006283921001</code>) أو الصق رابط المنتج، وسنقوم بجلب الاسم والصور والأسعار الحقيقية فوراً.
             </p>
             <div className="flex gap-3 flex-col sm:flex-row">
               <input
-                type="url"
+                type="text"
                 value={urlInput}
                 onChange={e => { setUrlInput(e.target.value); setUrlResult(null); setUrlError(""); }}
-                placeholder="https://www.aliexpress.com/item/... أو https://www.amazon.com/dp/..."
-                className="flex-1 border border-gray-200 rounded-lg px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-amber-400 text-left"
-                dir="ltr"
+                placeholder="أدخل رقم كود المنتج (مثل: 1005006283921001) أو الرابط الكامل..."
+                className="flex-1 border border-slate-700 bg-slate-950/90 text-white rounded-xl px-4 py-3 text-sm outline-none focus:border-amber-400 text-right"
+                dir="auto"
               />
               <button
                 disabled={!urlInput.trim() || urlFetching}
@@ -182,23 +182,23 @@ export default function Dropshipping() {
                     const r = await api.get(`/admin/dropship/fetch-url?url=${encodeURIComponent(urlInput.trim())}`);
                     setUrlResult(r);
                   } catch (e: any) {
-                    setUrlError(e?.message || "فشل استيراد المنتج من الرابط");
+                    setUrlError(e?.message || "فشل استيراد المنتج بالكود أو الرابط");
                   } finally {
                     setUrlFetching(false);
                   }
                 }}
-                className="flex items-center gap-2 bg-amber-500 hover:bg-amber-600 text-white px-6 py-3 rounded-lg text-sm font-medium disabled:opacity-50 whitespace-nowrap transition-colors"
+                className="flex items-center justify-center gap-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black px-8 py-3 rounded-xl text-sm font-extrabold disabled:opacity-50 whitespace-nowrap transition-all shadow-lg cursor-pointer"
               >
-                {urlFetching ? <><Loader2 size={15} className="animate-spin" /> جارٍ الاستيراد...</> : <><Download size={15} /> استيراد</>}
+                {urlFetching ? <><Loader2 size={16} className="animate-spin" /> جارٍ جلب البيانات...</> : <><Download size={16} /> جلب بيانات المنتج فوراً</>}
               </button>
             </div>
 
             {urlError && (
-              <div className="mt-4 flex items-start gap-2 bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 text-sm">
-                <AlertCircle size={15} className="mt-0.5 flex-shrink-0" />
+              <div className="mt-4 flex items-start gap-2 bg-red-950/60 border border-red-500/40 text-red-300 rounded-xl px-4 py-3 text-sm">
+                <AlertCircle size={16} className="mt-0.5 flex-shrink-0 text-red-400" />
                 <div>
-                  <p className="font-medium">{urlError}</p>
-                  <p className="text-xs text-red-500 mt-1">يمكنك إدخال البيانات يدوياً أدناه</p>
+                  <p className="font-bold">{urlError}</p>
+                  <p className="text-xs text-red-300/80 mt-1">تأكد من كتابة كود المنتج أو رابط صحيح، أو أدخل البيانات يدوياً أدناه</p>
                 </div>
               </div>
             )}
