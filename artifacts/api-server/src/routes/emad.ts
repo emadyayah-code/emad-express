@@ -1055,46 +1055,16 @@ router.get("/admin/dropship/auto-fetch", requireAuth, requireRole("admin", "mana
     if (platform === "aliexpress" && creds) {
       try {
         const deptsToFetch = category_id ? [{ id: category_id, name_ar: "القسم المحدد", name_en: "Selected" }] : ALIEXPRESS_DEPARTMENTS;
+        const targetPages = category_id ? [1, 2, 3, 4, 5, 6] : [1, 2, 3, 4];
         
-        // Fetch all departments in parallel for lightning-fast response (< 2 seconds)
-        const fetchPromises = deptsToFetch.map(dept => 
-          searchAliExpressProducts("", creds, 1, 50, dept.id).catch(() => [])
+        // Fetch pages across departments in parallel
+        const pagePromises = targetPages.flatMap(pNum => 
+          deptsToFetch.map(dept => searchAliExpressProducts("", creds, pNum, 50, dept.id).catch(() => []))
         );
-        const deptResults = await Promise.all(fetchPromises);
+        const deptResults = await Promise.all(pagePromises);
 
-        for (let i = 0; i < deptsToFetch.length; i++) {
-          const dept = deptsToFetch[i];
-          const prods = deptResults[i] || [];
-          for (const p of prods) {
-            if (p.product_id && !realProducts.some(r => r.source_id === String(p.product_id))) {
-              let img = p.product_main_image_url || "";
-              if (img.startsWith("//")) img = `https:${img}`;
-              realProducts.push({
-                source_id: String(p.product_id),
-                name: p.product_title,
-                price: parseFloat(p.target_sale_price) || parseFloat(p.target_original_price) || 25,
-                original_price: parseFloat(p.target_original_price) || 0,
-                image: img,
-                category_name: p.first_level_category_name || dept.name_ar,
-                rating: parseFloat(p.evaluate_rate) || 4.8,
-                orders_count: parseInt(p.sales_volume) || 120,
-                platform: "aliexpress",
-                source_url: p.product_detail_url || `https://www.aliexpress.com/item/${p.product_id}.html`,
-                supplier_name: p.shop_name || "AliExpress Verified Seller",
-              });
-            }
-          }
-        }
-
-        // If user selected a single department or needs more, fetch page 2 in parallel
-        if (category_id || realProducts.length < 300) {
-          const p2Promises = deptsToFetch.map(dept => 
-            searchAliExpressProducts("", creds, 2, 50, dept.id).catch(() => [])
-          );
-          const deptResults2 = await Promise.all(p2Promises);
-          for (let i = 0; i < deptsToFetch.length; i++) {
-            const dept = deptsToFetch[i];
-            const prods = deptResults2[i] || [];
+        for (const prods of deptResults) {
+          if (Array.isArray(prods)) {
             for (const p of prods) {
               if (p.product_id && !realProducts.some(r => r.source_id === String(p.product_id))) {
                 let img = p.product_main_image_url || "";
@@ -1105,7 +1075,7 @@ router.get("/admin/dropship/auto-fetch", requireAuth, requireRole("admin", "mana
                   price: parseFloat(p.target_sale_price) || parseFloat(p.target_original_price) || 25,
                   original_price: parseFloat(p.target_original_price) || 0,
                   image: img,
-                  category_name: p.first_level_category_name || dept.name_ar,
+                  category_name: p.first_level_category_name || "منتجات عامة",
                   rating: parseFloat(p.evaluate_rate) || 4.8,
                   orders_count: parseInt(p.sales_volume) || 120,
                   platform: "aliexpress",
@@ -1159,46 +1129,37 @@ router.post("/admin/dropship/bulk-import-1000", requireAuth, requireRole("admin"
       return fallback;
     }
 
-    // Fetch real products across all AliExpress departments concurrently (< 2 seconds)
+    // Fetch real products across all AliExpress departments concurrently (1,000 to 2,000+ items)
     let liveFetched: any[] = [];
     if (platform === "aliexpress" && creds) {
       try {
         const deptsToFetch = category_id ? [{ id: String(category_id), name_ar: "القسم المحدد", name_en: "Selected" }] : ALIEXPRESS_DEPARTMENTS;
+        const targetPages = category_id ? [1, 2, 3, 4, 5, 6, 7] : [1, 2, 3, 4];
         
-        // Page 1 parallel fetch
-        const page1Promises = deptsToFetch.map(dept => 
-          searchAliExpressProducts("", creds, 1, 50, dept.id).catch(() => [])
-        );
-        // Page 2 parallel fetch
-        const page2Promises = deptsToFetch.map(dept => 
-          searchAliExpressProducts("", creds, 2, 50, dept.id).catch(() => [])
+        const pagePromises = targetPages.flatMap(pNum => 
+          deptsToFetch.map(dept => searchAliExpressProducts("", creds, pNum, 50, dept.id).catch(() => []))
         );
 
-        const [resultsP1, resultsP2] = await Promise.all([
-          Promise.all(page1Promises),
-          Promise.all(page2Promises),
-        ]);
-
-        const allDeptBatches = [...resultsP1, ...resultsP2];
-        for (let i = 0; i < allDeptBatches.length; i++) {
-          const dept = deptsToFetch[i % deptsToFetch.length];
-          const prods = allDeptBatches[i] || [];
-          for (const p of prods) {
-            const srcId = String(p.product_id);
-            if (srcId && !existingSet.has(srcId) && !liveFetched.some(l => l.source_id === srcId)) {
-              let img = p.product_main_image_url || "";
-              if (img.startsWith("//")) img = `https:${img}`;
-              const cPrice = parsePrice(p.target_sale_price || p.target_original_price, 25);
-              liveFetched.push({
-                source_id: srcId,
-                name: p.product_title || `AliExpress Product ${srcId}`,
-                cost: cPrice,
-                image: img,
-                category_name: p.first_level_category_name || dept.name_ar,
-                quantity: 500 + ((parseInt(srcId.slice(-4)) || 100) % 1500),
-                source_url: p.product_detail_url || `https://www.aliexpress.com/item/${srcId}.html`,
-                supplier_name: p.shop_name || "AliExpress Verified Seller",
-              });
+        const allDeptBatches = await Promise.all(pagePromises);
+        for (const prods of allDeptBatches) {
+          if (Array.isArray(prods)) {
+            for (const p of prods) {
+              const srcId = String(p.product_id);
+              if (srcId && !existingSet.has(srcId) && !liveFetched.some(l => l.source_id === srcId)) {
+                let img = p.product_main_image_url || "";
+                if (img.startsWith("//")) img = `https:${img}`;
+                const cPrice = parsePrice(p.target_sale_price || p.target_original_price, 25);
+                liveFetched.push({
+                  source_id: srcId,
+                  name: p.product_title || `AliExpress Product ${srcId}`,
+                  cost: cPrice,
+                  image: img,
+                  category_name: p.first_level_category_name || "منتجات عامة",
+                  quantity: 500 + ((parseInt(srcId.slice(-4)) || 100) % 1500),
+                  source_url: p.product_detail_url || `https://www.aliexpress.com/item/${srcId}.html`,
+                  supplier_name: p.shop_name || "AliExpress Verified Seller",
+                });
+              }
             }
           }
         }
@@ -1208,7 +1169,7 @@ router.post("/admin/dropship/bulk-import-1000", requireAuth, requireRole("admin"
     }
 
     let importedCount = 0;
-    const chunkSize = 30;
+    const chunkSize = 40;
 
     for (let i = 0; i < liveFetched.length; i += chunkSize) {
       const chunk = liveFetched.slice(i, i + chunkSize);
