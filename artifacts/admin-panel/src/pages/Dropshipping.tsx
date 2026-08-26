@@ -172,7 +172,7 @@ export default function Dropshipping() {
                     <tr key={dp.id} className="border-b border-gray-50 hover:bg-gray-50/50">
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-3">
-                          {dp.product?.image && <img src={dp.product.image} alt="" className="w-10 h-10 object-cover rounded-lg" />}
+                          {dp.product?.image && <img src={dp.product.image} alt="" className="w-10 h-10 object-cover rounded-lg" referrerPolicy="no-referrer" />}
                           <div>
                             <p className="font-medium text-gray-800">{dp.product?.name || "—"}</p>
                             <a href={dp.source_url} target="_blank" rel="noreferrer" className="text-xs text-blue-500 flex items-center gap-1">
@@ -324,7 +324,7 @@ export default function Dropshipping() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {searchList.map((item: any) => (
                 <div key={item.source_id} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow">
-                  <img src={item.image} alt={item.name} className="w-full h-44 object-cover" />
+                  <img src={item.image} alt={item.name} className="w-full h-44 object-cover" referrerPolicy="no-referrer" />
                   <div className="p-4">
                     <p className="font-medium text-gray-800 text-sm line-clamp-2">{item.name}</p>
                     <div className="flex items-center justify-between mt-2">
@@ -614,7 +614,7 @@ function ImportModal({ item, onClose, onImport, loading }: { item: any; onClose:
         </div>
         <div className="p-5 space-y-4">
           <div className="flex gap-3">
-            <img src={item.image} alt={item.name} className="w-20 h-20 object-cover rounded-lg flex-shrink-0" />
+            <img src={item.image} alt={item.name} className="w-20 h-20 object-cover rounded-lg flex-shrink-0" referrerPolicy="no-referrer" />
             <div>
               <p className="text-sm text-gray-700 line-clamp-3">{item.name}</p>
               <p className="text-xs text-gray-400 mt-1">سعر المورد: <span className="font-semibold text-amber-600">{item.price?.toLocaleString()} ر</span></p>
@@ -682,7 +682,7 @@ function UrlImportForm({ initial, sourceUrl, onImport, importing }: {
 
       {f.image && (
         <div className="flex items-center gap-4 bg-slate-950/80 border border-slate-800 rounded-xl p-3">
-          <img src={f.image} alt="" className="w-24 h-24 object-cover rounded-xl border border-amber-500/20 flex-shrink-0" onError={e => (e.currentTarget.style.display = "none")} />
+          <img src={f.image} alt="" className="w-24 h-24 object-cover rounded-xl border border-amber-500/20 flex-shrink-0" referrerPolicy="no-referrer" onError={e => (e.currentTarget.style.display = "none")} />
           <div className="flex-1 min-w-0">
             <p className="text-xs text-amber-300 font-bold mb-1">معاينة الصورة الأصلية عالية الدقة من المورد</p>
             <input

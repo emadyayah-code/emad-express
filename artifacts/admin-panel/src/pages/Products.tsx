@@ -53,7 +53,7 @@ function ImageUploader({ value, onChange }: { value: string; onChange: (url: str
       <label className="text-sm font-medium text-gray-700 block mb-1">صورة المنتج</label>
       {value ? (
         <div className="relative w-full h-40 rounded-xl overflow-hidden border border-gray-200 group">
-          <img src={value} alt="product" className="w-full h-full object-cover" />
+          <img src={value} alt="product" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
           <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
             <button
               type="button"
@@ -248,7 +248,7 @@ export default function Products() {
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
                         {p.image ? (
-                          <img src={p.image} alt={p.name} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" style={{ border: "1px solid rgba(245,158,11,0.2)" }} />
+                          <img src={p.image} alt={p.name} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" style={{ border: "1px solid rgba(245,158,11,0.2)" }} referrerPolicy="no-referrer" />
                         ) : (
                           <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: "rgba(245,158,11,0.1)", border: "1px solid rgba(245,158,11,0.2)" }}>
                             <ImageIcon size={16} className="text-amber-500/50" />
