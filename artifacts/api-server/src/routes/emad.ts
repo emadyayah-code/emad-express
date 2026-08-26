@@ -929,17 +929,77 @@ router.get("/admin/platform-settings", requireAuth, requireRole("admin", "manage
 router.post("/admin/platform-settings", requireAuth, requireRole("admin", "manager"), async (req, res, next) => {
   try {
     const data = req.body || {};
-    for (const [key, value] of Object.entries(data)) {
-      if (typeof value === "string") {
+    const entries = Array.isArray(data) 
+      ? data.map((item: any) => [item.key, item.value]) 
+      : Object.entries(data);
+
+    for (const [key, value] of entries) {
+      if (typeof key === "string" && value !== undefined && value !== null) {
+        const strVal = String(value);
         const existing = await db.select().from(platform_settings).where(eq(platform_settings.key, key));
         if (existing.length > 0) {
-          await db.update(platform_settings).set({ value, updated_at: new Date() }).where(eq(platform_settings.key, key));
+          await db.update(platform_settings).set({ value: strVal, updated_at: new Date() }).where(eq(platform_settings.key, key));
         } else {
-          await db.insert(platform_settings).values({ key, value });
+          await db.insert(platform_settings).values({ key, value: strVal });
         }
       }
     }
     return res.json({ success: true, message: "تم حفظ مفاتيح API وإعدادات المنصات بنجاح في قاعدة البيانات" });
+  } catch (err) { next(err); }
+});
+
+// ========== GENERAL SETTINGS & PARTNER ADS ENDPOINTS ==========
+router.get("/admin/settings", requireAuth, requireRole("admin", "manager"), async (_req, res, next) => {
+  try {
+    const rows = await db.select().from(platform_settings);
+    return res.json({ success: true, data: rows });
+  } catch (err) { next(err); }
+});
+
+router.put("/admin/settings", requireAuth, requireRole("admin", "manager"), async (req, res, next) => {
+  try {
+    const data = req.body || [];
+    const entries = Array.isArray(data) 
+      ? data.map((item: any) => [item.key, item.value]) 
+      : Object.entries(data);
+
+    for (const [key, value] of entries) {
+      if (typeof key === "string" && value !== undefined && value !== null) {
+        const strVal = String(value);
+        const existing = await db.select().from(platform_settings).where(eq(platform_settings.key, key));
+        if (existing.length > 0) {
+          await db.update(platform_settings).set({ value: strVal, updated_at: new Date() }).where(eq(platform_settings.key, key));
+        } else {
+          await db.insert(platform_settings).values({ key, value: strVal });
+        }
+      }
+    }
+    return res.json({ success: true, message: "تم حفظ الإعدادات في قاعدة البيانات بنجاح" });
+  } catch (err) { next(err); }
+});
+
+router.get("/admin/partner-products", requireAuth, requireRole("admin", "manager"), async (_req, res, next) => {
+  try {
+    const [row] = await db.select().from(platform_settings).where(eq(platform_settings.key, "partner_products_banners"));
+    let items = [];
+    if (row && row.value) {
+      try { items = JSON.parse(row.value); } catch { items = []; }
+    }
+    return res.json(items);
+  } catch (err) { next(err); }
+});
+
+router.post("/admin/partner-products", requireAuth, requireRole("admin", "manager"), async (req, res, next) => {
+  try {
+    const items = req.body || [];
+    const strVal = JSON.stringify(items);
+    const existing = await db.select().from(platform_settings).where(eq(platform_settings.key, "partner_products_banners"));
+    if (existing.length > 0) {
+      await db.update(platform_settings).set({ value: strVal, updated_at: new Date() }).where(eq(platform_settings.key, "partner_products_banners"));
+    } else {
+      await db.insert(platform_settings).values({ key: "partner_products_banners", value: strVal });
+    }
+    return res.json({ success: true, count: items.length });
   } catch (err) { next(err); }
 });
 
