@@ -82,14 +82,23 @@ export async function fetchAliExpressProduct(
       fetch(urlEn, { signal: AbortSignal.timeout(15000) }).then(r => r.json()).catch(() => null),
     ]);
 
-    const prodAr = resAr?.aliexpress_affiliate_productdetail_get_response?.resp_result?.result?.products?.product?.[0] ||
-                   resAr?.aliexpress_affiliate_product_detail_get_response?.resp_result?.result?.products?.product?.[0];
-    const prodEn = resEn?.aliexpress_affiliate_productdetail_get_response?.resp_result?.result?.products?.product?.[0] ||
-                   resEn?.aliexpress_affiliate_product_detail_get_response?.resp_result?.result?.products?.product?.[0];
+    const extractProduct = (res: any) => {
+      const resp = res?.aliexpress_affiliate_productdetail_get_response ||
+                   res?.aliexpress_affiliate_product_detail_get_response;
+      const result = resp?.resp_result || resp?.result || resp;
+      let raw = result?.result?.products?.product ||
+                result?.products?.product ||
+                result?.products || [];
+      if (!Array.isArray(raw) && raw && typeof raw === "object") raw = [raw];
+      return Array.isArray(raw) && raw.length > 0 ? raw[0] : null;
+    };
+
+    const prodAr = extractProduct(resAr);
+    const prodEn = extractProduct(resEn);
 
     const baseProd = prodAr || prodEn;
     if (!baseProd) {
-      logger.warn({ productId }, "AliExpress product not found in response");
+      logger.warn({ productId, resAr }, "AliExpress product not found in response");
       return null;
     }
 

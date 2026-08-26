@@ -1238,15 +1238,16 @@ router.get("/admin/dropship/fetch-url", requireAuth, requireRole("admin", "manag
     let { url } = req.query as { url: string };
     if (!url || !url.trim()) return res.status(400).json({ success: false, message: "كود المنتج أو الرابط مطلوب" });
     url = url.trim();
+    let cleanInput = url.replace(/^[#\s]+/, "").trim();
 
-    // Check if input is purely a product ID / code (e.g. 1005006283921001)
+    // Check if input contains a product ID / code (e.g. 10050071340609, #10050071340609, or item URL)
     let productId = "";
-    if (/^\d{8,20}$/.test(url)) {
-      productId = url;
-      url = `https://www.aliexpress.com/item/${productId}.html`;
-    } else if (url.includes("aliexpress.com/item/")) {
-      const match = url.match(/item\/(\d+)/);
-      if (match) productId = match[1];
+    const matchId = cleanInput.match(/(\d{10,20})/);
+    if (matchId) {
+      productId = matchId[1];
+      if (!url.startsWith("http")) {
+        url = `https://www.aliexpress.com/item/${productId}.html`;
+      }
     }
 
     // Try AliExpress Official API if product ID and credentials are present
@@ -1262,6 +1263,8 @@ router.get("/admin/dropship/fetch-url", requireAuth, requireRole("admin", "manag
               success: true,
               source_id: apiProduct.product_id || productId,
               name: apiProduct.product_title || `منتج علي إكسبرس كود ${productId}`,
+              name_ar: apiProduct.title_ar || apiProduct.product_title || `منتج علي إكسبرس كود ${productId}`,
+              name_en: apiProduct.title_en || apiProduct.product_title || `AliExpress Product ${productId}`,
               price: parseFloat(apiProduct.target_sale_price) || parseFloat(apiProduct.target_original_price) || 45,
               original_price: parseFloat(apiProduct.target_original_price) || 0,
               quantity: parseInt(apiProduct.sales_volume) || 500,
