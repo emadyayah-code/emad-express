@@ -4,6 +4,7 @@ import { api } from "@/lib/api";
 import { Globe, Link, Settings, Save, ExternalLink, AlertCircle, Mail, Server, Lock, User, AtSign } from "lucide-react";
 
 const PLATFORMS = [
+  { key: "google_ads", name: "إعلانات جوجل وموبايل (Google AdMob / ADV)", color: "text-emerald-600", bg: "bg-emerald-50", icon: "📱" },
   { key: "email", name: "إعدادات البريد", color: "text-blue-600", bg: "bg-blue-50", icon: "📧" },
   { key: "aliexpress", name: "علي إكسبرس", color: "text-red-600", bg: "bg-red-50", icon: "🌐" },
   { key: "amazon", name: "أمازون", color: "text-orange-600", bg: "bg-orange-50", icon: "🛒" },
@@ -12,7 +13,7 @@ const PLATFORMS = [
 
 export default function AffiliateSettings() {
   const qc = useQueryClient();
-  const [activeTab, setActiveTab] = useState("email");
+  const [activeTab, setActiveTab] = useState("google_ads");
   const [saved, setSaved] = useState(false);
 
   const { data: settingsData, isLoading } = useQuery({
@@ -33,6 +34,16 @@ export default function AffiliateSettings() {
   const getValue = (key: string) => settings.find((s: any) => s.key === key)?.value || "";
 
   const [form, setForm] = useState({
+    google_ads_enabled: "true",
+    google_ads_test_mode: "false",
+    admob_app_id_android: "",
+    admob_app_id_ios: "",
+    admob_banner_unit_id: "",
+    admob_interstitial_unit_id: "",
+    admob_rewarded_unit_id: "",
+    admob_native_unit_id: "",
+    google_adsense_pub_id: "",
+    google_adsense_slot_id: "",
     smtp_host: "",
     smtp_port: "",
     smtp_user: "",
@@ -52,6 +63,16 @@ export default function AffiliateSettings() {
   useEffect(() => {
     if (settings && settings.length > 0) {
       setForm({
+        google_ads_enabled: getValue("google_ads_enabled") || "true",
+        google_ads_test_mode: getValue("google_ads_test_mode") || "false",
+        admob_app_id_android: getValue("admob_app_id_android"),
+        admob_app_id_ios: getValue("admob_app_id_ios"),
+        admob_banner_unit_id: getValue("admob_banner_unit_id"),
+        admob_interstitial_unit_id: getValue("admob_interstitial_unit_id"),
+        admob_rewarded_unit_id: getValue("admob_rewarded_unit_id"),
+        admob_native_unit_id: getValue("admob_native_unit_id"),
+        google_adsense_pub_id: getValue("google_adsense_pub_id"),
+        google_adsense_slot_id: getValue("google_adsense_slot_id"),
         smtp_host: getValue("smtp_host"),
         smtp_port: getValue("smtp_port"),
         smtp_user: getValue("smtp_user"),
@@ -117,6 +138,173 @@ export default function AffiliateSettings() {
 
       {/* Settings Form */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        {activeTab === "google_ads" && (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between flex-wrap gap-3 pb-4 border-b border-gray-100">
+              <div className="flex items-center gap-3">
+                <div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl border border-emerald-200">
+                  <Globe size={24} />
+                </div>
+                <div>
+                  <h3 className="font-bold text-gray-800 text-lg">إعلانات جوجل موبايل والويب (Google Mobile Ads / AdMob / ADV)</h3>
+                  <p className="text-xs text-gray-500 mt-0.5">إدارة ظهور وإيرادات الإعلانات في تطبيقات الموبايل (Android / iOS) والمتجر الإلكتروني</p>
+                </div>
+              </div>
+              <a
+                href="https://admob.google.com/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 px-3.5 py-2 rounded-xl flex items-center gap-1.5 transition-all"
+              >
+                <span>لوحة تحكم Google AdMob</span>
+                <ExternalLink size={13} />
+              </a>
+            </div>
+
+            {/* General Toggles */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-gray-50 p-4 rounded-xl border border-gray-200">
+              <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200">
+                <div>
+                  <p className="font-bold text-sm text-gray-800">حالة تشغيل الإعلانات</p>
+                  <p className="text-xs text-gray-500">تفعيل أو إيقاف ظهور إعلانات جوجل في التطبيق والمتجر</p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={form.google_ads_enabled === "true"}
+                    onChange={(e) => setForm({ ...form, google_ads_enabled: e.target.checked ? "true" : "false" })}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+                </label>
+              </div>
+
+              <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200">
+                <div>
+                  <p className="font-bold text-sm text-gray-800">وضع الاختبار (Test Ads Mode)</p>
+                  <p className="text-xs text-gray-500">إظهار إعلانات تجريبية أثناء الفحص لتفادي مخالفات جوجل</p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={form.google_ads_test_mode === "true"}
+                    onChange={(e) => setForm({ ...form, google_ads_test_mode: e.target.checked ? "true" : "false" })}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-600"></div>
+                </label>
+              </div>
+            </div>
+
+            {/* Mobile App IDs */}
+            <div className="space-y-3">
+              <h4 className="font-bold text-sm text-gray-800 flex items-center gap-2">
+                <span>📱</span> معرفات تطبيق الموبايل (Google AdMob App IDs)
+              </h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs font-bold text-gray-700">AdMob App ID (Android)</label>
+                  <input
+                    type="text"
+                    value={form.admob_app_id_android}
+                    onChange={(e) => setForm({ ...form, admob_app_id_android: e.target.value })}
+                    placeholder="ca-app-pub-xxxxxxxxxxxxxxxx~yyyyyyyyyy"
+                    className="w-full mt-1.5 border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm outline-none focus:ring-2 focus:ring-emerald-500 transition-all"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-gray-700">AdMob App ID (iOS / iPhone)</label>
+                  <input
+                    type="text"
+                    value={form.admob_app_id_ios}
+                    onChange={(e) => setForm({ ...form, admob_app_id_ios: e.target.value })}
+                    placeholder="ca-app-pub-xxxxxxxxxxxxxxxx~yyyyyyyyyy"
+                    className="w-full mt-1.5 border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm outline-none focus:ring-2 focus:ring-emerald-500 transition-all"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Ad Unit IDs */}
+            <div className="space-y-3 pt-2">
+              <h4 className="font-bold text-sm text-gray-800 flex items-center gap-2">
+                <span>🎯</span> معرفات الوحدات الإعلانية بالموبايل (Ad Units / ADV Slots)
+              </h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs font-bold text-gray-700">Banner Ad Unit (إعلان البانر الثابت)</label>
+                  <input
+                    type="text"
+                    value={form.admob_banner_unit_id}
+                    onChange={(e) => setForm({ ...form, admob_banner_unit_id: e.target.value })}
+                    placeholder="ca-app-pub-xxxxxxxxxxxxxxxx/zzzzzzzzzz"
+                    className="w-full mt-1.5 border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm outline-none focus:ring-2 focus:ring-emerald-500 transition-all"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-gray-700">Interstitial Ad Unit (إعلان الشاشة الكاملة / البيني)</label>
+                  <input
+                    type="text"
+                    value={form.admob_interstitial_unit_id}
+                    onChange={(e) => setForm({ ...form, admob_interstitial_unit_id: e.target.value })}
+                    placeholder="ca-app-pub-xxxxxxxxxxxxxxxx/zzzzzzzzzz"
+                    className="w-full mt-1.5 border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm outline-none focus:ring-2 focus:ring-emerald-500 transition-all"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-gray-700">Rewarded Video Ad Unit (إعلان الفيديو بمكافأة)</label>
+                  <input
+                    type="text"
+                    value={form.admob_rewarded_unit_id}
+                    onChange={(e) => setForm({ ...form, admob_rewarded_unit_id: e.target.value })}
+                    placeholder="ca-app-pub-xxxxxxxxxxxxxxxx/zzzzzzzzzz"
+                    className="w-full mt-1.5 border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm outline-none focus:ring-2 focus:ring-emerald-500 transition-all"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-gray-700">Native Advanced Unit (إعلان أصلي مدمج في قوائم المنتجات)</label>
+                  <input
+                    type="text"
+                    value={form.admob_native_unit_id}
+                    onChange={(e) => setForm({ ...form, admob_native_unit_id: e.target.value })}
+                    placeholder="ca-app-pub-xxxxxxxxxxxxxxxx/zzzzzzzzzz"
+                    className="w-full mt-1.5 border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm outline-none focus:ring-2 focus:ring-emerald-500 transition-all"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Web AdSense */}
+            <div className="space-y-3 pt-2">
+              <h4 className="font-bold text-sm text-gray-800 flex items-center gap-2">
+                <span>🌐</span> إعلانات جوجل لموقع الويب (Google AdSense Web)
+              </h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs font-bold text-gray-700">Google AdSense Publisher ID</label>
+                  <input
+                    type="text"
+                    value={form.google_adsense_pub_id}
+                    onChange={(e) => setForm({ ...form, google_adsense_pub_id: e.target.value })}
+                    placeholder="pub-xxxxxxxxxxxxxxxx"
+                    className="w-full mt-1.5 border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm outline-none focus:ring-2 focus:ring-emerald-500 transition-all"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-gray-700">Google AdSense Slot ID</label>
+                  <input
+                    type="text"
+                    value={form.google_adsense_slot_id}
+                    onChange={(e) => setForm({ ...form, google_adsense_slot_id: e.target.value })}
+                    placeholder="1234567890"
+                    className="w-full mt-1.5 border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm outline-none focus:ring-2 focus:ring-emerald-500 transition-all"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {activeTab === "email" && (
           <div className="space-y-5">
             <div className="flex items-center gap-3 mb-4">
