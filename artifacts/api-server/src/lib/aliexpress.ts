@@ -11,21 +11,27 @@ export interface AliExpressCredentials {
 
 function generateSign(params: Record<string, string>, appSecret: string): string {
   const sortedKeys = Object.keys(params).sort();
-  const signStr = sortedKeys.map(k => `${k}${params[k]}`).join("");
-  const fullStr = appSecret + signStr + appSecret;
-  return crypto.createHmac("sha256", appSecret).update(fullStr).digest("hex").toUpperCase();
+  let query = "";
+  for (const key of sortedKeys) {
+    if (key !== "sign" && params[key] !== undefined && params[key] !== "") {
+      query += key + params[key];
+    }
+  }
+  return crypto.createHash("md5").update(appSecret + query + appSecret, "utf8").digest("hex").toUpperCase();
 }
 
 function buildApiUrl(method: string, params: Record<string, string>, creds: AliExpressCredentials): string {
-  const timestamp = Date.now().toString();
+  const timestamp = new Date().toISOString().replace(/T/, " ").replace(/\..+/, "");
   const baseParams: Record<string, string> = {
-    app_key: creds.appKey,
+    app_key: creds.appKey.trim(),
     timestamp,
-    sign_method: "hmac-sha256",
+    sign_method: "md5",
+    v: "2.0",
+    format: "json",
     method,
     ...params,
   };
-  const sign = generateSign(baseParams, creds.appSecret);
+  const sign = generateSign(baseParams, creds.appSecret.trim());
   baseParams.sign = sign;
 
   const url = new URL(ALIEXPRESS_API_URL);
