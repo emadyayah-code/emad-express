@@ -1101,6 +1101,17 @@ router.post("/admin/dropship/bulk-import-1000", requireAuth, requireRole("admin"
     const creds = await getAliExpressCreds();
 
     let [defaultCategory] = await db.select().from(categories).limit(1);
+    if (!defaultCategory) {
+      const [newCat] = await db.insert(categories).values({
+        name: "منتجات عامة",
+        name_ar: "منتجات عامة",
+        name_en: "General Products",
+        slug: `general-${Date.now()}`,
+        description: "منتجات متنوعة ومستوردة",
+        is_active: true,
+      }).returning();
+      defaultCategory = newCat;
+    }
     const defaultCatId = defaultCategory ? defaultCategory.id : null;
 
     // Fetch existing source_ids to prevent any duplicate insertion
@@ -1156,77 +1167,52 @@ router.post("/admin/dropship/bulk-import-1000", requireAuth, requireRole("admin"
     }
 
     let importedCount = 0;
-    const batchSize = 25;
-    
-    for (let i = 0; i < liveFetched.length; i += batchSize) {
-      const currentBatch = liveFetched.slice(i, i + batchSize);
-      const productBatch = [];
-      const dropshipMetaBatch: any[] = [];
+    for (const item of liveFetched) {
+      if (existingSet.has(item.source_id)) continue;
+      existingSet.add(item.source_id);
 
-      for (const item of currentBatch) {
-        if (existingSet.has(item.source_id)) continue;
-        existingSet.add(item.source_id);
-
+      try {
         const sourcePrice = parsePrice(item.cost, 25);
         const salePrice = Number((sourcePrice * margin).toFixed(2));
         const skuUnique = `ALI-${item.source_id}`;
 
-        productBatch.push({
-          name_ar: item.name,
-          name_en: item.name,
+        const [inserted] = await db.insert(products).values({
+          name_ar: String(item.name || `AliExpress Product ${item.source_id}`).slice(0, 450),
+          name_en: String(item.name_en || item.name || `AliExpress Product ${item.source_id}`).slice(0, 450),
           sku: skuUnique,
           price: salePrice,
           cost: sourcePrice,
-          quantity: item.quantity || 500,
+          quantity: Number(item.quantity) || 500,
           min_quantity: 5,
           category_id: defaultCatId,
           description_ar: `منتج رسمي عالي الجودة مستورد مباشرة من علي إكسبرس (كود ${item.source_id}) من قسم ${item.category_name}. متجر المورد: ${item.supplier_name}.`,
           description_en: `Authentic AliExpress item (Code ${item.source_id}) from ${item.category_name} category. Supplier: ${item.supplier_name}.`,
-          image: item.image || "",
+          image: String(item.image || ""),
           is_active: true,
-        });
+        }).onConflictDoNothing().returning({ id: products.id, price: products.price, cost: products.cost });
 
-        dropshipMetaBatch.push({
-          sourceId: item.source_id,
-          supplierName: item.supplier_name,
-          srcUrl: item.source_url,
-          sourcePrice,
-          salePrice,
-        });
-      }
-
-      if (productBatch.length > 0) {
-        try {
-          const insertedProducts = await db.insert(products).values(productBatch).onConflictDoNothing().returning({ id: products.id, price: products.price, cost: products.cost });
-          
-          if (insertedProducts && insertedProducts.length > 0) {
-            const dropshipBatch = insertedProducts.map((p, idx) => {
-              const meta = dropshipMetaBatch[idx] || dropshipMetaBatch[0];
-              return {
-                product_id: p.id,
-                platform,
-                source_id: meta?.sourceId || `ALI-${p.id}`,
-                source_url: meta?.srcUrl || "",
-                source_price: meta?.sourcePrice || p.cost,
-                source_currency: "USD",
-                our_price: meta?.salePrice || p.price,
-                supplier_name: meta?.supplierName || "AliExpress Verified Seller",
-                platform_commission_rate: 8,
-              };
-            });
-
-            await db.insert(dropship_products).values(dropshipBatch).onConflictDoNothing();
-            importedCount += insertedProducts.length;
-          }
-        } catch (batchErr) {
-          logger.error({ batchErr }, "Batch insert warning in bulk-import-1000");
+        if (inserted) {
+          await db.insert(dropship_products).values({
+            product_id: inserted.id,
+            platform,
+            source_id: item.source_id,
+            source_url: item.source_url || `https://www.aliexpress.com/item/${item.source_id}.html`,
+            source_price: sourcePrice,
+            source_currency: "USD",
+            our_price: salePrice,
+            supplier_name: item.supplier_name || "AliExpress Verified Seller",
+            platform_commission_rate: 8,
+          }).onConflictDoNothing();
+          importedCount++;
         }
+      } catch (itemErr) {
+        logger.warn({ itemErr, source_id: item.source_id }, "Skipped product with error");
       }
     }
 
     return res.json({
       success: true,
-      message: `تم استيراد ${importedCount} منتج حقيقي بالكامل من كافة أقسام علي إكسبرس بصورها وأسعارها الأصلية بنجاح!`,
+      message: `تم استيراد ${importedCount} منتج حقيقي بالكامل من كافة أقسام علي إكسبرس وحفظها في قاعدة البيانات بنجاح!`,
       imported: importedCount,
       platform,
     });
