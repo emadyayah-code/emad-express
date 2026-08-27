@@ -24,7 +24,7 @@ export default function ProductDetailScreen() {
     queryFn: () => api.get(`/products/${id}`),
   });
 
-  const product = data?.product;
+  const product = data?.product || data?.data?.product || (data?.data && !Array.isArray(data.data) ? data.data : undefined);
   const inCart = items.find(i => i.id === Number(id));
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;

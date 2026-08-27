@@ -831,7 +831,11 @@ router.get("/products/:id", validateParams(idParamSchema), async (req, res, next
       name: requestLang === "en" ? (product.name_en || (product as any).name || product.name_ar) : (product.name_ar || (product as any).name || product.name_en),
       description: requestLang === "en" ? (product.description_en || (product as any).description || product.description_ar) : (product.description_ar || (product as any).description || product.description_en),
     };
-    return res.json({ success: true, data: { product: localized } });
+    return res.json({ 
+      success: true, 
+      product: localized,
+      data: { product: localized } 
+    });
   } catch (err) { next(err); }
 });
 
