@@ -260,14 +260,27 @@ export default function PaymentScreen() {
           </View>
         </View>
 
-        {/* Payment Type Info */}
+        {/* Payment Type Info with Visa / Mastercard Badges */}
         <View className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4">
-          <View className="flex-row items-center gap-2 mb-2">
-            <CreditCard size={18} color="#1d4ed8" />
-            <Text className="font-bold text-blue-900">طريقة الدفع</Text>
+          <View className="flex-row items-center justify-between mb-2">
+            <View className="flex-row items-center gap-2">
+              <CreditCard size={18} color="#1d4ed8" />
+              <Text className="font-bold text-blue-900">بوابة الدفع العالمية للمورد الرئيسي</Text>
+            </View>
+            <View className="flex-row gap-1">
+              <View className="bg-[#1a1f71] px-2 py-0.5 rounded">
+                <Text className="text-white text-[10px] font-black">VISA</Text>
+              </View>
+              <View className="bg-[#eb001b] px-2 py-0.5 rounded">
+                <Text className="text-white text-[10px] font-black">MC</Text>
+              </View>
+              <View className="bg-[#007a3d] px-2 py-0.5 rounded">
+                <Text className="text-white text-[10px] font-black">Mada</Text>
+              </View>
+            </View>
           </View>
           <Text className="text-blue-800 text-sm">
-            الدفع الإلكتروني الآمن والمشفر عبر بوابات الدفع العالمية المعتمدة
+            يتم تحويل المبلغ مباشرةً للمورد الرئيسي لحساب الطلب وتأكيد الشحن فوراً دون مغادرة التطبيق.
           </Text>
         </View>
 
@@ -275,10 +288,10 @@ export default function PaymentScreen() {
         <View className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4">
           <View className="flex-row items-center gap-2 mb-2">
             <Truck size={18} color="#d97706" />
-            <Text className="font-bold text-amber-900">الشحن والتوصيل</Text>
+            <Text className="font-bold text-amber-900">الشحن والتوصيل للمشتري</Text>
           </View>
           <Text className="text-amber-800 text-sm">
-            شحن مباشر وسريع مع توفير رقم تتبع رسمي حتى استلام الطلب
+            شحن وتوصيل مباشر مع توفير رقم تتبع رسمي فوري حتى استلام الطلب
           </Text>
         </View>
 

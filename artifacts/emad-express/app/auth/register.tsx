@@ -1,4 +1,4 @@
-﻿import React, { useState } from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -18,46 +18,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
-
-export interface Country {
-  code: string;
-  nameAr: string;
-  nameEn: string;
-  dialCode: string;
-  flag: string;
-}
-
-export const COUNTRIES: Country[] = [
-  { code: "YE", nameAr: "اليمن", nameEn: "Yemen", dialCode: "+967", flag: "🇾🇪" },
-  { code: "SA", nameAr: "المملكة العربية السعودية", nameEn: "Saudi Arabia", dialCode: "+966", flag: "🇸🇦" },
-  { code: "AE", nameAr: "الإمارات العربية المتحدة", nameEn: "United Arab Emirates", dialCode: "+971", flag: "🇦🇪" },
-  { code: "EG", nameAr: "مصر", nameEn: "Egypt", dialCode: "+20", flag: "🇪🇬" },
-  { code: "KW", nameAr: "الكويت", nameEn: "Kuwait", dialCode: "+965", flag: "🇰🇼" },
-  { code: "QA", nameAr: "قطر", nameEn: "Qatar", dialCode: "+974", flag: "🇶🇦" },
-  { code: "BH", nameAr: "البحرين", nameEn: "Bahrain", dialCode: "+973", flag: "🇧🇭" },
-  { code: "OM", nameAr: "عُمان", nameEn: "Oman", dialCode: "+968", flag: "🇴🇲" },
-  { code: "JO", nameAr: "الأردن", nameEn: "Jordan", dialCode: "+962", flag: "🇯🇴" },
-  { code: "IQ", nameAr: "العراق", nameEn: "Iraq", dialCode: "+964", flag: "🇮🇶" },
-  { code: "LB", nameAr: "لبنان", nameEn: "Lebanon", dialCode: "+961", flag: "🇱🇧" },
-  { code: "SY", nameAr: "سوريا", nameEn: "Syria", dialCode: "+963", flag: "🇸🇾" },
-  { code: "PS", nameAr: "فلسطين", nameEn: "Palestine", dialCode: "+970", flag: "🇵🇸" },
-  { code: "SD", nameAr: "السودان", nameEn: "Sudan", dialCode: "+249", flag: "🇸🇩" },
-  { code: "DZ", nameAr: "الجزائر", nameEn: "Algeria", dialCode: "+213", flag: "🇩🇿" },
-  { code: "MA", nameAr: "المغرب", nameEn: "Morocco", dialCode: "+212", flag: "🇲🇦" },
-  { code: "TN", nameAr: "تونس", nameEn: "Tunisia", dialCode: "+216", flag: "🇹🇳" },
-  { code: "LY", nameAr: "ليبيا", nameEn: "Libya", dialCode: "+218", flag: "🇱🇾" },
-  { code: "TR", nameAr: "تركيا", nameEn: "Turkey", dialCode: "+90", flag: "🇹🇷" },
-  { code: "US", nameAr: "الولايات المتحدة", nameEn: "United States", dialCode: "+1", flag: "🇺🇸" },
-  { code: "GB", nameAr: "المملكة المتحدة", nameEn: "United Kingdom", dialCode: "+44", flag: "🇬🇧" },
-  { code: "CA", nameAr: "كندا", nameEn: "Canada", dialCode: "+1", flag: "🇨🇦" },
-  { code: "DE", nameAr: "ألمانيا", nameEn: "Germany", dialCode: "+49", flag: "🇩🇪" },
-  { code: "FR", nameAr: "فرنسا", nameEn: "France", dialCode: "+33", flag: "🇫🇷" },
-  { code: "CN", nameAr: "الصين", nameEn: "China", dialCode: "+86", flag: "🇨🇳" },
-  { code: "IN", nameAr: "الهند", nameEn: "India", dialCode: "+91", flag: "🇮🇳" },
-  { code: "PK", nameAr: "باكستان", nameEn: "Pakistan", dialCode: "+92", flag: "🇵🇰" },
-  { code: "MY", nameAr: "ماليزيا", nameEn: "Malaysia", dialCode: "+60", flag: "🇲🇾" },
-  { code: "ID", nameAr: "إندونيسيا", nameEn: "Indonesia", dialCode: "+62", flag: "🇮🇩" },
-];
+import { ALL_COUNTRIES, Country } from "@/lib/countries";
 
 export default function RegisterScreen() {
   const colors = useColors();
@@ -70,7 +31,7 @@ export default function RegisterScreen() {
   const [email, setEmail] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [password, setPassword] = useState("");
-  const [selectedCountry, setSelectedCountry] = useState<Country>(COUNTRIES[0]); // Default Yemen
+  const [selectedCountry, setSelectedCountry] = useState<Country>(ALL_COUNTRIES[0]); // Default Yemen (+967)
   const [countryModalVisible, setCountryModalVisible] = useState(false);
   const [searchCountry, setSearchCountry] = useState("");
   const [error, setError] = useState("");
@@ -78,13 +39,13 @@ export default function RegisterScreen() {
   const topPad = Platform.OS === "web" ? 67 : insets.top;
 
   const filteredCountries = searchCountry
-    ? COUNTRIES.filter(
+    ? ALL_COUNTRIES.filter(
         (c) =>
           c.nameAr.includes(searchCountry) ||
           c.nameEn.toLowerCase().includes(searchCountry.toLowerCase()) ||
           c.dialCode.includes(searchCountry)
       )
-    : COUNTRIES;
+    : ALL_COUNTRIES;
 
   async function handleRegister() {
     if (!name.trim() || !email.trim() || !phoneNumber.trim() || !password) {
