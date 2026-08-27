@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -44,8 +44,10 @@ export default function CheckoutScreen() {
 
   useEffect(() => {
     if (!address && defaultAddress) {
-      const formatted = `${defaultAddress.recipientName} (${defaultAddress.phone}) - ${defaultAddress.country}، ${defaultAddress.city}، ${defaultAddress.street}${
-        defaultAddress.building ? `، عمارة: ${defaultAddress.building}` : ""
+      const formatted = `${defaultAddress.recipientName} (${defaultAddress.dialCode || ""} ${defaultAddress.phone}) - ${defaultAddress.country}، ${
+        defaultAddress.state ? `${defaultAddress.state}، ` : ""
+      }${defaultAddress.city}، ${defaultAddress.street}${defaultAddress.apartment ? ` (${defaultAddress.apartment})` : ""}${
+        defaultAddress.zipCode ? ` - الرمز البريدي: ${defaultAddress.zipCode}` : ""
       }`;
       setAddress(formatted);
     }
@@ -278,16 +280,18 @@ export default function CheckoutScreen() {
             <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
               <Text style={[styles.cardTitle, { color: colors.foreground, marginBottom: 0 }]}>{t.checkout.delivery_address}</Text>
               <TouchableOpacity onPress={() => router.push("/addresses")} style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-                <Feather name="map-pin" size={13} color={colors.primary} />
-                <Text style={{ color: colors.primary, fontSize: 12, fontWeight: "600" }}>إدارة عناويني</Text>
+                <Feather name="plus-circle" size={14} color="#e11d48" />
+                <Text style={{ color: "#e11d48", fontSize: 13, fontWeight: "700" }}>+ إضافة / إدارة العناوين</Text>
               </TouchableOpacity>
             </View>
 
             {addresses.length > 0 && (
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingBottom: 10 }}>
                 {addresses.map((a) => {
-                  const formatted = `${a.recipientName} (${a.phone}) - ${a.country}، ${a.city}، ${a.street}${
-                    a.building ? `، عمارة: ${a.building}` : ""
+                  const formatted = `${a.recipientName} (${a.dialCode || ""} ${a.phone}) - ${a.country}، ${
+                    a.state ? `${a.state}، ` : ""
+                  }${a.city}، ${a.street}${a.apartment ? ` (${a.apartment})` : ""}${
+                    a.zipCode ? ` - الرمز البريدي: ${a.zipCode}` : ""
                   }`;
                   const isSelected = address === formatted;
                   return (
@@ -297,15 +301,16 @@ export default function CheckoutScreen() {
                       style={[
                         styles.addrPill,
                         {
-                          backgroundColor: isSelected ? "#f59e0b20" : colors.muted,
-                          borderColor: isSelected ? colors.primary : colors.border,
+                          backgroundColor: isSelected ? "#e11d4815" : colors.muted,
+                          borderColor: isSelected ? "#e11d48" : colors.border,
                         },
                       ]}
                     >
-                      <Feather name={isSelected ? "check-circle" : "map-pin"} size={13} color={isSelected ? colors.primary : colors.mutedForeground} />
-                      <Text style={{ color: isSelected ? colors.primary : colors.foreground, fontSize: 12, fontWeight: "600" }}>
-                        {a.title || "عنوان"} - {a.city}
+                      <Text style={{ fontSize: 16 }}>{a.countryFlag || "📍"}</Text>
+                      <Text style={{ color: isSelected ? "#e11d48" : colors.foreground, fontSize: 12, fontWeight: "700" }}>
+                        {a.recipientName} ({a.city})
                       </Text>
+                      {isSelected && <Feather name="check" size={13} color="#e11d48" />}
                     </TouchableOpacity>
                   );
                 })}

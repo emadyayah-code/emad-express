@@ -3,14 +3,18 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export interface Address {
   id: string;
-  title: string; // e.g. "������", "�����"
+  title: string;
   recipientName: string;
   phone: string;
+  dialCode?: string;
   country: string;
-  city: string;
+  countryCode?: string;
+  countryFlag?: string;
   street: string;
-  building?: string;
-  notes?: string;
+  apartment?: string;
+  state?: string;
+  city: string;
+  zipCode?: string;
   isDefault: boolean;
 }
 

@@ -1,85 +1,138 @@
 ﻿import React, { useState } from "react";
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Platform, Alert, Modal } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  TextInput,
+  Platform,
+  Alert,
+  Modal,
+  FlatList,
+} from "react-native";
 import { useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
 import { useAddress, Address } from "@/context/AddressContext";
 import { useLanguage } from "@/context/LanguageContext";
+import { ALL_COUNTRIES, Country } from "@/lib/countries";
 
 export default function AddressesScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { addresses, addAddress, deleteAddress, setDefaultAddress, updateAddress } = useAddress();
-  const { t, language, isRTL } = useLanguage();
+  const { language, isRTL } = useLanguage();
 
   const [modalVisible, setModalVisible] = useState(false);
+  const [countryModalVisible, setCountryModalVisible] = useState(false);
+  const [searchCountry, setSearchCountry] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
 
-  const [form, setForm] = useState({
-    title: "المنزل",
-    recipientName: "",
-    phone: "",
-    country: "اليمن",
-    city: "",
-    street: "",
-    building: "",
-    notes: "",
-    isDefault: false,
-  });
+  // Selected Country for the Address
+  const [selectedCountry, setSelectedCountry] = useState<Country>(ALL_COUNTRIES[0]); // Yemen default
+
+  // Form Fields matching AliExpress modal screenshot exactly
+  const [recipientName, setRecipientName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [street, setStreet] = useState("");
+  const [apartment, setApartment] = useState("");
+  const [stateProvince, setStateProvince] = useState("");
+  const [city, setCity] = useState("");
+  const [zipCode, setZipCode] = useState("");
+  const [isDefault, setIsDefault] = useState(false);
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
   const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
 
+  const filteredCountries = searchCountry
+    ? ALL_COUNTRIES.filter(
+        (c) =>
+          c.nameAr.includes(searchCountry) ||
+          c.nameEn.toLowerCase().includes(searchCountry.toLowerCase()) ||
+          c.dialCode.includes(searchCountry)
+      )
+    : ALL_COUNTRIES;
+
   function openAddModal() {
     setEditingId(null);
-    setForm({
-      title: "المنزل",
-      recipientName: "",
-      phone: "",
-      country: "اليمن",
-      city: "",
-      street: "",
-      building: "",
-      notes: "",
-      isDefault: addresses.length === 0,
-    });
+    setSelectedCountry(ALL_COUNTRIES[0]);
+    setRecipientName("");
+    setPhone("");
+    setStreet("");
+    setApartment("");
+    setStateProvince("");
+    setCity("");
+    setZipCode("");
+    setIsDefault(addresses.length === 0);
     setModalVisible(true);
   }
 
   function openEditModal(addr: Address) {
     setEditingId(addr.id);
-    setForm({
-      title: addr.title,
-      recipientName: addr.recipientName,
-      phone: addr.phone,
-      country: addr.country,
-      city: addr.city,
-      street: addr.street,
-      building: addr.building || "",
-      notes: addr.notes || "",
-      isDefault: addr.isDefault,
-    });
+    const countryObj = ALL_COUNTRIES.find((c) => c.nameAr === addr.country || c.code === addr.countryCode) || ALL_COUNTRIES[0];
+    setSelectedCountry(countryObj);
+    setRecipientName(addr.recipientName);
+    setPhone(addr.phone);
+    setStreet(addr.street);
+    setApartment(addr.apartment || "");
+    setStateProvince(addr.state || "");
+    setCity(addr.city);
+    setZipCode(addr.zipCode || "");
+    setIsDefault(addr.isDefault);
     setModalVisible(true);
   }
 
   async function handleSave() {
-    if (!form.recipientName.trim() || !form.city.trim() || !form.street.trim() || !form.phone.trim()) {
-      Alert.alert("تنبيه", "يرجى ملء جميع الحقول الإلزامية (الاسم، الجوال، المدينة، والشارع)");
+    if (!recipientName.trim()) {
+      Alert.alert("تنبيه", "الرجاء إدخال اسم جهة الاتصال.");
+      return;
+    }
+    if (!phone.trim()) {
+      Alert.alert("تنبيه", "الرجاء إدخال رقم الهاتف المحمول.");
+      return;
+    }
+    if (!street.trim()) {
+      Alert.alert("تنبيه", "الرجاء إدخال اسم الشارع ورقم المنزل/الوحدة السكنية.");
+      return;
+    }
+    if (!city.trim()) {
+      Alert.alert("تنبيه", "الرجاء إدخال المدينة.");
+      return;
+    }
+    if (!stateProvince.trim()) {
+      Alert.alert("تنبيه", "الرجاء إدخال الولاية / المقاطعة / المحافظة.");
       return;
     }
 
+    const payload: Omit<Address, "id"> = {
+      title: recipientName.trim(),
+      recipientName: recipientName.trim(),
+      phone: phone.trim(),
+      dialCode: selectedCountry.dialCode,
+      country: selectedCountry.nameAr,
+      countryCode: selectedCountry.code,
+      countryFlag: selectedCountry.flag,
+      street: street.trim(),
+      apartment: apartment.trim(),
+      state: stateProvince.trim(),
+      city: city.trim(),
+      zipCode: zipCode.trim(),
+      isDefault,
+    };
+
     if (editingId) {
-      await updateAddress(editingId, form);
+      await updateAddress(editingId, payload);
     } else {
-      await addAddress(form);
+      await addAddress(payload);
     }
     setModalVisible(false);
   }
 
   function confirmDelete(id: string) {
-    Alert.alert("حذف العنوان", "هل أنت متأكد من رغبتك في حذف هذا العنوان؟", [
+    Alert.alert("حذف العنوان", "هل أنت متأكد من حذف هذا العنوان؟", [
       { text: "إلغاء", style: "cancel" },
       { text: "حذف", onPress: () => deleteAddress(id), style: "destructive" },
     ]);
@@ -87,13 +140,14 @@ export default function AddressesScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
+      {/* Screen Header */}
       <View style={[styles.header, { paddingTop: topPad + 16, backgroundColor: colors.card }]}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
           <Feather name={isRTL ? "arrow-right" : "arrow-left"} size={22} color={colors.foreground} />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.foreground }]}>عناويني للتوصيل</Text>
-        <TouchableOpacity onPress={openAddModal} style={[styles.addTopBtn, { backgroundColor: colors.primary }]}>
-          <Feather name="plus" size={18} color="#000" />
+        <Text style={[styles.headerTitle, { color: colors.foreground }]}>عنوان الشحن والتوصيل</Text>
+        <TouchableOpacity onPress={openAddModal} style={[styles.addTopBtn, { backgroundColor: "#e11d48" }]}>
+          <Feather name="plus" size={18} color="#fff" />
         </TouchableOpacity>
       </View>
 
@@ -103,27 +157,37 @@ export default function AddressesScreen() {
             <View style={[styles.emptyIcon, { backgroundColor: colors.muted }]}>
               <Feather name="map-pin" size={44} color={colors.mutedForeground} />
             </View>
-            <Text style={[styles.emptyTitle, { color: colors.foreground }]}>لا توجد عناوين محفوظة بعد</Text>
+            <Text style={[styles.emptyTitle, { color: colors.foreground }]}>لا توجد عناوين شحن محفوظة بعد</Text>
             <Text style={{ color: colors.mutedForeground, textAlign: "center", fontSize: 14, paddingHorizontal: 30 }}>
-              أضف عنوان التوصيل الخاص بك لسرعة تأكيد الطلبات وتعبئة العنوان تلقائياً عند الدفع!
+              أضف عنوان الشحن الخاص بك ليتم إرساله مباشرةً للمورد الرئيسي لتجهيز شحنتك وتسليمها بسرعة!
             </Text>
-            <TouchableOpacity style={[styles.bigAddBtn, { backgroundColor: colors.primary }]} onPress={openAddModal}>
-              <Feather name="plus-circle" size={20} color="#000" />
-              <Text style={styles.bigAddBtnText}>إضافة عنوان جديد</Text>
+            <TouchableOpacity style={[styles.bigAddBtn, { backgroundColor: "#e11d48" }]} onPress={openAddModal}>
+              <Feather name="plus-circle" size={20} color="#fff" />
+              <Text style={styles.bigAddBtnText}>إضافة عنوان شحن جديد +</Text>
             </TouchableOpacity>
           </View>
         ) : (
           addresses.map((item) => (
-            <View key={item.id} style={[styles.addrCard, { backgroundColor: colors.card, borderColor: item.isDefault ? colors.primary : colors.border }]}>
+            <View
+              key={item.id}
+              style={[
+                styles.addrCard,
+                {
+                  backgroundColor: colors.card,
+                  borderColor: item.isDefault ? "#e11d48" : colors.border,
+                },
+              ]}
+            >
               <View style={styles.cardTopRow}>
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-                  <View style={[styles.titleBadge, { backgroundColor: item.isDefault ? colors.primary : colors.muted }]}>
-                    <Text style={[styles.titleBadgeText, { color: item.isDefault ? "#000" : colors.foreground }]}>{item.title || "عنوان"}</Text>
-                  </View>
+                  <Text style={{ fontSize: 20 }}>{item.countryFlag || "📍"}</Text>
+                  <Text style={[styles.recipientText, { color: colors.foreground }]}>
+                    {item.recipientName}
+                  </Text>
                   {item.isDefault && (
                     <View style={styles.defaultBadge}>
-                      <Feather name="check-circle" size={12} color="#059669" />
-                      <Text style={styles.defaultBadgeText}>العنوان الافتراضي</Text>
+                      <Feather name="check" size={12} color="#fff" />
+                      <Text style={styles.defaultBadgeText}>افتراضي</Text>
                     </View>
                   )}
                 </View>
@@ -137,20 +201,24 @@ export default function AddressesScreen() {
                 </View>
               </View>
 
-              <Text style={[styles.recipientText, { color: colors.foreground }]}>{item.recipientName} ({item.phone})</Text>
-              <Text style={{ color: colors.mutedForeground, fontSize: 14, marginTop: 4 }}>
-                📍 {item.country} - {item.city}، {item.street} {item.building ? "، عمارة: " + item.building : ""}
+              <Text style={{ color: colors.foreground, fontSize: 14, fontWeight: "600" }}>
+                📞 {item.dialCode || ""} {item.phone}
               </Text>
-              {item.notes ? (
-                <Text style={{ color: colors.mutedForeground, fontSize: 12, marginTop: 4, fontStyle: "italic" }}>
-                  ملاحظات: {item.notes}
-                </Text>
-              ) : null}
+              <Text style={{ color: colors.mutedForeground, fontSize: 13 }}>
+                🏠 {item.country} - {item.state ? `${item.state}، ` : ""}{item.city}، {item.street}
+                {item.apartment ? ` (${item.apartment})` : ""}
+                {item.zipCode ? ` - الرمز البريدي: ${item.zipCode}` : ""}
+              </Text>
 
               {!item.isDefault && (
-                <TouchableOpacity onPress={() => setDefaultAddress(item.id)} style={[styles.setDefaultBtn, { borderColor: colors.border }]}>
-                  <Feather name="check" size={14} color={colors.primary} />
-                  <Text style={{ color: colors.primary, fontSize: 13, fontWeight: "600" }}>تعيين كعنوان افتراضي</Text>
+                <TouchableOpacity
+                  onPress={() => setDefaultAddress(item.id)}
+                  style={[styles.setDefaultBtn, { borderColor: colors.border }]}
+                >
+                  <Feather name="check" size={14} color="#e11d48" />
+                  <Text style={{ color: "#e11d48", fontSize: 13, fontWeight: "600" }}>
+                    تعيين كعنوان الشحن الافتراضي
+                  </Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -159,104 +227,209 @@ export default function AddressesScreen() {
         <View style={{ height: bottomPad + 30 }} />
       </ScrollView>
 
-      <Modal visible={modalVisible} transparent animationType="slide" onRequestClose={() => setModalVisible(false)}>
-        <View style={{ flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(0,0,0,0.6)" }}>
-          <View style={[styles.modalSheet, { backgroundColor: colors.card, paddingBottom: insets.bottom + 20 }]}>
+      {/* AliExpress-Style "إضافة عنوان جديد" Modal Popup */}
+      <Modal visible={modalVisible} transparent animationType="fade" onRequestClose={() => setModalVisible(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={[styles.aliModalCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            {/* Modal Header */}
+            <View style={styles.aliModalHeader}>
+              <Text style={[styles.aliModalTitle, { color: colors.foreground }]}>إضافة عنوان جديد</Text>
+              <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.closeBtn}>
+                <Feather name="x" size={20} color={colors.mutedForeground} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={{ maxHeight: 480 }} showsVerticalScrollIndicator={true} keyboardShouldPersistTaps="handled">
+              <View style={{ padding: 18, gap: 14 }}>
+                {/* 1. Country / Region Selector */}
+                <View>
+                  <Text style={[styles.aliLabel, { color: colors.foreground }]}>البلد/المنطقة</Text>
+                  <TouchableOpacity
+                    style={[styles.aliCountryBtn, { backgroundColor: colors.background, borderColor: colors.border }]}
+                    onPress={() => {
+                      setSearchCountry("");
+                      setCountryModalVisible(true);
+                    }}
+                  >
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                      <Text style={{ fontSize: 20 }}>{selectedCountry.flag}</Text>
+                      <Text style={[styles.aliCountryText, { color: colors.foreground }]}>{selectedCountry.nameAr}</Text>
+                    </View>
+                    <Feather name="chevron-down" size={18} color={colors.mutedForeground} />
+                  </TouchableOpacity>
+                </View>
+
+                {/* 2. Contact Information */}
+                <View>
+                  <Text style={[styles.aliSectionHeader, { color: colors.foreground }]}>معلومات الاتصال</Text>
+                  <View style={{ gap: 10, marginTop: 6 }}>
+                    {/* Recipient Name */}
+                    <View>
+                      <TextInput
+                        value={recipientName}
+                        onChangeText={setRecipientName}
+                        placeholder="*اسم جهة الاتصال"
+                        placeholderTextColor={colors.mutedForeground}
+                        style={[styles.aliInput, { backgroundColor: colors.background, borderColor: colors.border, color: colors.foreground }]}
+                      />
+                      <Text style={[styles.aliHint, { color: colors.mutedForeground }]}>الرجاء إدخال اسم جهة الاتصال.</Text>
+                    </View>
+
+                    {/* Phone Number with Dial Code Prefix Box */}
+                    <View style={styles.aliPhoneRow}>
+                      <View style={[styles.aliDialCodeBox, { backgroundColor: colors.muted, borderColor: colors.border }]}>
+                        <Text style={[styles.aliDialCodeText, { color: colors.foreground }]}>{selectedCountry.dialCode}</Text>
+                      </View>
+                      <TextInput
+                        value={phone}
+                        onChangeText={(v) => setPhone(v.replace(/\D/g, ""))}
+                        placeholder="*رقم الهاتف المحمول"
+                        placeholderTextColor={colors.mutedForeground}
+                        keyboardType="phone-pad"
+                        style={[styles.aliPhoneInput, { backgroundColor: colors.background, borderColor: colors.border, color: colors.foreground }]}
+                      />
+                    </View>
+                  </View>
+                </View>
+
+                {/* 3. Street Address */}
+                <View>
+                  <Text style={[styles.aliSectionHeader, { color: colors.foreground }]}>عنوان</Text>
+                  <View style={{ gap: 10, marginTop: 6 }}>
+                    <TextInput
+                      value={street}
+                      onChangeText={setStreet}
+                      placeholder="*شارع، منزل/شقة/وحدة سكنية"
+                      placeholderTextColor={colors.mutedForeground}
+                      style={[styles.aliInput, { backgroundColor: colors.background, borderColor: colors.border, color: colors.foreground }]}
+                    />
+
+                    <TextInput
+                      value={apartment}
+                      onChangeText={setApartment}
+                      placeholder="شقة، جناح، وحدة، إلخ (اختياري)"
+                      placeholderTextColor={colors.mutedForeground}
+                      style={[styles.aliInput, { backgroundColor: colors.background, borderColor: colors.border, color: colors.foreground }]}
+                    />
+
+                    {/* State / City / Zip Code in 3-column / stacked row */}
+                    <View style={{ flexDirection: "row", gap: 8 }}>
+                      <TextInput
+                        value={stateProvince}
+                        onChangeText={setStateProvince}
+                        placeholder="*الولاية/المقاطعة"
+                        placeholderTextColor={colors.mutedForeground}
+                        style={[styles.aliInput, { flex: 1.2, backgroundColor: colors.background, borderColor: colors.border, color: colors.foreground }]}
+                      />
+                      <TextInput
+                        value={city}
+                        onChangeText={setCity}
+                        placeholder="*مدينة"
+                        placeholderTextColor={colors.mutedForeground}
+                        style={[styles.aliInput, { flex: 1, backgroundColor: colors.background, borderColor: colors.border, color: colors.foreground }]}
+                      />
+                      <TextInput
+                        value={zipCode}
+                        onChangeText={setZipCode}
+                        placeholder="*الرمز البريدي"
+                        placeholderTextColor={colors.mutedForeground}
+                        keyboardType="numeric"
+                        style={[styles.aliInput, { flex: 1, backgroundColor: colors.background, borderColor: colors.border, color: colors.foreground }]}
+                      />
+                    </View>
+                  </View>
+                </View>
+
+                {/* 4. Set as Default Shipping Address Checkbox */}
+                <TouchableOpacity
+                  style={styles.aliCheckboxRow}
+                  onPress={() => setIsDefault(!isDefault)}
+                  activeOpacity={0.8}
+                >
+                  <View style={[styles.aliCheckbox, { borderColor: isDefault ? "#e11d48" : colors.border, backgroundColor: isDefault ? "#e11d48" : "transparent" }]}>
+                    {isDefault && <Feather name="check" size={14} color="#fff" />}
+                  </View>
+                  <Text style={[styles.aliCheckboxLabel, { color: colors.foreground }]}>
+                    قم بتعيينه كعنوان الشحن الافتراضي
+                  </Text>
+                </TouchableOpacity>
+
+                {/* 5. Action Buttons (Confirm Red & Cancel White) */}
+                <View style={styles.aliActionsRow}>
+                  <TouchableOpacity style={styles.aliConfirmBtn} onPress={handleSave}>
+                    <Text style={styles.aliConfirmBtnText}>يتأكد</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={[styles.aliCancelBtn, { borderColor: colors.border }]} onPress={() => setModalVisible(false)}>
+                    <Text style={[styles.aliCancelBtnText, { color: colors.foreground }]}>يلغي</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Full Countries Dropdown Picker Modal */}
+      <Modal
+        visible={countryModalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setCountryModalVisible(false)}
+      >
+        <View style={{ flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(0,0,0,0.65)" }}>
+          <View style={[styles.countryModalSheet, { backgroundColor: colors.card, paddingBottom: insets.bottom + 16 }]}>
             <View style={styles.modalHandle} />
-            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-              <Text style={[styles.modalHeading, { color: colors.foreground }]}>
-                {editingId ? "تعديل العنوان" : "إضافة عنوان توصيل جديد"}
-              </Text>
-              <TouchableOpacity onPress={() => setModalVisible(false)}>
+            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+              <Text style={[styles.countryModalTitle, { color: colors.foreground }]}>اختر البلد / المنطقة</Text>
+              <TouchableOpacity onPress={() => setCountryModalVisible(false)}>
                 <Feather name="x" size={22} color={colors.mutedForeground} />
               </TouchableOpacity>
             </View>
 
-            <ScrollView style={{ maxHeight: 420 }} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-              <View style={{ gap: 12 }}>
-                <Text style={[styles.inputLabel, { color: colors.mutedForeground }]}>نوع العنوان (المنزل، العمل...)</Text>
-                <TextInput
-                  value={form.title}
-                  onChangeText={(v) => setForm({ ...form, title: v })}
-                  placeholder="مثال: المنزل، المكتب"
-                  placeholderTextColor={colors.mutedForeground}
-                  style={[styles.input, { color: colors.foreground, backgroundColor: colors.muted, borderColor: colors.border }]}
-                />
+            <View style={[styles.countrySearchBox, { backgroundColor: colors.muted, borderColor: colors.border }]}>
+              <Feather name="search" size={16} color={colors.mutedForeground} />
+              <TextInput
+                value={searchCountry}
+                onChangeText={setSearchCountry}
+                placeholder="ابحث بالاسم أو الرمز (+967...)"
+                placeholderTextColor={colors.mutedForeground}
+                style={[styles.countrySearchInput, { color: colors.foreground }]}
+              />
+            </View>
 
-                <Text style={[styles.inputLabel, { color: colors.mutedForeground }]}>اسم المستلم *</Text>
-                <TextInput
-                  value={form.recipientName}
-                  onChangeText={(v) => setForm({ ...form, recipientName: v })}
-                  placeholder="الاسم الكامل"
-                  placeholderTextColor={colors.mutedForeground}
-                  style={[styles.input, { color: colors.foreground, backgroundColor: colors.muted, borderColor: colors.border }]}
-                />
-
-                <Text style={[styles.inputLabel, { color: colors.mutedForeground }]}>رقم الهاتف للتوصيل *</Text>
-                <TextInput
-                  value={form.phone}
-                  onChangeText={(v) => setForm({ ...form, phone: v })}
-                  placeholder="رقم الهاتف للتواصل والتسليم"
-                  placeholderTextColor={colors.mutedForeground}
-                  keyboardType="phone-pad"
-                  style={[styles.input, { color: colors.foreground, backgroundColor: colors.muted, borderColor: colors.border }]}
-                />
-
-                <View style={{ flexDirection: "row", gap: 10 }}>
-                  <View style={{ flex: 1 }}>
-                    <Text style={[styles.inputLabel, { color: colors.mutedForeground }]}>الدولة</Text>
-                    <TextInput
-                      value={form.country}
-                      onChangeText={(v) => setForm({ ...form, country: v })}
-                      placeholder="اليمن / السعودية..."
-                      placeholderTextColor={colors.mutedForeground}
-                      style={[styles.input, { color: colors.foreground, backgroundColor: colors.muted, borderColor: colors.border }]}
-                    />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={[styles.inputLabel, { color: colors.mutedForeground }]}>المدينة *</Text>
-                    <TextInput
-                      value={form.city}
-                      onChangeText={(v) => setForm({ ...form, city: v })}
-                      placeholder="صنعاء، تعز، عدن..."
-                      placeholderTextColor={colors.mutedForeground}
-                      style={[styles.input, { color: colors.foreground, backgroundColor: colors.muted, borderColor: colors.border }]}
-                    />
-                  </View>
-                </View>
-
-                <Text style={[styles.inputLabel, { color: colors.mutedForeground }]}>الشارع والحي *</Text>
-                <TextInput
-                  value={form.street}
-                  onChangeText={(v) => setForm({ ...form, street: v })}
-                  placeholder="اسم الشارع، الحي، المعلم القريب"
-                  placeholderTextColor={colors.mutedForeground}
-                  style={[styles.input, { color: colors.foreground, backgroundColor: colors.muted, borderColor: colors.border }]}
-                />
-
-                <Text style={[styles.inputLabel, { color: colors.mutedForeground }]}>رقم العمارة / الشقة</Text>
-                <TextInput
-                  value={form.building}
-                  onChangeText={(v) => setForm({ ...form, building: v })}
-                  placeholder="اختياري"
-                  placeholderTextColor={colors.mutedForeground}
-                  style={[styles.input, { color: colors.foreground, backgroundColor: colors.muted, borderColor: colors.border }]}
-                />
-
-                <Text style={[styles.inputLabel, { color: colors.mutedForeground }]}>ملاحظات التوصيل</Text>
-                <TextInput
-                  value={form.notes}
-                  onChangeText={(v) => setForm({ ...form, notes: v })}
-                  placeholder="مثال: بجوار المسجد، الاتصال قبل الوصول"
-                  placeholderTextColor={colors.mutedForeground}
-                  style={[styles.input, { color: colors.foreground, backgroundColor: colors.muted, borderColor: colors.border }]}
-                />
-              </View>
-            </ScrollView>
-
-            <TouchableOpacity style={[styles.saveBtn, { backgroundColor: colors.primary }]} onPress={handleSave}>
-              <Text style={styles.saveBtnText}>{editingId ? "حفظ التعديلات" : "إضافة العنوان"}</Text>
-            </TouchableOpacity>
+            <FlatList
+              data={filteredCountries}
+              keyExtractor={(item) => item.code}
+              style={{ maxHeight: 380, marginTop: 8 }}
+              renderItem={({ item }) => {
+                const isSelected = item.code === selectedCountry.code;
+                return (
+                  <TouchableOpacity
+                    style={[
+                      styles.countryItem,
+                      {
+                        backgroundColor: isSelected ? "#e11d4815" : "transparent",
+                        borderColor: isSelected ? "#e11d48" : "transparent",
+                      },
+                    ]}
+                    onPress={() => {
+                      setSelectedCountry(item);
+                      setCountryModalVisible(false);
+                    }}
+                  >
+                    <Text style={{ fontSize: 24, marginRight: 10 }}>{item.flag}</Text>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.countryName, { color: colors.foreground, fontWeight: isSelected ? "700" : "500" }]}>
+                        {language === "ar" ? item.nameAr : item.nameEn}
+                      </Text>
+                      <Text style={{ color: colors.mutedForeground, fontSize: 12 }}>{item.code}</Text>
+                    </View>
+                    <Text style={[styles.countryDial, { color: "#e11d48" }]}>{item.dialCode}</Text>
+                    {isSelected && <Feather name="check" size={16} color="#e11d48" style={{ marginLeft: 6 }} />}
+                  </TouchableOpacity>
+                );
+              }}
+            />
           </View>
         </View>
       </Modal>
@@ -274,21 +447,47 @@ const styles = StyleSheet.create({
   emptyIcon: { width: 88, height: 88, borderRadius: 44, alignItems: "center", justifyContent: "center" },
   emptyTitle: { fontSize: 18, fontWeight: "700" },
   bigAddBtn: { flexDirection: "row", alignItems: "center", gap: 8, paddingVertical: 14, paddingHorizontal: 24, borderRadius: 14, marginTop: 10 },
-  bigAddBtnText: { color: "#000", fontWeight: "700", fontSize: 15 },
+  bigAddBtnText: { color: "#fff", fontWeight: "700", fontSize: 15 },
   addrCard: { borderRadius: 16, padding: 16, borderWidth: 1.5, gap: 6 },
   cardTopRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  titleBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
-  titleBadgeText: { fontWeight: "700", fontSize: 12 },
-  defaultBadge: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "#05966918", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
-  defaultBadgeText: { color: "#059669", fontSize: 11, fontWeight: "600" },
+  recipientText: { fontSize: 16, fontWeight: "700" },
+  defaultBadge: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "#e11d48", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
+  defaultBadgeText: { color: "#fff", fontSize: 11, fontWeight: "700" },
   actionBtn: { width: 32, height: 32, borderRadius: 8, alignItems: "center", justifyContent: "center" },
-  recipientText: { fontSize: 15, fontWeight: "700", marginTop: 4 },
   setDefaultBtn: { flexDirection: "row", alignItems: "center", gap: 6, alignSelf: "flex-start", paddingVertical: 6, paddingHorizontal: 12, borderRadius: 8, borderWidth: 1, marginTop: 8 },
-  modalSheet: { borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20 },
-  modalHandle: { width: 40, height: 4, borderRadius: 2, backgroundColor: "#444", alignSelf: "center", marginBottom: 12 },
-  modalHeading: { fontSize: 18, fontWeight: "700" },
-  inputLabel: { fontSize: 13, fontWeight: "600" },
-  input: { borderRadius: 12, borderWidth: 1, paddingHorizontal: 14, paddingVertical: 10, fontSize: 14, textAlign: "right" },
-  saveBtn: { paddingVertical: 14, borderRadius: 14, alignItems: "center", marginTop: 16 },
-  saveBtnText: { color: "#000", fontWeight: "700", fontSize: 16 },
+
+  // AliExpress-Style Modal
+  modalOverlay: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "rgba(0,0,0,0.7)", padding: 16 },
+  aliModalCard: { width: "100%", maxWidth: 480, borderRadius: 16, borderWidth: 1, overflow: "hidden", shadowColor: "#000", shadowOpacity: 0.3, shadowRadius: 10, elevation: 10 },
+  aliModalHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 18, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: "rgba(255,255,255,0.08)" },
+  aliModalTitle: { fontSize: 16, fontWeight: "800" },
+  closeBtn: { padding: 4 },
+  aliLabel: { fontSize: 13, fontWeight: "700", marginBottom: 6 },
+  aliSectionHeader: { fontSize: 14, fontWeight: "800", marginTop: 4 },
+  aliCountryBtn: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 14, paddingVertical: 12, borderRadius: 10, borderWidth: 1 },
+  aliCountryText: { fontSize: 14, fontWeight: "600" },
+  aliInput: { borderRadius: 10, borderWidth: 1, paddingHorizontal: 12, paddingVertical: 10, fontSize: 13, textAlign: "right" },
+  aliHint: { fontSize: 11, marginTop: 3, marginRight: 2 },
+  aliPhoneRow: { flexDirection: "row", gap: 8, alignItems: "center" },
+  aliDialCodeBox: { paddingHorizontal: 12, paddingVertical: 10, borderRadius: 10, borderWidth: 1, justifyContent: "center", alignItems: "center", minWidth: 60 },
+  aliDialCodeText: { fontSize: 13, fontWeight: "700" },
+  aliPhoneInput: { flex: 1, borderRadius: 10, borderWidth: 1, paddingHorizontal: 12, paddingVertical: 10, fontSize: 13, textAlign: "right" },
+  aliCheckboxRow: { flexDirection: "row", alignItems: "center", gap: 8, marginVertical: 4 },
+  aliCheckbox: { width: 18, height: 18, borderRadius: 4, borderWidth: 1.5, alignItems: "center", justifyContent: "center" },
+  aliCheckboxLabel: { fontSize: 13, fontWeight: "600" },
+  aliActionsRow: { flexDirection: "row", gap: 10, marginTop: 10 },
+  aliConfirmBtn: { flex: 1, backgroundColor: "#e11d48", paddingVertical: 12, borderRadius: 24, alignItems: "center", justifyContent: "center" },
+  aliConfirmBtnText: { color: "#fff", fontWeight: "800", fontSize: 15 },
+  aliCancelBtn: { flex: 1, borderWidth: 1, paddingVertical: 12, borderRadius: 24, alignItems: "center", justifyContent: "center" },
+  aliCancelBtnText: { fontWeight: "700", fontSize: 15 },
+
+  // Country Modal Styles
+  countryModalSheet: { borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 18, maxHeight: "80%" },
+  modalHandle: { width: 40, height: 4, borderRadius: 2, backgroundColor: "#666", alignSelf: "center", marginBottom: 12 },
+  countryModalTitle: { fontSize: 16, fontWeight: "700" },
+  countrySearchBox: { flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 12, paddingVertical: 10, borderRadius: 12, borderWidth: 1, marginBottom: 6 },
+  countrySearchInput: { flex: 1, fontSize: 14, textAlign: "right" },
+  countryItem: { flexDirection: "row", alignItems: "center", paddingVertical: 10, paddingHorizontal: 12, borderRadius: 10, borderWidth: 1, marginBottom: 4 },
+  countryName: { fontSize: 14 },
+  countryDial: { fontSize: 14, fontWeight: "700" },
 });
