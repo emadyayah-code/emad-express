@@ -17,7 +17,9 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.emadexpress.app",
       "infoPlist": {
-        "NSAppTransportSecurity": { "NSAllowsArbitraryLoads": true }
+        "NSAppTransportSecurity": {
+          "NSAllowsArbitraryLoads": true
+        }
       }
     },
     "android": {
@@ -48,15 +50,11 @@
       "expo-font",
       "expo-web-browser"
     ],
-    "experiments": {
-      "typedRoutes": true,
-      "reactCompiler": true
-    },
+    "owner": "emad-express",
     "extra": {
       "eas": {
-        "projectId": "837ca35a-e29b-41f3-8959-b3a977beef74"
+        "projectId": "7e66819e-ffaf-421e-977f-0952510fedf5"
       }
-    },
-    "owner": "emadexpree"
+    }
   }
 }
