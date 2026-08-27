@@ -169,6 +169,22 @@ function AboutModal({ visible, onClose }: { visible: boolean; onClose: () => voi
               <Text style={styles.socialLabel}>{about.twitter || "Twitter"}</Text>
             </TouchableOpacity>
           </View>
+
+          {/* Developer Credit */}
+          <View style={[styles.developerBadge, { backgroundColor: "rgba(245,158,11,0.06)", borderColor: "rgba(245,158,11,0.25)" }]}>
+            <Feather name="code" size={16} color="#f59e0b" />
+            <View style={{ flex: 1 }}>
+              <Text style={{ color: "#f59e0b", fontSize: 10, fontWeight: "700" }}>تصميم وتطوير المنصة</Text>
+              <Text style={{ color: colors.foreground, fontSize: 12, fontWeight: "700" }}>المهندس عماد الأكحلي</Text>
+            </View>
+            <TouchableOpacity 
+              onPress={() => Linking.openURL("tel:772223645")}
+              style={styles.devCallBtn}
+            >
+              <Feather name="phone-call" size={11} color="#000" />
+              <Text style={{ color: "#000", fontSize: 11, fontWeight: "800", writingDirection: "ltr" }}>772223645</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
     </Modal>
@@ -248,6 +264,22 @@ export default function ProfileScreen() {
       <TouchableOpacity onPress={() => setShowAbout(true)}>
         <Text style={{ color: colors.mutedForeground, fontSize: 13 }}>{t.profile.about || "About Us"}</Text>
       </TouchableOpacity>
+
+      {/* Developer Credit */}
+      <View style={[styles.developerBadge, { width: "90%", marginTop: 12, backgroundColor: "rgba(245,158,11,0.05)", borderColor: "rgba(245,158,11,0.2)" }]}>
+        <Feather name="code" size={15} color="#f59e0b" />
+        <View style={{ flex: 1 }}>
+          <Text style={{ color: "#f59e0b", fontSize: 10, fontWeight: "700" }}>تصميم وتطوير</Text>
+          <Text style={{ color: colors.foreground, fontSize: 12, fontWeight: "700" }}>المهندس عماد الأكحلي</Text>
+        </View>
+        <TouchableOpacity 
+          onPress={() => Linking.openURL("tel:772223645")}
+          style={styles.devCallBtn}
+        >
+          <Feather name="phone-call" size={11} color="#000" />
+          <Text style={{ color: "#000", fontSize: 11, fontWeight: "800", writingDirection: "ltr" }}>772223645</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 
@@ -284,6 +316,22 @@ export default function ProfileScreen() {
             <MenuItem icon="info"        label={(t.profile as any).about || "About Us"}            onPress={() => setShowAbout(true)} />
             <MenuItem icon="help-circle" label={t.profile.help}                                   onPress={() => {}} />
             <MenuItem icon="log-out"     label={t.profile.logout}                                 onPress={handleLogout} danger />
+
+            {/* Developer Credit */}
+            <View style={[styles.developerBadge, { marginTop: 12, backgroundColor: "rgba(245,158,11,0.05)", borderColor: "rgba(245,158,11,0.2)" }]}>
+              <Feather name="code" size={15} color="#f59e0b" />
+              <View style={{ flex: 1 }}>
+                <Text style={{ color: "#f59e0b", fontSize: 10, fontWeight: "700" }}>تصميم وتطوير</Text>
+                <Text style={{ color: colors.foreground, fontSize: 12, fontWeight: "700" }}>المهندس عماد الأكحلي</Text>
+              </View>
+              <TouchableOpacity 
+                onPress={() => Linking.openURL("tel:772223645")}
+                style={styles.devCallBtn}
+              >
+                <Feather name="phone-call" size={11} color="#000" />
+                <Text style={{ color: "#000", fontSize: 11, fontWeight: "800", writingDirection: "ltr" }}>772223645</Text>
+              </TouchableOpacity>
+            </View>
           </View>
           <View style={{ height: bottomPad + 80 }} />
         </ScrollView>
@@ -312,6 +360,8 @@ const styles = StyleSheet.create({
   optionLeft: { flexDirection: "row", alignItems: "center", gap: 12 },
   optionIcon: { width: 44, height: 44, borderRadius: 12, alignItems: "center", justifyContent: "center" },
   aboutSheet: { borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 24, gap: 14 },
+  developerBadge: { flexDirection: "row", alignItems: "center", gap: 10, padding: 12, borderRadius: 14, borderWidth: 1 },
+  devCallBtn: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "#f59e0b", paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8 },
   closeBtn: { position: "absolute", top: 24, left: 24, zIndex: 10 },
   aboutHeader: { alignItems: "center", gap: 8, paddingTop: 8 },
   aboutLogo: { width: 72, height: 72, borderRadius: 20, alignItems: "center", justifyContent: "center" },
