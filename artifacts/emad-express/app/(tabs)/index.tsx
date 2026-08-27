@@ -1,5 +1,5 @@
-import React from "react";
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, FlatList, Platform, Linking } from "react-native";
+import React, { useState, useEffect, useRef } from "react";
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, FlatList, Platform, Dimensions } from "react-native";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
@@ -11,6 +11,9 @@ import { useLanguage } from "@/context/LanguageContext";
 import { useCurrency } from "@/context/CurrencyContext";
 import { LinearGradient } from "expo-linear-gradient";
 import { AdBanner } from "@/components/AdBanner";
+
+const { width: SCREEN_WIDTH } = Dimensions.get("window");
+const SLIDE_WIDTH = Math.min(SCREEN_WIDTH - 32, 480);
 
 const logoImg = require("@/assets/images/logo.png");
 
@@ -34,15 +37,34 @@ export default function HomeScreen() {
   const { data: categories } = useQuery({ queryKey: ["categories"], queryFn: () => api.get("/categories") });
 
   const products = productsData?.data || [];
-  const featured = products.slice(0, 4);
-  const topSelling = products.slice(2, 6);
+  const showcaseProducts = products.slice(0, 6);
+  const featured = products.slice(0, 6);
+  const topSelling = products.slice(6, 12);
+
+  const [activeSlide, setActiveSlide] = useState(0);
+  const sliderRef = useRef<FlatList>(null);
+
+  // Auto-play animated carousel
+  useEffect(() => {
+    if (showcaseProducts.length <= 1) return;
+    const timer = setInterval(() => {
+      setActiveSlide((prev) => {
+        const next = (prev + 1) % showcaseProducts.length;
+        try {
+          sliderRef.current?.scrollToIndex({ index: next, animated: true });
+        } catch {}
+        return next;
+      });
+    }, 3800);
+    return () => clearInterval(timer);
+  }, [showcaseProducts.length]);
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
   const isRTL = language === "ar";
 
   return (
     <ScrollView style={[styles.container, { backgroundColor: colors.background }]} showsVerticalScrollIndicator={false}>
-      <LinearGradient colors={["#0a0a0a", "#1a1000", "#0a0a0a"]} style={[styles.heroSection, { paddingTop: topPad + 10, paddingBottom: 10 }]}>
+      <LinearGradient colors={["#0a0a0a", "#1a1000", "#0a0a0a"]} style={[styles.heroSection, { paddingTop: topPad + 10, paddingBottom: 16 }]}>
         <View style={styles.headerRow}>
           <Image source={logoImg} style={styles.logo} resizeMode="contain" />
           <TouchableOpacity onPress={() => router.push("/(tabs)/cart")} style={[styles.cartBtn, { backgroundColor: "rgba(245,158,11,0.15)", borderWidth: 1, borderColor: "rgba(245,158,11,0.3)" }]}>
@@ -50,6 +72,85 @@ export default function HomeScreen() {
             {count > 0 && <View style={styles.badge}><Text style={styles.badgeText}>{count}</Text></View>}
           </TouchableOpacity>
         </View>
+
+        {/* Animated Dynamic Product Showcase Carousel */}
+        {showcaseProducts.length > 0 && (
+          <View style={{ marginTop: 6 }}>
+            <FlatList
+              ref={sliderRef}
+              data={showcaseProducts}
+              horizontal
+              pagingEnabled
+              showsHorizontalScrollIndicator={false}
+              keyExtractor={(item: any) => `showcase-${item.id}`}
+              onMomentumScrollEnd={(e) => {
+                const idx = Math.round(e.nativeEvent.contentOffset.x / (SLIDE_WIDTH + 12));
+                if (idx >= 0 && idx < showcaseProducts.length) setActiveSlide(idx);
+              }}
+              getItemLayout={(_, index) => ({
+                length: SLIDE_WIDTH + 12,
+                offset: (SLIDE_WIDTH + 12) * index,
+                index,
+              })}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  activeOpacity={0.9}
+                  onPress={() => router.push({ pathname: "/product/[id]", params: { id: item.id } })}
+                  style={[
+                    styles.showcaseCard,
+                    { width: SLIDE_WIDTH, backgroundColor: "rgba(255,255,255,0.03)", borderColor: "rgba(245,158,11,0.25)" },
+                  ]}
+                >
+                  <View style={{ flex: 1.2, padding: 14, justifyContent: "space-between" }}>
+                    <View>
+                      <View style={styles.showcaseBadge}>
+                        <Text style={styles.showcaseBadgeText}>✨ منتج مميز</Text>
+                      </View>
+                      <Text style={[styles.showcaseTitle, { color: "#fff", textAlign: isRTL ? "right" : "left" }]} numberOfLines={2}>
+                        {item.name}
+                      </Text>
+                    </View>
+
+                    <View>
+                      <Text style={[styles.showcasePrice, { color: "#f59e0b" }]}>{format(item.price)}</Text>
+                      <View style={styles.showcaseShopBtn}>
+                        <Text style={styles.showcaseShopText}>عرض المنتج</Text>
+                        <Feather name={isRTL ? "arrow-left" : "arrow-right"} size={14} color="#000" />
+                      </View>
+                    </View>
+                  </View>
+
+                  <View style={styles.showcaseImageWrap}>
+                    {item.image ? (
+                      <Image source={{ uri: item.image }} style={styles.showcaseImage} resizeMode="cover" />
+                    ) : (
+                      <View style={[styles.showcaseImage, { backgroundColor: "#1f1f1f", alignItems: "center", justifyContent: "center" }]}>
+                        <Feather name="package" size={40} color="#666" />
+                      </View>
+                    )}
+                  </View>
+                </TouchableOpacity>
+              )}
+              contentContainerStyle={{ gap: 12 }}
+            />
+
+            {/* Pagination Dots */}
+            <View style={styles.dotsRow}>
+              {showcaseProducts.map((_: any, i: number) => (
+                <View
+                  key={`dot-${i}`}
+                  style={[
+                    styles.dot,
+                    {
+                      width: activeSlide === i ? 22 : 6,
+                      backgroundColor: activeSlide === i ? "#f59e0b" : "rgba(255,255,255,0.2)",
+                    },
+                  ]}
+                />
+              ))}
+            </View>
+          </View>
+        )}
       </LinearGradient>
 
       {/* Google AdMob Banner — Top */}
@@ -163,13 +264,17 @@ const styles = StyleSheet.create({
   cartBtn: { width: 42, height: 42, borderRadius: 21, alignItems: "center", justifyContent: "center" },
   badge: { position: "absolute", top: -4, right: -4, backgroundColor: "#ef4444", borderRadius: 8, minWidth: 16, height: 16, alignItems: "center", justifyContent: "center", paddingHorizontal: 3 },
   badgeText: { color: "#fff", fontSize: 10, fontWeight: "bold" },
-  bannerInner: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", borderRadius: 16, padding: 16, backgroundColor: "rgba(245,158,11,0.08)", borderWidth: 1, borderColor: "rgba(245,158,11,0.2)" },
-  bannerContent: { flex: 1 },
-  bannerTitle: { color: "#fff", fontSize: 18, fontWeight: "700", lineHeight: 24, marginBottom: 4 },
-  bannerSub: { color: "rgba(255,255,255,0.6)", fontSize: 12, marginBottom: 12 },
-  bannerBtn: { paddingVertical: 8, paddingHorizontal: 18, borderRadius: 10, alignSelf: "flex-start", backgroundColor: "#f59e0b" },
-  bannerBtnText: { color: "#000", fontWeight: "700", fontSize: 13 },
-  bannerEmoji: { fontSize: 52, marginLeft: 8 },
+  showcaseCard: { flexDirection: "row", borderRadius: 18, overflow: "hidden", borderWidth: 1, height: 165 },
+  showcaseBadge: { alignSelf: "flex-start", backgroundColor: "rgba(245,158,11,0.2)", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, borderWidth: 1, borderColor: "rgba(245,158,11,0.3)", marginBottom: 6 },
+  showcaseBadgeText: { color: "#f59e0b", fontSize: 10, fontWeight: "700" },
+  showcaseTitle: { fontSize: 13, fontWeight: "700", lineHeight: 18, marginBottom: 6 },
+  showcasePrice: { fontSize: 16, fontWeight: "800", marginBottom: 6 },
+  showcaseShopBtn: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "#f59e0b", paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8, alignSelf: "flex-start" },
+  showcaseShopText: { color: "#000", fontSize: 11, fontWeight: "700" },
+  showcaseImageWrap: { flex: 1, backgroundColor: "#141414" },
+  showcaseImage: { width: "100%", height: "100%" },
+  dotsRow: { flexDirection: "row", justifyContent: "center", alignItems: "center", gap: 6, marginTop: 12 },
+  dot: { height: 6, borderRadius: 3 },
   section: { marginBottom: 8 },
   sectionHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 16, marginBottom: 12, marginTop: 14 },
   sectionTitle: { fontSize: 17, fontWeight: "700" },
