@@ -189,6 +189,7 @@ router.post("/auth/register", validateBody(registerSchema), async (req, res, nex
     return res.status(201).json({
       success: true,
       token,
+      access_token: token,
       user: { id: newUser.id, name: newUser.name, email: newUser.email, role: "customer", email_verified: false },
       message: emailSent ? "تم إرسال كود التحقق إلى بريدك الإلكتروني" : "تم التسجيل بنجاح. يرجى التحقق من بريدك الإلكتروني",
       email_sent: emailSent,

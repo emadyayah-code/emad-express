@@ -8,9 +8,10 @@ export function validateBody(schema: ZodSchema) {
       next();
     } catch (err) {
       if (err instanceof ZodError) {
+        const firstMsg = err.errors[0]?.message || "بيانات غير صالحة";
         return res.status(400).json({
           success: false,
-          message: "بيانات غير صالحة",
+          message: firstMsg,
           errors: err.errors.map(e => ({ path: e.path.join("."), message: e.message })),
         });
       }

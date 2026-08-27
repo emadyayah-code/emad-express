@@ -41,26 +41,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const res = await fetch(`${BASE}/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ email: email.trim().toLowerCase(), password }),
     });
-    if (!res.ok) { const e = await res.json(); throw new Error(e.message || "فشل تسجيل الدخول"); }
-    const data = await res.json();
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) { throw new Error(data.message || "فشل تسجيل الدخول"); }
+    const authToken = data.access_token || data.token;
     setUser(data.user);
-    setToken(data.access_token);
-    await AsyncStorage.multiSet([["user", JSON.stringify(data.user)], ["token", data.access_token]]);
+    setToken(authToken);
+    await AsyncStorage.multiSet([["user", JSON.stringify(data.user)], ["token", authToken]]);
   }
 
   async function register(name: string, email: string, phone: string, password: string) {
     const res = await fetch(`${BASE}/auth/register`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, email, phone, password }),
+      body: JSON.stringify({ name: name.trim(), email: email.trim().toLowerCase(), phone: phone.trim(), password }),
     });
-    if (!res.ok) { const e = await res.json(); throw new Error(e.message || "فشل إنشاء الحساب"); }
-    const data = await res.json();
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) { throw new Error(data.message || "فشل إنشاء الحساب"); }
+    const authToken = data.access_token || data.token;
     setUser(data.user);
-    setToken(data.access_token);
-    await AsyncStorage.multiSet([["user", JSON.stringify(data.user)], ["token", data.access_token]]);
+    setToken(authToken);
+    if (authToken) {
+      await AsyncStorage.multiSet([["user", JSON.stringify(data.user)], ["token", authToken]]);
+    }
   }
 
   async function logout() {

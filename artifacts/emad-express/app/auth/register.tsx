@@ -35,7 +35,7 @@ export default function RegisterScreen() {
     setError("");
     try {
       await register(form.name.trim(), form.email.trim(), form.phone.trim(), form.password);
-      router.replace("/(tabs)");
+      router.replace({ pathname: "/verify-email", params: { email: form.email.trim().toLowerCase() } } as any);
     } catch (e: any) {
       const msg = e.message || "";
       if (msg.includes("مستخدم بالفعل") || msg.includes("مستخدم")) {

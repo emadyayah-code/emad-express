@@ -2,14 +2,11 @@ import { z } from "zod";
 
 export const emailSchema = z.string().email("بريد إلكتروني غير صالح").max(255);
 
-export const phoneSchema = z.string().regex(/^\+?[0-9\s\-]{8,20}$/, "رقم هاتف غير صالح").max(20);
+export const phoneSchema = z.string().max(30).optional().nullable().or(z.literal(""));
 
 export const passwordSchema = z.string()
-  .min(8, "كلمة المرور يجب أن تكون 8 أحرف على الأقل")
-  .max(128, "كلمة المرور طويلة جداً")
-  .regex(/[A-Z]/, "يجب أن تحتوي على حرف كبير")
-  .regex(/[a-z]/, "يجب أن تحتوي على حرف صغير")
-  .regex(/[0-9]/, "يجب أن تحتوي على رقم");
+  .min(6, "كلمة المرور يجب أن تكون 6 أحرف على الأقل")
+  .max(128, "كلمة المرور طويلة جداً");
 
 export const loginSchema = z.object({
   email: emailSchema,
