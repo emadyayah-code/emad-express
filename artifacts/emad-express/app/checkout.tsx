@@ -48,16 +48,15 @@ export default function CheckoutScreen() {
     }
     setLoading(true);
     try {
-      const selectedMethod = PAYMENT_METHODS.find(m => m.key === payMethod);
-
       // Create order first
+      const methodKey = payMethod === "stripe" ? "card" : payMethod;
       const orderRes = await api.post("/orders", {
         items: items.map(i => ({ product_id: i.id, product_name: i.name, quantity: i.quantity, price: i.price, total: i.price * i.quantity })),
         shipping_address: address,
-        payment_method: selectedMethod?.label,
+        payment_method: methodKey,
       }, token);
 
-      const orderId = orderRes.data?.data?.id;
+      const orderId = orderRes?.data?.id || orderRes?.data?.data?.id || orderRes?.id;
 
       // For Dropshipping or Split Payment, navigate to payment screen
       if (orderId && (payMethod === "split" || payMethod === "webview" || isDropshipping)) {

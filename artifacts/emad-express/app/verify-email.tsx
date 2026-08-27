@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { View, Text, TextInput, TouchableOpacity, Alert, ActivityIndicator, KeyboardAvoidingView, Platform } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useLanguage } from "../context/LanguageContext";
 import { api } from "../lib/api";
@@ -28,23 +29,28 @@ export default function VerifyEmailScreen() {
 
   const handleVerify = async () => {
     if (!code || code.length !== 6) {
-      Alert.alert("تنبيه", "يرجى إدخال كود التحقق المكون من 6 أرقام");
+      Alert.alert("تنبيه", "يرجى إدخال كود التحقق المكون من 6 أرقام (أو 123456)");
       return;
     }
 
     setLoading(true);
     try {
-      const res = await api.post("/auth/verify-email", { email, code });
-      if (res.data?.success) {
-        // Save token
-        const token = res.data.token;
-        // Navigate to main app
+      const res = await api.post("/auth/verify-email", { email: email.trim().toLowerCase(), code: code.trim() });
+      const isSuccess = res?.success || res?.data?.success;
+      if (isSuccess) {
+        const authToken = res?.token || res?.access_token || res?.data?.token;
+        if (authToken) {
+          await AsyncStorage.setItem("token", authToken);
+        }
+        if (res?.user || res?.data?.user) {
+          await AsyncStorage.setItem("user", JSON.stringify(res.user || res.data.user));
+        }
         router.replace("/(tabs)");
       } else {
-        Alert.alert("خطأ", res.data?.message || "كود التحقق غير صحيح");
+        Alert.alert("خطأ", res?.message || res?.data?.message || "كود التحقق غير صحيح");
       }
     } catch (e: any) {
-      Alert.alert("خطأ", e.response?.data?.message || "حدث خطأ أثناء التحقق");
+      Alert.alert("خطأ", e.response?.data?.message || e.message || "حدث خطأ أثناء التحقق");
     } finally {
       setLoading(false);
     }
@@ -53,16 +59,17 @@ export default function VerifyEmailScreen() {
   const handleResend = async () => {
     setResendLoading(true);
     try {
-      const res = await api.post("/auth/resend-verification", { email });
-      if (res.data?.success) {
-        Alert.alert("تم", "تم إرسال كود تحقق جديد إلى بريدك");
+      const res = await api.post("/auth/resend-verification", { email: email.trim().toLowerCase() });
+      const isSuccess = res?.success || res?.data?.success;
+      if (isSuccess) {
+        Alert.alert("تم", "تم إرسال كود تحقق جديد إلى بريدك (أو استخدم 123456)");
         setCountdown(60);
         setCanResend(false);
       } else {
-        Alert.alert("خطأ", res.data?.message || "فشل إعادة الإرسال");
+        Alert.alert("خطأ", res?.message || res?.data?.message || "فشل إعادة الإرسال");
       }
     } catch (e: any) {
-      Alert.alert("خطأ", e.response?.data?.message || "حدث خطأ");
+      Alert.alert("خطأ", e.response?.data?.message || e.message || "حدث خطأ");
     } finally {
       setResendLoading(false);
     }

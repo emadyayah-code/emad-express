@@ -23,12 +23,13 @@ export default function ProductsScreen() {
   const [selectedCat, setSelectedCat] = useState<number | null>(params.category_id ? parseInt(params.category_id) : null);
 
   const { data: productsData, isLoading } = useQuery({
-    queryKey: ["products", selectedCat],
-    queryFn: () => api.get(`/products${selectedCat ? `?category_id=${selectedCat}` : ""}`),
+    queryKey: ["products", selectedCat, language],
+    queryFn: () => api.get(`/products${selectedCat ? `?category_id=${selectedCat}&lang=${language}` : `?lang=${language}`}`),
   });
-  const { data: categories } = useQuery({ queryKey: ["categories"], queryFn: () => api.get("/categories") });
+  const { data: categoriesData } = useQuery({ queryKey: ["categories", language], queryFn: () => api.get("/categories") });
 
-  const allProducts = productsData?.data || [];
+  const categoriesList = Array.isArray(categoriesData) ? categoriesData : (categoriesData?.data || []);
+  const allProducts = Array.isArray(productsData) ? productsData : (productsData?.data || productsData?.products || []);
   const filtered = search
     ? allProducts.filter((p: any) => {
         const name = (language === "ar" ? (p.name_ar || p.name) : (p.name_en || p.name)).toLowerCase();
@@ -66,7 +67,7 @@ export default function ProductsScreen() {
               {t.products.all}
             </Text>
           </TouchableOpacity>
-          {(categories || []).map((c: any) => {
+          {categoriesList.map((c: any) => {
             const catName = language === "ar" ? (c.name_ar || c.name) : (c.name_en || c.name);
             return (
               <TouchableOpacity

@@ -20,8 +20,8 @@ export default function ProductDetailScreen() {
   const { format, currency } = useCurrency();
 
   const { data, isLoading } = useQuery({
-    queryKey: ["product", id],
-    queryFn: () => api.get(`/products/${id}`),
+    queryKey: ["product", id, language],
+    queryFn: () => api.get(`/products/${id}?lang=${language}`),
   });
 
   const product = data?.product || data?.data?.product || (data?.data && !Array.isArray(data.data) ? data.data : undefined);

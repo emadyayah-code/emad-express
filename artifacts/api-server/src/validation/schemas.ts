@@ -51,7 +51,7 @@ export const orderSchema = z.object({
     total: z.number().min(0).max(99999999).optional(),
   })).min(1, "السلة فارغة").max(50, "عدد العناصر كبير جداً"),
   shipping_address: z.string().max(1000).optional(),
-  payment_method: z.enum(["cod", "card", "bank_transfer"]).default("cod"),
+  payment_method: z.string().max(100).default("cod"),
 });
 
 export const employeeSchema = z.object({

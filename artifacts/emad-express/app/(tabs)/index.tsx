@@ -33,10 +33,11 @@ export default function HomeScreen() {
   const { t, language } = useLanguage();
   const { format } = useCurrency();
 
-  const { data: productsData } = useQuery({ queryKey: ["products"], queryFn: () => api.get("/products") });
-  const { data: categories } = useQuery({ queryKey: ["categories"], queryFn: () => api.get("/categories") });
+  const { data: productsData } = useQuery({ queryKey: ["products", language], queryFn: () => api.get(`/products?lang=${language}`) });
+  const { data: categoriesData } = useQuery({ queryKey: ["categories", language], queryFn: () => api.get("/categories") });
 
-  const products = productsData?.data || [];
+  const products = Array.isArray(productsData) ? productsData : (productsData?.data || productsData?.products || []);
+  const categories = Array.isArray(categoriesData) ? categoriesData : (categoriesData?.data || []);
   const showcaseProducts = products.slice(0, 6);
   const featured = products.slice(0, 6);
   const topSelling = products.slice(6, 12);
@@ -68,24 +69,32 @@ export default function HomeScreen() {
         <View style={styles.headerRow}>
           <Image source={logoImg} style={styles.logo} resizeMode="contain" />
           <TouchableOpacity onPress={() => router.push("/(tabs)/cart")} style={[styles.cartBtn, { backgroundColor: "rgba(245,158,11,0.15)", borderWidth: 1, borderColor: "rgba(245,158,11,0.3)" }]}>
-            <Feather name="shopping-cart" size={20} color="#f59e0b" />
-            {count > 0 && <View style={styles.badge}><Text style={styles.badgeText}>{count}</Text></View>}
+            <Feather name="shopping-bag" size={20} color="#f59e0b" />
+            {count > 0 && (
+              <View style={styles.badge}>
+                <Text style={styles.badgeText}>{count}</Text>
+              </View>
+            )}
           </TouchableOpacity>
         </View>
 
-        {/* Animated Dynamic Product Showcase Carousel */}
+        {/* Dynamic Animated Showcase Carousel */}
         {showcaseProducts.length > 0 && (
-          <View style={{ marginTop: 6 }}>
+          <View style={{ marginTop: 8 }}>
             <FlatList
               ref={sliderRef}
-              data={showcaseProducts}
               horizontal
-              pagingEnabled
+              pagingEnabled={false}
               showsHorizontalScrollIndicator={false}
+              data={showcaseProducts}
               keyExtractor={(item: any) => `showcase-${item.id}`}
+              snapToInterval={SLIDE_WIDTH + 12}
+              decelerationRate="fast"
               onMomentumScrollEnd={(e) => {
-                const idx = Math.round(e.nativeEvent.contentOffset.x / (SLIDE_WIDTH + 12));
-                if (idx >= 0 && idx < showcaseProducts.length) setActiveSlide(idx);
+                const index = Math.round(e.nativeEvent.contentOffset.x / (SLIDE_WIDTH + 12));
+                if (index >= 0 && index < showcaseProducts.length) {
+                  setActiveSlide(index);
+                }
               }}
               getItemLayout={(_, index) => ({
                 length: SLIDE_WIDTH + 12,
@@ -201,6 +210,9 @@ export default function HomeScreen() {
       <View style={styles.section}>
         <View style={[styles.sectionHeader, { flexDirection: isRTL ? "row" : "row-reverse" }]}>
           <Text style={[styles.sectionTitle, { color: colors.foreground }]}>{t.home.featured}</Text>
+          <TouchableOpacity onPress={() => router.push("/(tabs)/products")}>
+            <Text style={[styles.seeAll, { color: colors.primary }]}>{t.home.see_all}</Text>
+          </TouchableOpacity>
         </View>
         <FlatList
           horizontal showsHorizontalScrollIndicator={false}
@@ -242,6 +254,9 @@ export default function HomeScreen() {
       <View style={styles.section}>
         <View style={[styles.sectionHeader, { flexDirection: isRTL ? "row" : "row-reverse" }]}>
           <Text style={[styles.sectionTitle, { color: colors.foreground }]}>{t.home.best_sellers}</Text>
+          <TouchableOpacity onPress={() => router.push("/(tabs)/products")}>
+            <Text style={[styles.seeAll, { color: colors.primary }]}>{t.home.see_all}</Text>
+          </TouchableOpacity>
         </View>
         <View style={{ paddingHorizontal: 16, gap: 10 }}>
           {topSelling.map((item: any) => {

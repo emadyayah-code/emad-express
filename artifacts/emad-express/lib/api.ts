@@ -1,4 +1,4 @@
-﻿import AsyncStorage from "@react-native-async-storage/async-storage";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const DOMAIN = process.env.EXPO_PUBLIC_DOMAIN || "emadexpress.ayadicmed.com";
 const BASE = `https://${DOMAIN}/api`;
@@ -17,8 +17,10 @@ export async function getToken(): Promise<string | null> {
 
 async function request(path: string, opts: RequestInit = {}, customToken?: string | null) {
   const token = customToken || (await getToken());
+  const appLang = (await AsyncStorage.getItem("app_language")) || "ar";
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
+    "Accept-Language": appLang,
     ...((opts.headers as Record<string, string>) || {}),
   };
   if (token) {
