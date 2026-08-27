@@ -31,9 +31,8 @@ export function useAppSettings(): AppSettings {
   const [settings, setSettings] = useState<AppSettings>(cached ?? DEFAULTS);
 
   useEffect(() => {
-    if (cached) { setSettings(cached); return; }
-    fetch(`${BASE}/app-settings`)
-      .then(r => r.ok ? r.json() : null)
+    fetch(`${BASE}/app-settings?_t=${Date.now()}`)
+      .then(r => (r.ok ? r.json() : null))
       .then(data => {
         if (data) {
           const s: AppSettings = { ...DEFAULTS, ...data };
