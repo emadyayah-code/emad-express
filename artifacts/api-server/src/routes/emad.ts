@@ -170,29 +170,69 @@ router.post("/auth/register", validateBody(registerSchema), async (req, res, nex
     if (existing) return res.status(409).json({ success: false, message: "البريد الإلكتروني مستخدم بالفعل" });
 
     const hashedPassword = await hashPassword(password);
-    const verificationCode = generateVerificationCode();
-    const verificationExpiry = getVerificationExpiry();
 
     const [newUser] = await db.insert(users).values({
       name, email: normalizedEmail, password: hashedPassword, phone: phone || "", role: "customer",
-      email_verified: false, verification_code: verificationCode, verification_expires_at: verificationExpiry,
+      email_verified: true,
     }).returning();
 
     const [newCustomer] = await db.insert(customers).values({
       user_id: newUser.id, name, email: normalizedEmail, phone: phone || "", address: address || "",
     }).returning();
 
-    // Send verification email
-    const emailSent = await sendVerificationEmail(normalizedEmail, name, verificationCode);
-
     const token = signToken({ userId: newUser.id, customerId: newCustomer.id, role: "customer" });
     return res.status(201).json({
       success: true,
       token,
       access_token: token,
-      user: { id: newUser.id, name: newUser.name, email: newUser.email, role: "customer", email_verified: false },
-      message: emailSent ? "تم إرسال كود التحقق إلى بريدك الإلكتروني" : "تم التسجيل بنجاح. يرجى التحقق من بريدك الإلكتروني",
-      email_sent: emailSent,
+      user: { id: newUser.id, name: newUser.name, email: newUser.email, role: "customer", email_verified: true },
+      message: "تم إنشاء الحساب وتسجيل الدخول بنجاح",
+    });
+  } catch (err) { next(err); }
+});
+
+router.post("/auth/google", async (req, res, next) => {
+  try {
+    const { email, name, google_id, photo, phone } = req.body;
+    if (!email) {
+      return res.status(400).json({ success: false, message: "البريد الإلكتروني مطلوب" });
+    }
+    const normalizedEmail = email.trim().toLowerCase();
+    let [user] = await db.select().from(users).where(eq(users.email, normalizedEmail));
+
+    if (!user) {
+      const tempPass = await hashPassword(`google_${Date.now()}_${Math.random()}`);
+      [user] = await db.insert(users).values({
+        name: name || normalizedEmail.split("@")[0],
+        email: normalizedEmail,
+        password: tempPass,
+        phone: phone || "",
+        role: "customer",
+        email_verified: true,
+      }).returning();
+
+      await db.insert(customers).values({
+        user_id: user.id,
+        name: user.name,
+        email: normalizedEmail,
+        phone: phone || "",
+        address: "",
+      });
+    }
+
+    let customerId: number | undefined;
+    if (user.role === "customer") {
+      const [customer] = await db.select().from(customers).where(eq(customers.user_id, user.id));
+      if (customer) customerId = customer.id;
+    }
+
+    const token = signToken({ userId: user.id, customerId, role: user.role });
+    return res.json({
+      success: true,
+      token,
+      access_token: token,
+      user: { id: user.id, name: user.name, email: user.email, role: user.role, email_verified: true },
+      message: "تم تسجيل الدخول عبر Google بنجاح",
     });
   } catch (err) { next(err); }
 });
@@ -208,16 +248,6 @@ router.post("/auth/login", authRateLimiter, validateBody(loginSchema), async (re
     if (!valid) {
       logger.warn({ email: normalizedEmail, ip: req.ip }, "Failed login attempt");
       return res.status(401).json({ success: false, message: "بيانات الدخول غير صحيحة" });
-    }
-
-    // Check if email is verified for customer role
-    if (!user.email_verified && user.role === "customer") {
-      return res.status(403).json({
-        success: false,
-        message: "البريد الإلكتروني غير مفعل. يرجى التحقق من بريدك الإلكتروني",
-        requires_verification: true,
-        email: user.email,
-      });
     }
 
     let customerId: number | undefined;

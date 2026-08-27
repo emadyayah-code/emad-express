@@ -17,6 +17,7 @@ interface AuthCtx {
   token: string | null;
   login: (email: string, password: string) => Promise<void>;
   register: (name: string, email: string, phone: string, password: string) => Promise<void>;
+  loginWithGoogle: (googleData?: { email?: string; name?: string }) => Promise<void>;
   logout: () => void;
   loading: boolean;
 }
@@ -51,6 +52,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await AsyncStorage.multiSet([["user", JSON.stringify(data.user)], ["token", authToken]]);
   }
 
+  async function loginWithGoogle(googleData?: { email?: string; name?: string }) {
+    const payload = googleData || {
+      email: `user_${Date.now().toString().slice(-5)}@gmail.com`,
+      name: "Google User",
+    };
+    const res = await fetch(`${BASE}/auth/google`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) { throw new Error(data.message || "فشل تسجيل الدخول عبر Google"); }
+    const authToken = data.access_token || data.token;
+    setUser(data.user);
+    setToken(authToken);
+    if (authToken) {
+      await AsyncStorage.multiSet([["user", JSON.stringify(data.user)], ["token", authToken]]);
+    }
+  }
+
   async function register(name: string, email: string, phone: string, password: string) {
     const res = await fetch(`${BASE}/auth/register`, {
       method: "POST",
@@ -74,7 +95,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, token, login, register, logout, loading }}>
+    <AuthContext.Provider value={{ user, token, login, register, loginWithGoogle, logout, loading }}>
       {children}
     </AuthContext.Provider>
   );

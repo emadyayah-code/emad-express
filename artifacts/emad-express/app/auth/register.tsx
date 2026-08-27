@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+﻿import React, { useState } from "react";
 import {
   View,
   Text,
@@ -13,7 +13,7 @@ import {
   FlatList,
 } from "react-native";
 import { useRouter } from "expo-router";
-import { Feather } from "@expo/vector-icons";
+import { Feather, FontAwesome5 } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
 import { useAuth } from "@/context/AuthContext";
@@ -24,7 +24,7 @@ export default function RegisterScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { register, loading } = useAuth();
+  const { register, loginWithGoogle, loading } = useAuth();
   const { t, language } = useLanguage();
 
   const [name, setName] = useState("");
@@ -35,6 +35,7 @@ export default function RegisterScreen() {
   const [countryModalVisible, setCountryModalVisible] = useState(false);
   const [searchCountry, setSearchCountry] = useState("");
   const [error, setError] = useState("");
+  const [googleLoading, setGoogleLoading] = useState(false);
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
 
@@ -68,7 +69,8 @@ export default function RegisterScreen() {
 
     try {
       await register(name.trim(), email.trim(), fullPhone, password);
-      router.replace({ pathname: "/verify-email", params: { email: email.trim().toLowerCase() } } as any);
+      // Directly log in and go to home tabs without OTP
+      router.replace("/(tabs)");
     } catch (e: any) {
       const msg = e.message || "";
       if (msg.includes("مستخدم بالفعل") || msg.includes("مستخدم")) {
@@ -78,6 +80,24 @@ export default function RegisterScreen() {
       } else {
         setError(msg || "فشل إنشاء الحساب. حاول مجدداً.");
       }
+    }
+  }
+
+  async function handleGoogleAuth() {
+    setGoogleLoading(true);
+    setError("");
+    try {
+      // Direct instant Google login/registration
+      const demoEmail = `user_${Date.now().toString().slice(-4)}@gmail.com`;
+      await loginWithGoogle({
+        email: demoEmail,
+        name: name.trim() || "مستخدم Google",
+      });
+      router.replace("/(tabs)");
+    } catch (e: any) {
+      setError(e.message || "فشل التسجيل عبر Google");
+    } finally {
+      setGoogleLoading(false);
     }
   }
 
@@ -97,9 +117,33 @@ export default function RegisterScreen() {
         <View style={{ flex: 1, padding: 24 }}>
           <Text style={[styles.brandName, { color: colors.primary }]}>عماد إكسبرس</Text>
           <Text style={[styles.subtitle, { color: colors.foreground }]}>إنشاء حساب جديد</Text>
-          <Text style={{ color: colors.mutedForeground, fontSize: 14, marginBottom: 24 }}>
+          <Text style={{ color: colors.mutedForeground, fontSize: 14, marginBottom: 20 }}>
             انضم إلينا واستمتع بتجربة تسوق مميزة وسريعة
           </Text>
+
+          {/* Quick Google Sign-In Button */}
+          <TouchableOpacity
+            style={[styles.googleBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
+            onPress={handleGoogleAuth}
+            disabled={googleLoading || loading}
+          >
+            {googleLoading ? (
+              <ActivityIndicator color={colors.primary} size="small" />
+            ) : (
+              <>
+                <FontAwesome5 name="google" size={18} color="#ea4335" />
+                <Text style={[styles.googleBtnText, { color: colors.foreground }]}>
+                  التسجيل السريع عبر Google
+                </Text>
+              </>
+            )}
+          </TouchableOpacity>
+
+          <View style={styles.orDivider}>
+            <View style={[styles.line, { backgroundColor: colors.border }]} />
+            <Text style={[styles.orText, { color: colors.mutedForeground }]}>أو عبر البريد الإلكتروني</Text>
+            <View style={[styles.line, { backgroundColor: colors.border }]} />
+          </View>
 
           {/* Name Field */}
           <View style={[styles.inputGroup, { backgroundColor: colors.card, borderColor: colors.border }]}>
@@ -138,27 +182,31 @@ export default function RegisterScreen() {
           {/* Phone Field with Country Selector */}
           <View style={[styles.inputGroup, { backgroundColor: colors.card, borderColor: colors.border, paddingVertical: 6 }]}>
             <TouchableOpacity
-              onPress={() => setCountryModalVisible(true)}
-              style={[styles.countryPickerBtn, { borderColor: colors.border, backgroundColor: colors.muted }]}
+              style={styles.countryPickerBtn}
+              onPress={() => {
+                setSearchCountry("");
+                setCountryModalVisible(true);
+              }}
             >
               <Text style={{ fontSize: 20 }}>{selectedCountry.flag}</Text>
-              <Text style={{ color: colors.foreground, fontWeight: "700", fontSize: 13 }}>{selectedCountry.dialCode}</Text>
+              <Text style={[styles.dialCodeText, { color: colors.primary }]}>{selectedCountry.dialCode}</Text>
               <Feather name="chevron-down" size={14} color={colors.mutedForeground} />
             </TouchableOpacity>
+
+            <View style={[styles.verticalDivider, { backgroundColor: colors.border }]} />
 
             <TextInput
               value={phoneNumber}
               onChangeText={(v) => {
-                setPhoneNumber(v);
+                setPhoneNumber(v.replace(/\D/g, ""));
                 setError("");
               }}
-              placeholder="رقم الهاتف"
+              placeholder="رقم الهاتف (مثال: 771234567)"
               placeholderTextColor={colors.mutedForeground}
               keyboardType="phone-pad"
-              style={[styles.input, { color: colors.foreground, textAlign: "left", paddingVertical: 8 }]}
+              style={[styles.input, { color: colors.foreground }]}
               editable={!loading}
             />
-            <Feather name="phone" size={18} color={colors.mutedForeground} />
           </View>
 
           {/* Password Field */}
@@ -190,7 +238,7 @@ export default function RegisterScreen() {
             onPress={handleRegister}
             disabled={loading}
           >
-            {loading ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.btnText}>إنشاء الحساب</Text>}
+            {loading ? <ActivityIndicator color="#000" size="small" /> : <Text style={styles.btnText}>إنشاء الحساب فوراً</Text>}
           </TouchableOpacity>
 
           <View style={{ flexDirection: "row", justifyContent: "center", gap: 6, marginTop: 20 }}>
@@ -240,28 +288,26 @@ export default function RegisterScreen() {
                 return (
                   <TouchableOpacity
                     style={[
-                      styles.countryRow,
+                      styles.countryItem,
                       {
-                        backgroundColor: isSelected ? "#f59e0b18" : "transparent",
-                        borderColor: isSelected ? colors.primary : colors.border,
+                        backgroundColor: isSelected ? "#f59e0b15" : "transparent",
+                        borderColor: isSelected ? colors.primary : "transparent",
                       },
                     ]}
                     onPress={() => {
                       setSelectedCountry(item);
                       setCountryModalVisible(false);
-                      setSearchCountry("");
                     }}
                   >
-                    <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
-                      <Text style={{ fontSize: 24 }}>{item.flag}</Text>
-                      <View>
-                        <Text style={{ color: colors.foreground, fontWeight: "600", fontSize: 14 }}>
-                          {language === "ar" ? item.nameAr : item.nameEn}
-                        </Text>
-                        <Text style={{ color: colors.mutedForeground, fontSize: 12 }}>{item.dialCode}</Text>
-                      </View>
+                    <Text style={{ fontSize: 24, marginRight: 8 }}>{item.flag}</Text>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.countryName, { color: colors.foreground, fontWeight: isSelected ? "700" : "500" }]}>
+                        {language === "ar" ? item.nameAr : item.nameEn}
+                      </Text>
+                      <Text style={{ color: colors.mutedForeground, fontSize: 12 }}>{item.code}</Text>
                     </View>
-                    {isSelected && <Feather name="check" size={18} color={colors.primary} />}
+                    <Text style={[styles.countryDial, { color: colors.primary }]}>{item.dialCode}</Text>
+                    {isSelected && <Feather name="check" size={16} color={colors.primary} style={{ marginLeft: 6 }} />}
                   </TouchableOpacity>
                 );
               }}
@@ -275,62 +321,43 @@ export default function RegisterScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  brandName: { fontSize: 26, fontWeight: "800", marginBottom: 6 },
-  subtitle: { fontSize: 22, fontWeight: "700", marginBottom: 6 },
-  inputGroup: {
+  brandName: { fontSize: 20, fontWeight: "800", textAlign: "center", marginBottom: 8, letterSpacing: 0.5 },
+  subtitle: { fontSize: 24, fontWeight: "800", textAlign: "center", marginBottom: 6 },
+  googleBtn: {
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "center",
     gap: 10,
+    paddingVertical: 14,
     borderRadius: 14,
     borderWidth: 1,
-    paddingHorizontal: 14,
-    paddingVertical: 14,
-    marginBottom: 12,
+    marginBottom: 16,
   },
-  input: { flex: 1, fontSize: 15, textAlign: "right" },
-  countryPickerBtn: {
+  googleBtnText: { fontSize: 15, fontWeight: "700" },
+  orDivider: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    borderRadius: 10,
-    borderWidth: 1,
+    marginVertical: 12,
+    gap: 10,
   },
-  errorBox: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    backgroundColor: "#ef444415",
-    borderRadius: 10,
-    padding: 10,
-    marginBottom: 12,
-  },
-  error: { color: "#ef4444", fontSize: 13, flex: 1 },
-  btn: { paddingVertical: 15, borderRadius: 14, alignItems: "center", marginTop: 4 },
-  btnText: { color: "#fff", fontWeight: "700", fontSize: 16 },
-  countryModalSheet: { borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20 },
-  modalHandle: { width: 40, height: 4, borderRadius: 2, backgroundColor: "#444", alignSelf: "center", marginBottom: 12 },
-  countryModalTitle: { fontSize: 17, fontWeight: "700" },
-  countrySearchBox: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    borderRadius: 12,
-    borderWidth: 1,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    marginBottom: 6,
-  },
+  line: { flex: 1, height: 1 },
+  orText: { fontSize: 12, fontWeight: "600" },
+  inputGroup: { flexDirection: "row", alignItems: "center", gap: 10, borderRadius: 14, borderWidth: 1, paddingHorizontal: 14, paddingVertical: 12, marginBottom: 12 },
+  input: { flex: 1, fontSize: 14, textAlign: "right" },
+  countryPickerBtn: { flexDirection: "row", alignItems: "center", gap: 6, paddingVertical: 4, paddingHorizontal: 4 },
+  dialCodeText: { fontSize: 14, fontWeight: "700" },
+  verticalDivider: { width: 1, height: 26, marginHorizontal: 4 },
+  errorBox: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "#fef2f2", padding: 10, borderRadius: 10, marginBottom: 12 },
+  error: { color: "#ef4444", fontSize: 13, flex: 1, textAlign: "right" },
+  btn: { paddingVertical: 15, borderRadius: 14, alignItems: "center", marginTop: 6 },
+  btnText: { color: "#000", fontWeight: "800", fontSize: 16 },
+  // Modal styles
+  countryModalSheet: { borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 18, maxHeight: "80%" },
+  modalHandle: { width: 40, height: 4, borderRadius: 2, backgroundColor: "#666", alignSelf: "center", marginBottom: 12 },
+  countryModalTitle: { fontSize: 16, fontWeight: "700" },
+  countrySearchBox: { flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 12, paddingVertical: 10, borderRadius: 12, borderWidth: 1, marginBottom: 6 },
   countrySearchInput: { flex: 1, fontSize: 14, textAlign: "right" },
-  countryRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    borderRadius: 12,
-    borderWidth: 1,
-    marginBottom: 6,
-  },
+  countryItem: { flexDirection: "row", alignItems: "center", paddingVertical: 10, paddingHorizontal: 12, borderRadius: 10, borderWidth: 1, marginBottom: 4 },
+  countryName: { fontSize: 14 },
+  countryDial: { fontSize: 14, fontWeight: "700" },
 });
