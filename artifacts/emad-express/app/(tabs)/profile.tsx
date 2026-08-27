@@ -292,13 +292,11 @@ export default function ProfileScreen() {
 
           <View style={{ padding: 16, gap: 10 }}>
             <MenuItem icon="package"     label={t.profile.my_orders}                              onPress={() => router.push("/(tabs)/orders")} />
-            <MenuItem icon="heart"       label={t.profile.favorites}                              onPress={() => {}} />
-            <MenuItem icon="map-pin"     label={t.profile.addresses}                              onPress={() => {}} />
-            <MenuItem icon="settings"    label={t.profile.settings}                               onPress={() => {}} />
+            <MenuItem icon="heart"       label={t.profile.favorites}                              onPress={() => router.push("/favorites")} />
+            <MenuItem icon="map-pin"     label={t.profile.addresses}                              onPress={() => router.push("/addresses")} />
             <MenuItem icon="globe"       label={t.profile.language}   rightEl={<LangBadge />}     onPress={() => setShowLanguage(true)} />
             <MenuItem icon="dollar-sign" label={language === "ar" ? "العملة" : "Currency"} rightEl={<CurrencyBadge />} onPress={() => setShowCurrency(true)} />
             <MenuItem icon="info"        label={(t.profile as any).about || "About Us"}            onPress={() => setShowAbout(true)} />
-            <MenuItem icon="help-circle" label={t.profile.help}                                   onPress={() => {}} />
             <MenuItem icon="log-out"     label={t.profile.logout}                                 onPress={handleLogout} danger />
 
             {/* Copyright Badge */}

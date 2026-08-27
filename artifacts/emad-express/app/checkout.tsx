@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Platform, Alert } from "react-native";
 import { useRouter } from "expo-router";
 import { Feather, FontAwesome5 } from "@expo/vector-icons";
@@ -8,6 +8,7 @@ import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { useCurrency } from "@/context/CurrencyContext";
+import { useAddress } from "@/context/AddressContext";
 import { api } from "@/lib/api";
 
 export default function CheckoutScreen() {
@@ -18,11 +19,19 @@ export default function CheckoutScreen() {
   const { token } = useAuth();
   const { t } = useLanguage();
   const { format } = useCurrency();
+  const { addresses, defaultAddress } = useAddress();
 
   const [address, setAddress] = useState("");
   const [payMethod, setPayMethod] = useState("stripe");
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+
+  useEffect(() => {
+    if (!address && defaultAddress) {
+      const formatted = `${defaultAddress.recipientName} (${defaultAddress.phone}) - ${defaultAddress.country}، ${defaultAddress.city}، ${defaultAddress.street}${defaultAddress.building ? `، عمارة: ${defaultAddress.building}` : ""}`;
+      setAddress(formatted);
+    }
+  }, [defaultAddress]);
 
   const isDropshipping = items.some((i: any) => i.source_platform);
 
@@ -133,7 +142,41 @@ export default function CheckoutScreen() {
 
           {/* Address */}
           <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <Text style={[styles.cardTitle, { color: colors.foreground }]}>{t.checkout.delivery_address}</Text>
+            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+              <Text style={[styles.cardTitle, { color: colors.foreground, marginBottom: 0 }]}>{t.checkout.delivery_address}</Text>
+              <TouchableOpacity onPress={() => router.push("/addresses")} style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                <Feather name="map-pin" size={13} color={colors.primary} />
+                <Text style={{ color: colors.primary, fontSize: 12, fontWeight: "600" }}>إدارة عناويني</Text>
+              </TouchableOpacity>
+            </View>
+
+            {addresses.length > 0 && (
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingBottom: 10 }}>
+                {addresses.map((a) => {
+                  const formatted = `${a.recipientName} (${a.phone}) - ${a.country}، ${a.city}، ${a.street}${a.building ? `، عمارة: ${a.building}` : ""}`;
+                  const isSelected = address === formatted;
+                  return (
+                    <TouchableOpacity
+                      key={a.id}
+                      onPress={() => setAddress(formatted)}
+                      style={[
+                        styles.addrPill,
+                        {
+                          backgroundColor: isSelected ? "#f59e0b20" : colors.muted,
+                          borderColor: isSelected ? colors.primary : colors.border,
+                        },
+                      ]}
+                    >
+                      <Feather name={isSelected ? "check-circle" : "map-pin"} size={13} color={isSelected ? colors.primary : colors.mutedForeground} />
+                      <Text style={{ color: isSelected ? colors.primary : colors.foreground, fontSize: 12, fontWeight: "600" }}>
+                        {a.title || "عنوان"} - {a.city}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            )}
+
             <TextInput
               value={address} onChangeText={setAddress}
               placeholder={t.checkout.address_placeholder}
@@ -191,6 +234,7 @@ const styles = StyleSheet.create({
   cardTitle: { fontSize: 16, fontWeight: "700", marginBottom: 12 },
   orderItem: { flexDirection: "row", justifyContent: "space-between", marginBottom: 8 },
   divider: { height: 1, marginVertical: 10 },
+  addrPill: { flexDirection: "row", alignItems: "center", gap: 6, paddingVertical: 8, paddingHorizontal: 12, borderRadius: 10, borderWidth: 1 },
   addressInput: { borderRadius: 12, borderWidth: 1, padding: 12, fontSize: 14, minHeight: 80, textAlignVertical: "top", textAlign: "right" },
   payOption: { flexDirection: "row", alignItems: "center", gap: 12, padding: 12, borderRadius: 12, borderWidth: 1.5, marginBottom: 8 },
   radio: { width: 20, height: 20, borderRadius: 10, borderWidth: 2, alignItems: "center", justifyContent: "center" },

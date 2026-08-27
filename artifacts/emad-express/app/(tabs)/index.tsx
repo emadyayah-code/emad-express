@@ -9,6 +9,7 @@ import { api } from "@/lib/api";
 import { useCart } from "@/context/CartContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { useCurrency } from "@/context/CurrencyContext";
+import { useFavorites } from "@/context/FavoritesContext";
 import { LinearGradient } from "expo-linear-gradient";
 import { AdBanner } from "@/components/AdBanner";
 
@@ -32,6 +33,7 @@ export default function HomeScreen() {
   const { addItem, count } = useCart();
   const { t, language } = useLanguage();
   const { format } = useCurrency();
+  const { favorites, isFavorite, toggleFavorite } = useFavorites();
 
   const { data: productsData } = useQuery({ queryKey: ["products", language], queryFn: () => api.get(`/products?lang=${language}`) });
   const { data: categoriesData } = useQuery({ queryKey: ["categories", language], queryFn: () => api.get("/categories") });
@@ -68,14 +70,24 @@ export default function HomeScreen() {
       <LinearGradient colors={["#0a0a0a", "#1a1000", "#0a0a0a"]} style={[styles.heroSection, { paddingTop: topPad + 10, paddingBottom: 16 }]}>
         <View style={styles.headerRow}>
           <Image source={logoImg} style={styles.logo} resizeMode="contain" />
-          <TouchableOpacity onPress={() => router.push("/(tabs)/cart")} style={[styles.cartBtn, { backgroundColor: "rgba(245,158,11,0.15)", borderWidth: 1, borderColor: "rgba(245,158,11,0.3)" }]}>
-            <Feather name="shopping-bag" size={20} color="#f59e0b" />
-            {count > 0 && (
-              <View style={styles.badge}>
-                <Text style={styles.badgeText}>{count}</Text>
-              </View>
-            )}
-          </TouchableOpacity>
+          <View style={{ flexDirection: "row", gap: 10 }}>
+            <TouchableOpacity onPress={() => router.push("/favorites")} style={[styles.cartBtn, { backgroundColor: "rgba(239,68,68,0.15)", borderWidth: 1, borderColor: "rgba(239,68,68,0.3)" }]}>
+              <Feather name="heart" size={19} color="#ef4444" />
+              {favorites.length > 0 && (
+                <View style={[styles.badge, { backgroundColor: "#ef4444" }]}>
+                  <Text style={styles.badgeText}>{favorites.length}</Text>
+                </View>
+              )}
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => router.push("/(tabs)/cart")} style={[styles.cartBtn, { backgroundColor: "rgba(245,158,11,0.15)", borderWidth: 1, borderColor: "rgba(245,158,11,0.3)" }]}>
+              <Feather name="shopping-bag" size={19} color="#f59e0b" />
+              {count > 0 && (
+                <View style={styles.badge}>
+                  <Text style={styles.badgeText}>{count}</Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* Dynamic Animated Showcase Carousel */}
@@ -220,16 +232,36 @@ export default function HomeScreen() {
           keyExtractor={(item: any) => String(item.id)}
           renderItem={({ item }: { item: any }) => {
             const displayName = language === "ar" ? (item.name_ar || item.name) : (item.name_en || item.name);
+            const isFav = isFavorite(item.id);
             return (
               <TouchableOpacity style={[styles.productCard, { backgroundColor: colors.card, borderColor: colors.border }]}
                 onPress={() => router.push({ pathname: "/product/[id]", params: { id: item.id } })}>
-                {item.image ? (
-                  <Image source={{ uri: item.image }} style={styles.productImage} resizeMode="cover" />
-                ) : (
-                  <View style={[styles.productImage, { backgroundColor: colors.muted, alignItems: "center", justifyContent: "center" }]}>
-                    <Feather name="package" size={32} color={colors.mutedForeground} />
-                  </View>
-                )}
+                <View style={{ position: "relative" }}>
+                  {item.image ? (
+                    <Image source={{ uri: item.image }} style={styles.productImage} resizeMode="cover" />
+                  ) : (
+                    <View style={[styles.productImage, { backgroundColor: colors.muted, alignItems: "center", justifyContent: "center" }]}>
+                      <Feather name="package" size={32} color={colors.mutedForeground} />
+                    </View>
+                  )}
+                  <TouchableOpacity
+                    style={[styles.favCardBtn, { backgroundColor: "rgba(0,0,0,0.6)" }]}
+                    onPress={(e) => {
+                      e.stopPropagation?.();
+                      toggleFavorite({
+                        id: item.id,
+                        name: item.name,
+                        name_ar: item.name_ar,
+                        name_en: item.name_en,
+                        price: item.price,
+                        image: item.image,
+                        category_id: item.category_id,
+                      });
+                    }}
+                  >
+                    <Feather name="heart" size={14} color={isFav ? "#ef4444" : "#fff"} />
+                  </TouchableOpacity>
+                </View>
                 <View style={styles.productInfo}>
                   <Text style={[styles.productName, { color: colors.foreground, textAlign: isRTL ? "right" : "left" }]} numberOfLines={2}>{displayName}</Text>
                   <Text style={[styles.productPrice, { color: colors.primary }]}>{format(item.price, language)}</Text>
@@ -318,6 +350,7 @@ const styles = StyleSheet.create({
   catName: { fontSize: 12, fontWeight: "600", textAlign: "center", maxWidth: 80 },
   productCard: { width: 165, borderRadius: 14, overflow: "hidden", borderWidth: 1 },
   productImage: { width: "100%", height: 140 },
+  favCardBtn: { position: "absolute", top: 8, right: 8, width: 28, height: 28, borderRadius: 14, alignItems: "center", justifyContent: "center" },
   productInfo: { padding: 12 },
   productName: { fontSize: 13, fontWeight: "600", lineHeight: 18, marginBottom: 6 },
   productPrice: { fontSize: 15, fontWeight: "700", marginBottom: 10 },

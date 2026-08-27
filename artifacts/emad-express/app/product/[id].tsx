@@ -9,6 +9,7 @@ import { api } from "@/lib/api";
 import { useCart } from "@/context/CartContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { useCurrency } from "@/context/CurrencyContext";
+import { useFavorites } from "@/context/FavoritesContext";
 
 export default function ProductDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -18,6 +19,7 @@ export default function ProductDetailScreen() {
   const { addItem, items } = useCart();
   const { t, language } = useLanguage();
   const { format, currency } = useCurrency();
+  const { isFavorite, toggleFavorite } = useFavorites();
 
   const { data, isLoading } = useQuery({
     queryKey: ["product", id, language],
@@ -26,6 +28,7 @@ export default function ProductDetailScreen() {
 
   const product = data?.product || data?.data?.product || (data?.data && !Array.isArray(data.data) ? data.data : undefined);
   const inCart = items.find(i => i.id === Number(id));
+  const isFav = isFavorite(Number(id));
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
   const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
@@ -69,6 +72,22 @@ export default function ProductDetailScreen() {
           )}
           <TouchableOpacity style={[styles.backBtn, { top: topPad + 12, backgroundColor: colors.card }]} onPress={() => router.back()}>
             <Feather name="arrow-right" size={20} color={colors.foreground} />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.favBtn, { top: topPad + 12, backgroundColor: colors.card }]}
+            onPress={() => toggleFavorite({
+              id: product.id,
+              name: product.name,
+              name_ar: product.name_ar,
+              name_en: product.name_en,
+              price: product.price,
+              image: product.image,
+              description: product.description,
+              description_ar: product.description_ar,
+              description_en: product.description_en,
+            })}
+          >
+            <Feather name="heart" size={20} color={isFav ? "#ef4444" : colors.foreground} />
           </TouchableOpacity>
         </View>
         <View style={[styles.content, { backgroundColor: colors.background }]}>
@@ -140,6 +159,7 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   heroImage: { width: "100%", height: 300 },
   backBtn: { position: "absolute", left: 16, width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center", shadowColor: "#000", shadowOpacity: 0.1, shadowRadius: 8, elevation: 3 },
+  favBtn: { position: "absolute", right: 16, width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center", shadowColor: "#000", shadowOpacity: 0.1, shadowRadius: 8, elevation: 3 },
   content: { padding: 20, borderTopLeftRadius: 24, borderTopRightRadius: 24, marginTop: -20 },
   productName: { fontSize: 20, fontWeight: "700", lineHeight: 28, flex: 1 },
   stockBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, marginTop: 4 },

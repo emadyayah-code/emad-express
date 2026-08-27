@@ -18,6 +18,8 @@ import { CartProvider } from "@/context/CartContext";
 import { AuthProvider } from "@/context/AuthContext";
 import { LanguageProvider } from "@/context/LanguageContext";
 import { CurrencyProvider } from "@/context/CurrencyContext";
+import { FavoritesProvider } from "@/context/FavoritesContext";
+import { AddressProvider } from "@/context/AddressContext";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -33,6 +35,8 @@ function RootLayoutNav() {
       <Stack.Screen name="auth/login" options={{ headerShown: false, presentation: "modal" }} />
       <Stack.Screen name="auth/register" options={{ headerShown: false, presentation: "modal" }} />
       <Stack.Screen name="checkout" options={{ headerShown: false, presentation: "card" }} />
+      <Stack.Screen name="addresses" options={{ headerShown: false, presentation: "card" }} />
+      <Stack.Screen name="favorites" options={{ headerShown: false, presentation: "card" }} />
     </Stack>
   );
 }
@@ -59,15 +63,19 @@ export default function RootLayout() {
         <QueryClientProvider client={queryClient}>
           <LanguageProvider>
             <CurrencyProvider>
-            <AuthProvider>
-              <CartProvider>
-                <GestureHandlerRootView>
-                  <KeyboardProvider>
-                    <RootLayoutNav />
-                  </KeyboardProvider>
-                </GestureHandlerRootView>
-              </CartProvider>
-            </AuthProvider>
+              <AuthProvider>
+                <AddressProvider>
+                  <FavoritesProvider>
+                    <CartProvider>
+                      <GestureHandlerRootView>
+                        <KeyboardProvider>
+                          <RootLayoutNav />
+                        </KeyboardProvider>
+                      </GestureHandlerRootView>
+                    </CartProvider>
+                  </FavoritesProvider>
+                </AddressProvider>
+              </AuthProvider>
             </CurrencyProvider>
           </LanguageProvider>
         </QueryClientProvider>

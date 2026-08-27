@@ -9,6 +9,7 @@ import { api } from "@/lib/api";
 import { useCart } from "@/context/CartContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { useCurrency } from "@/context/CurrencyContext";
+import { useFavorites } from "@/context/FavoritesContext";
 
 export default function ProductsScreen() {
   const colors = useColors();
@@ -18,6 +19,7 @@ export default function ProductsScreen() {
   const { addItem } = useCart();
   const { t, language, isRTL } = useLanguage();
   const { format } = useCurrency();
+  const { isFavorite, toggleFavorite } = useFavorites();
 
   const [search, setSearch] = useState("");
   const [selectedCat, setSelectedCat] = useState<number | null>(params.category_id ? parseInt(params.category_id) : null);
@@ -103,18 +105,38 @@ export default function ProductsScreen() {
           showsVerticalScrollIndicator={false}
           renderItem={({ item }: { item: any }) => {
             const displayName = language === "ar" ? (item.name_ar || item.name) : (item.name_en || item.name);
+            const isFav = isFavorite(item.id);
             return (
               <TouchableOpacity
                 style={[styles.productCard, { backgroundColor: colors.card, borderColor: colors.border, flex: 1 }]}
                 onPress={() => router.push({ pathname: "/product/[id]", params: { id: item.id } })}
               >
-                {item.image ? (
-                  <Image source={{ uri: item.image }} style={styles.productImage} resizeMode="cover" />
-                ) : (
-                  <View style={[styles.productImage, { backgroundColor: colors.muted, alignItems: "center", justifyContent: "center" }]}>
-                    <Feather name="package" size={32} color={colors.mutedForeground} />
-                  </View>
-                )}
+                <View style={{ position: "relative" }}>
+                  {item.image ? (
+                    <Image source={{ uri: item.image }} style={styles.productImage} resizeMode="cover" />
+                  ) : (
+                    <View style={[styles.productImage, { backgroundColor: colors.muted, alignItems: "center", justifyContent: "center" }]}>
+                      <Feather name="package" size={32} color={colors.mutedForeground} />
+                    </View>
+                  )}
+                  <TouchableOpacity
+                    style={[styles.cardFavBtn, { backgroundColor: "rgba(0,0,0,0.6)" }]}
+                    onPress={(e) => {
+                      e.stopPropagation?.();
+                      toggleFavorite({
+                        id: item.id,
+                        name: item.name,
+                        name_ar: item.name_ar,
+                        name_en: item.name_en,
+                        price: item.price,
+                        image: item.image,
+                        category_id: item.category_id,
+                      });
+                    }}
+                  >
+                    <Feather name="heart" size={14} color={isFav ? "#ef4444" : "#fff"} />
+                  </TouchableOpacity>
+                </View>
                 <View style={styles.productInfo}>
                   <Text style={[styles.productName, { color: colors.foreground, textAlign: isRTL ? "right" : "left" }]} numberOfLines={2}>
                     {displayName}
@@ -149,8 +171,9 @@ const styles = StyleSheet.create({
   catPillText: { fontSize: 13, fontWeight: "600" },
   productCard: { borderRadius: 14, overflow: "hidden", borderWidth: 1 },
   productImage: { width: "100%", height: 130 },
+  cardFavBtn: { position: "absolute", top: 8, right: 8, width: 28, height: 28, borderRadius: 14, alignItems: "center", justifyContent: "center" },
   productInfo: { padding: 10 },
-  productName: { fontSize: 13, fontWeight: "600", lineHeight: 18 },
+  productName: { fontSize: 13, fontWeight: "600", marginBottom: 4 },
   productPrice: { fontSize: 14, fontWeight: "700" },
   addBtn: { width: 28, height: 28, borderRadius: 14, alignItems: "center", justifyContent: "center" },
 });
