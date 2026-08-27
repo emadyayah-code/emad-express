@@ -92,45 +92,52 @@ export default function HomeScreen() {
                 offset: (SLIDE_WIDTH + 12) * index,
                 index,
               })}
-              renderItem={({ item }) => (
-                <TouchableOpacity
-                  activeOpacity={0.9}
-                  onPress={() => router.push({ pathname: "/product/[id]", params: { id: item.id } })}
-                  style={[
-                    styles.showcaseCard,
-                    { width: SLIDE_WIDTH, backgroundColor: "rgba(255,255,255,0.03)", borderColor: "rgba(245,158,11,0.25)" },
-                  ]}
-                >
-                  <View style={{ flex: 1.2, padding: 14, justifyContent: "space-between" }}>
-                    <View>
-                      <View style={styles.showcaseBadge}>
-                        <Text style={styles.showcaseBadgeText}>✨ منتج مميز</Text>
+              renderItem={({ item }) => {
+                const displayName = language === "ar" ? (item.name_ar || item.name) : (item.name_en || item.name);
+                return (
+                  <TouchableOpacity
+                    activeOpacity={0.9}
+                    onPress={() => router.push({ pathname: "/product/[id]", params: { id: item.id } })}
+                    style={[
+                      styles.showcaseCard,
+                      { width: SLIDE_WIDTH, backgroundColor: "rgba(255,255,255,0.03)", borderColor: "rgba(245,158,11,0.25)" },
+                    ]}
+                  >
+                    <View style={{ flex: 1.2, padding: 14, justifyContent: "space-between" }}>
+                      <View>
+                        <View style={styles.showcaseBadge}>
+                          <Text style={styles.showcaseBadgeText}>
+                            {language === "ar" ? "✨ منتج مميز" : "✨ Featured"}
+                          </Text>
+                        </View>
+                        <Text style={[styles.showcaseTitle, { color: "#fff", textAlign: isRTL ? "right" : "left" }]} numberOfLines={2}>
+                          {displayName}
+                        </Text>
                       </View>
-                      <Text style={[styles.showcaseTitle, { color: "#fff", textAlign: isRTL ? "right" : "left" }]} numberOfLines={2}>
-                        {item.name}
-                      </Text>
+
+                      <View>
+                        <Text style={[styles.showcasePrice, { color: "#f59e0b" }]}>{format(item.price, language)}</Text>
+                        <View style={styles.showcaseShopBtn}>
+                          <Text style={styles.showcaseShopText}>
+                            {language === "ar" ? "عرض المنتج" : "View"}
+                          </Text>
+                          <Feather name={isRTL ? "arrow-left" : "arrow-right"} size={14} color="#000" />
+                        </View>
+                      </View>
                     </View>
 
-                    <View>
-                      <Text style={[styles.showcasePrice, { color: "#f59e0b" }]}>{format(item.price)}</Text>
-                      <View style={styles.showcaseShopBtn}>
-                        <Text style={styles.showcaseShopText}>عرض المنتج</Text>
-                        <Feather name={isRTL ? "arrow-left" : "arrow-right"} size={14} color="#000" />
-                      </View>
+                    <View style={styles.showcaseImageWrap}>
+                      {item.image ? (
+                        <Image source={{ uri: item.image }} style={styles.showcaseImage} resizeMode="cover" />
+                      ) : (
+                        <View style={[styles.showcaseImage, { backgroundColor: "#1f1f1f", alignItems: "center", justifyContent: "center" }]}>
+                          <Feather name="package" size={40} color="#666" />
+                        </View>
+                      )}
                     </View>
-                  </View>
-
-                  <View style={styles.showcaseImageWrap}>
-                    {item.image ? (
-                      <Image source={{ uri: item.image }} style={styles.showcaseImage} resizeMode="cover" />
-                    ) : (
-                      <View style={[styles.showcaseImage, { backgroundColor: "#1f1f1f", alignItems: "center", justifyContent: "center" }]}>
-                        <Feather name="package" size={40} color="#666" />
-                      </View>
-                    )}
-                  </View>
-                </TouchableOpacity>
-              )}
+                  </TouchableOpacity>
+                );
+              }}
               contentContainerStyle={{ gap: 12 }}
             />
 
@@ -170,19 +177,22 @@ export default function HomeScreen() {
           horizontal showsHorizontalScrollIndicator={false}
           data={categories || []}
           keyExtractor={(item: any) => String(item.id)}
-          renderItem={({ item }: { item: any }) => (
-            <TouchableOpacity style={[styles.catCard, { backgroundColor: colors.card, borderColor: colors.border }]}
-              onPress={() => router.push({ pathname: "/(tabs)/products", params: { category_id: item.id } })}>
-              {item.image ? (
-                <Image source={{ uri: item.image }} style={styles.catImage} resizeMode="cover" />
-              ) : (
-                <View style={[styles.catImage, { alignItems: "center", justifyContent: "center", backgroundColor: colors.muted }]}>
-                  <Text style={styles.catIcon}>{item.icon || CATEGORIES_ICONS[item.name] || "📦"}</Text>
-                </View>
-              )}
-              <Text style={[styles.catName, { color: colors.foreground }]} numberOfLines={1}>{item.name}</Text>
-            </TouchableOpacity>
-          )}
+          renderItem={({ item }: { item: any }) => {
+            const catName = language === "ar" ? (item.name_ar || item.name) : (item.name_en || item.name);
+            return (
+              <TouchableOpacity style={[styles.catCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+                onPress={() => router.push({ pathname: "/(tabs)/products", params: { category_id: item.id } })}>
+                {item.image ? (
+                  <Image source={{ uri: item.image }} style={styles.catImage} resizeMode="cover" />
+                ) : (
+                  <View style={[styles.catImage, { alignItems: "center", justifyContent: "center", backgroundColor: colors.muted }]}>
+                    <Text style={styles.catIcon}>{item.icon || CATEGORIES_ICONS[item.name] || "📦"}</Text>
+                  </View>
+                )}
+                <Text style={[styles.catName, { color: colors.foreground }]} numberOfLines={1}>{catName}</Text>
+              </TouchableOpacity>
+            );
+          }}
           contentContainerStyle={{ paddingHorizontal: 16, gap: 10 }}
         />
       </View>
@@ -196,26 +206,29 @@ export default function HomeScreen() {
           horizontal showsHorizontalScrollIndicator={false}
           data={featured}
           keyExtractor={(item: any) => String(item.id)}
-          renderItem={({ item }: { item: any }) => (
-            <TouchableOpacity style={[styles.productCard, { backgroundColor: colors.card, borderColor: colors.border }]}
-              onPress={() => router.push({ pathname: "/product/[id]", params: { id: item.id } })}>
-              {item.image ? (
-                <Image source={{ uri: item.image }} style={styles.productImage} resizeMode="cover" />
-              ) : (
-                <View style={[styles.productImage, { backgroundColor: colors.muted, alignItems: "center", justifyContent: "center" }]}>
-                  <Feather name="package" size={32} color={colors.mutedForeground} />
+          renderItem={({ item }: { item: any }) => {
+            const displayName = language === "ar" ? (item.name_ar || item.name) : (item.name_en || item.name);
+            return (
+              <TouchableOpacity style={[styles.productCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+                onPress={() => router.push({ pathname: "/product/[id]", params: { id: item.id } })}>
+                {item.image ? (
+                  <Image source={{ uri: item.image }} style={styles.productImage} resizeMode="cover" />
+                ) : (
+                  <View style={[styles.productImage, { backgroundColor: colors.muted, alignItems: "center", justifyContent: "center" }]}>
+                    <Feather name="package" size={32} color={colors.mutedForeground} />
+                  </View>
+                )}
+                <View style={styles.productInfo}>
+                  <Text style={[styles.productName, { color: colors.foreground, textAlign: isRTL ? "right" : "left" }]} numberOfLines={2}>{displayName}</Text>
+                  <Text style={[styles.productPrice, { color: colors.primary }]}>{format(item.price, language)}</Text>
+                  <TouchableOpacity style={[styles.addBtn, { backgroundColor: colors.primary }]}
+                    onPress={() => addItem({ id: item.id, name: displayName, price: item.price, image: item.image })}>
+                    <Feather name="plus" size={16} color="#000" />
+                  </TouchableOpacity>
                 </View>
-              )}
-              <View style={styles.productInfo}>
-                <Text style={[styles.productName, { color: colors.foreground, textAlign: isRTL ? "right" : "left" }]} numberOfLines={2}>{item.name}</Text>
-                <Text style={[styles.productPrice, { color: colors.primary }]}>{format(item.price)}</Text>
-                <TouchableOpacity style={[styles.addBtn, { backgroundColor: colors.primary }]}
-                  onPress={() => addItem({ id: item.id, name: item.name, price: item.price, image: item.image })}>
-                  <Feather name="plus" size={16} color="#fff" />
-                </TouchableOpacity>
-              </View>
-            </TouchableOpacity>
-          )}
+              </TouchableOpacity>
+            );
+          }}
           contentContainerStyle={{ paddingHorizontal: 16, gap: 12 }}
         />
       </View>
@@ -231,23 +244,27 @@ export default function HomeScreen() {
           <Text style={[styles.sectionTitle, { color: colors.foreground }]}>{t.home.best_sellers}</Text>
         </View>
         <View style={{ paddingHorizontal: 16, gap: 10 }}>
-          {topSelling.map((item: any) => (
-            <TouchableOpacity key={item.id} style={[styles.listItem, { backgroundColor: colors.card, borderColor: colors.border }]}
-              onPress={() => router.push({ pathname: "/product/[id]", params: { id: item.id } })}>
-              {item.image ? (
-                <Image source={{ uri: item.image }} style={styles.listImage} resizeMode="cover" />
-              ) : (
-                <View style={[styles.listImage, { backgroundColor: colors.muted, alignItems: "center", justifyContent: "center" }]}>
-                  <Feather name="package" size={24} color={colors.mutedForeground} />
+          {topSelling.map((item: any) => {
+            const displayName = language === "ar" ? (item.name_ar || item.name) : (item.name_en || item.name);
+            const displayDesc = language === "ar" ? (item.description_ar || item.description) : (item.description_en || item.description);
+            return (
+              <TouchableOpacity key={item.id} style={[styles.listItem, { backgroundColor: colors.card, borderColor: colors.border }]}
+                onPress={() => router.push({ pathname: "/product/[id]", params: { id: item.id } })}>
+                {item.image ? (
+                  <Image source={{ uri: item.image }} style={styles.listImage} resizeMode="cover" />
+                ) : (
+                  <View style={[styles.listImage, { backgroundColor: colors.muted, alignItems: "center", justifyContent: "center" }]}>
+                    <Feather name="package" size={24} color={colors.mutedForeground} />
+                  </View>
+                )}
+                <View style={{ flex: 1, marginHorizontal: 12 }}>
+                  <Text style={[styles.listName, { color: colors.foreground, textAlign: isRTL ? "right" : "left" }]} numberOfLines={1}>{displayName}</Text>
+                  <Text style={[styles.listDesc, { color: colors.mutedForeground, textAlign: isRTL ? "right" : "left" }]} numberOfLines={1}>{displayDesc}</Text>
                 </View>
-              )}
-              <View style={{ flex: 1, marginHorizontal: 12 }}>
-                <Text style={[styles.listName, { color: colors.foreground, textAlign: isRTL ? "right" : "left" }]} numberOfLines={1}>{item.name}</Text>
-                <Text style={[styles.listDesc, { color: colors.mutedForeground, textAlign: isRTL ? "right" : "left" }]} numberOfLines={1}>{item.description}</Text>
-              </View>
-              <Text style={[styles.listPrice, { color: colors.primary }]}>{format(item.price)}</Text>
-            </TouchableOpacity>
-          ))}
+                <Text style={[styles.listPrice, { color: colors.primary }]}>{format(item.price, language)}</Text>
+              </TouchableOpacity>
+            );
+          })}
         </View>
       </View>
 

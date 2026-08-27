@@ -13,7 +13,7 @@ export default function CartScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { items, removeItem, updateQuantity, total, clearCart } = useCart();
-  const { t } = useLanguage();
+  const { t, language, isRTL } = useLanguage();
   const { format } = useCurrency();
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
@@ -30,7 +30,7 @@ export default function CartScreen() {
           <Text style={{ color: colors.mutedForeground, fontSize: 18, fontWeight: "600" }}>{t.cart.empty}</Text>
           <Text style={{ color: colors.mutedForeground, fontSize: 14 }}>{t.cart.empty_sub}</Text>
           <TouchableOpacity style={[styles.browseBtn, { backgroundColor: colors.primary }]} onPress={() => router.push("/(tabs)/products")}>
-            <Text style={{ color: "#fff", fontWeight: "700", fontSize: 15 }}>{t.cart.browse}</Text>
+            <Text style={{ color: "#000", fontWeight: "700", fontSize: 15 }}>{t.cart.browse}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -39,10 +39,10 @@ export default function CartScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={[styles.header, { paddingTop: topPad + 16, backgroundColor: colors.card }]}>
+      <View style={[styles.header, { paddingTop: topPad + 16, backgroundColor: colors.card, flexDirection: isRTL ? "row" : "row-reverse" }]}>
         <Text style={[styles.title, { color: colors.foreground }]}>{t.cart.title}</Text>
         <TouchableOpacity onPress={clearCart}>
-          <Text style={{ color: "#ef4444", fontSize: 13 }}>{t.cart.clear}</Text>
+          <Text style={{ color: "#ef4444", fontSize: 13, fontWeight: "600" }}>{t.cart.clear}</Text>
         </TouchableOpacity>
       </View>
       <FlatList
@@ -60,8 +60,8 @@ export default function CartScreen() {
               </View>
             )}
             <View style={{ flex: 1, marginHorizontal: 12 }}>
-              <Text style={[styles.itemName, { color: colors.foreground }]} numberOfLines={2}>{item.name}</Text>
-              <Text style={[styles.itemPrice, { color: colors.primary }]}>{format(item.price)}</Text>
+              <Text style={[styles.itemName, { color: colors.foreground, textAlign: isRTL ? "right" : "left" }]} numberOfLines={2}>{item.name}</Text>
+              <Text style={[styles.itemPrice, { color: colors.primary }]}>{format(item.price, language)}</Text>
             </View>
             <View style={styles.qtyControl}>
               <TouchableOpacity onPress={() => updateQuantity(item.id, item.quantity - 1)} style={[styles.qtyBtn, { borderColor: colors.border }]}>
@@ -82,11 +82,11 @@ export default function CartScreen() {
       <View style={[styles.footer, { backgroundColor: colors.card, borderColor: colors.border, paddingBottom: bottomPad + 16 }]}>
         <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 14 }}>
           <Text style={[styles.totalLabel, { color: colors.mutedForeground }]}>{t.cart.total}</Text>
-          <Text style={[styles.totalValue, { color: colors.foreground }]}>{format(total)}</Text>
+          <Text style={[styles.totalValue, { color: colors.foreground }]}>{format(total, language)}</Text>
         </View>
         <TouchableOpacity style={[styles.checkoutBtn, { backgroundColor: colors.primary }]} onPress={() => router.push("/checkout")}>
-          <Text style={styles.checkoutText}>{t.cart.checkout}</Text>
-          <Feather name="arrow-left" size={18} color="#fff" />
+          <Text style={[styles.checkoutText, { color: "#000" }]}>{t.cart.checkout}</Text>
+          <Feather name={isRTL ? "arrow-left" : "arrow-right"} size={18} color="#000" />
         </TouchableOpacity>
       </View>
     </View>

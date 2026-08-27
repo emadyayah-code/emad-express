@@ -16,7 +16,7 @@ export default function ProductDetailScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { addItem, items } = useCart();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { format, currency } = useCurrency();
 
   const { data, isLoading } = useQuery({
@@ -73,7 +73,9 @@ export default function ProductDetailScreen() {
         </View>
         <View style={[styles.content, { backgroundColor: colors.background }]}>
           <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
-            <Text style={[styles.productName, { color: colors.foreground, flex: 1 }]}>{product.name}</Text>
+            <Text style={[styles.productName, { color: colors.foreground, flex: 1, textAlign: language === "ar" ? "right" : "left" }]}>
+              {language === "ar" ? (product.name_ar || product.name) : (product.name_en || product.name)}
+            </Text>
             <View style={[styles.stockBadge, { backgroundColor: product.quantity > 0 ? "#d1fae5" : "#fee2e2" }]}>
               <Text style={{ color: product.quantity > 0 ? "#059669" : "#dc2626", fontSize: 12, fontWeight: "600" }}>
                 {product.quantity > 0 ? t.products.in_stock : t.products.out_of_stock}
@@ -81,19 +83,23 @@ export default function ProductDetailScreen() {
             </View>
           </View>
           <View style={{ flexDirection: "row", alignItems: "baseline", gap: 4, marginTop: 12 }}>
-            <Text style={[styles.price, { color: colors.primary }]}>{format(product.price)}</Text>
+            <Text style={[styles.price, { color: colors.primary }]}>{format(product.price, language)}</Text>
           </View>
           <View style={[styles.divider, { backgroundColor: colors.border }]} />
-          <Text style={[styles.sectionLabel, { color: colors.foreground }]}>{t.product.description}</Text>
-          <Text style={[styles.description, { color: colors.mutedForeground }]}>{product.description}</Text>
+          <Text style={[styles.sectionLabel, { color: colors.foreground, textAlign: language === "ar" ? "right" : "left" }]}>
+            {t.product.description}
+          </Text>
+          <Text style={[styles.description, { color: colors.mutedForeground, textAlign: language === "ar" ? "right" : "left" }]}>
+            {language === "ar" ? (product.description_ar || product.description) : (product.description_en || product.description)}
+          </Text>
           <View style={[styles.infoRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <View style={styles.infoItem}>
-              <Text style={{ color: colors.mutedForeground, fontSize: 12 }}>كود المنتج</Text>
-              <Text style={{ color: colors.foreground, fontSize: 14, fontWeight: "600" }}>{product.sku}</Text>
+              <Text style={{ color: colors.mutedForeground, fontSize: 12 }}>{language === "ar" ? "كود المنتج" : "SKU"}</Text>
+              <Text style={{ color: colors.foreground, fontSize: 14, fontWeight: "600" }}>{product.sku || product.id}</Text>
             </View>
             <View style={[styles.infoDivider, { backgroundColor: colors.border }]} />
             <View style={styles.infoItem}>
-              <Text style={{ color: colors.mutedForeground, fontSize: 12 }}>الكمية المتاحة</Text>
+              <Text style={{ color: colors.mutedForeground, fontSize: 12 }}>{language === "ar" ? "الكمية المتاحة" : "Available Stock"}</Text>
               <Text style={{ color: colors.foreground, fontSize: 14, fontWeight: "600" }}>{product.quantity}</Text>
             </View>
           </View>
@@ -105,20 +111,24 @@ export default function ProductDetailScreen() {
           <View style={{ flexDirection: "row", gap: 12 }}>
             <TouchableOpacity style={[styles.cartBtn, { backgroundColor: colors.muted, flex: 1 }]} onPress={() => router.push("/(tabs)/cart")}>
               <Feather name="shopping-cart" size={18} color={colors.foreground} />
-              <Text style={{ color: colors.foreground, fontWeight: "700", fontSize: 15 }}>في السلة ({inCart.quantity})</Text>
+              <Text style={{ color: colors.foreground, fontWeight: "700", fontSize: 15 }}>
+                {language === "ar" ? `في السلة (${inCart.quantity})` : `In Cart (${inCart.quantity})`}
+              </Text>
             </TouchableOpacity>
             <TouchableOpacity style={[styles.cartBtn, { backgroundColor: colors.primary, flex: 1 }]}
-              onPress={() => addItem({ id: product.id, name: product.name, price: product.price, image: product.image })}>
-              <Feather name="plus" size={18} color="#fff" />
-              <Text style={{ color: "#fff", fontWeight: "700", fontSize: 15 }}>إضافة أخرى</Text>
+              onPress={() => addItem({ id: product.id, name: language === "ar" ? (product.name_ar || product.name) : (product.name_en || product.name), price: product.price, image: product.image })}>
+              <Feather name="plus" size={18} color="#000" />
+              <Text style={{ color: "#000", fontWeight: "700", fontSize: 15 }}>
+                {language === "ar" ? "إضافة أخرى" : "Add More"}
+              </Text>
             </TouchableOpacity>
           </View>
         ) : (
           <TouchableOpacity style={[styles.cartBtn, { backgroundColor: colors.primary }]}
-            onPress={() => addItem({ id: product.id, name: product.name, price: product.price, image: product.image })}
+            onPress={() => addItem({ id: product.id, name: language === "ar" ? (product.name_ar || product.name) : (product.name_en || product.name), price: product.price, image: product.image })}
             disabled={product.quantity === 0}>
-            <Feather name="shopping-cart" size={18} color="#fff" />
-            <Text style={{ color: "#fff", fontWeight: "700", fontSize: 16 }}>{t.product.add_to_cart}</Text>
+            <Feather name="shopping-cart" size={18} color="#000" />
+            <Text style={{ color: "#000", fontWeight: "700", fontSize: 16 }}>{t.product.add_to_cart}</Text>
           </TouchableOpacity>
         )}
       </View>

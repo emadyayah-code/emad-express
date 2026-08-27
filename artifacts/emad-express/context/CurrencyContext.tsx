@@ -21,15 +21,15 @@ export const CURRENCIES: Currency[] = [
 interface CurrencyContextType {
   currency: Currency;
   setCurrency: (code: CurrencyCode) => void;
-  format: (sarAmount: number) => string;
-  formatPrice: (sarAmount: number) => string;
+  format: (sarAmount: number, lang?: string) => string;
+  formatPrice: (sarAmount: number, lang?: string) => string;
 }
 
 const CurrencyContext = createContext<CurrencyContextType>({
   currency: CURRENCIES[0],
   setCurrency: () => {},
-  format: (n) => `${n.toLocaleString()} ر.س`,
-  formatPrice: (n) => `${n.toLocaleString()} ر.س`,
+  format: (n, lang = "ar") => (lang === "ar" ? `${n.toLocaleString()} ر.س` : `SAR ${n.toLocaleString()}`),
+  formatPrice: (n, lang = "ar") => (lang === "ar" ? `${n.toLocaleString()} ر.س` : `SAR ${n.toLocaleString()}`),
 });
 
 export function CurrencyProvider({ children }: { children: React.ReactNode }) {
@@ -48,13 +48,16 @@ export function CurrencyProvider({ children }: { children: React.ReactNode }) {
     AsyncStorage.setItem("app_currency", c);
   }
 
-  function format(sarAmount: number): string {
+  function format(sarAmount: number, lang: string = "ar"): string {
     const converted = sarAmount * currency.rate;
     const formatted = converted.toLocaleString(undefined, {
       minimumFractionDigits: currency.decimals,
       maximumFractionDigits: currency.decimals,
     });
-    return `${formatted} ${currency.symbol}`;
+    const symbol = lang === "ar" 
+      ? currency.symbol 
+      : (currency.code === "USD" ? "$" : currency.code);
+    return lang === "ar" ? `${formatted} ${symbol}` : `${symbol} ${formatted}`;
   }
 
   return (
