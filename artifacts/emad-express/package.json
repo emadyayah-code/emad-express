@@ -55,5 +55,9 @@
     "typescript": "~5.9.2",
     "zod": "catalog:",
     "zod-validation-error": "^3.4.0"
+  },
+  "dependencies": {
+    "lucide-react-native": "^1.34.0",
+    "react-native-webview": "^14.0.1"
   }
 }

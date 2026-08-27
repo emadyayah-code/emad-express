@@ -22,12 +22,14 @@ interface CurrencyContextType {
   currency: Currency;
   setCurrency: (code: CurrencyCode) => void;
   format: (sarAmount: number) => string;
+  formatPrice: (sarAmount: number) => string;
 }
 
 const CurrencyContext = createContext<CurrencyContextType>({
   currency: CURRENCIES[0],
   setCurrency: () => {},
   format: (n) => `${n.toLocaleString()} ر.س`,
+  formatPrice: (n) => `${n.toLocaleString()} ر.س`,
 });
 
 export function CurrencyProvider({ children }: { children: React.ReactNode }) {
@@ -56,7 +58,7 @@ export function CurrencyProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <CurrencyContext.Provider value={{ currency, setCurrency, format }}>
+    <CurrencyContext.Provider value={{ currency, setCurrency, format, formatPrice: format }}>
       {children}
     </CurrencyContext.Provider>
   );

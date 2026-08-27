@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import { View, Text, TextInput, TouchableOpacity, Alert, ActivityIndicator, KeyboardAvoidingView, Platform } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useLanguage } from "../../context/LanguageContext";
-import { api } from "../../lib/api";
+import { useLanguage } from "../context/LanguageContext";
+import { api } from "../lib/api";
 import { Mail, CheckCircle, RefreshCw, ArrowLeft, Lock, Shield } from "lucide-react-native";
 
 export default function VerifyEmailScreen() {
@@ -85,8 +85,7 @@ export default function VerifyEmailScreen() {
           </View>
           <Text className="text-2xl font-bold text-gray-900">التحقق من البريد الإلكتروني</Text>
           <Text className="text-gray-500 text-center mt-2 px-4">
-            أرسلنا كود تحقق مكون من 6 أرقام إلى{"
-"}
+            أرسلنا كود تحقق مكون من 6 أرقام إلى{" "}
             <Text className="font-semibold text-emerald-600">{email}</Text>
           </Text>
         </View>
