@@ -42,23 +42,13 @@ export default function HomeScreen() {
 
   return (
     <ScrollView style={[styles.container, { backgroundColor: colors.background }]} showsVerticalScrollIndicator={false}>
-      <LinearGradient colors={["#0a0a0a", "#1a1000", "#0a0a0a"]} style={[styles.heroSection, { paddingTop: topPad + 10 }]}>
+      <LinearGradient colors={["#0a0a0a", "#1a1000", "#0a0a0a"]} style={[styles.heroSection, { paddingTop: topPad + 10, paddingBottom: 10 }]}>
         <View style={styles.headerRow}>
           <Image source={logoImg} style={styles.logo} resizeMode="contain" />
           <TouchableOpacity onPress={() => router.push("/(tabs)/cart")} style={[styles.cartBtn, { backgroundColor: "rgba(245,158,11,0.15)", borderWidth: 1, borderColor: "rgba(245,158,11,0.3)" }]}>
             <Feather name="shopping-cart" size={20} color="#f59e0b" />
             {count > 0 && <View style={styles.badge}><Text style={styles.badgeText}>{count}</Text></View>}
           </TouchableOpacity>
-        </View>
-        <View style={styles.bannerInner}>
-          <View style={styles.bannerContent}>
-            <Text style={styles.bannerTitle}>{t.home.banner_title}</Text>
-            <Text style={styles.bannerSub}>{t.home.banner_sub}</Text>
-            <TouchableOpacity style={styles.bannerBtn} onPress={() => router.push("/(tabs)/products")}>
-              <Text style={styles.bannerBtnText}>{t.home.shop_now}</Text>
-            </TouchableOpacity>
-          </View>
-          <Text style={styles.bannerEmoji}>🛍️</Text>
         </View>
       </LinearGradient>
 
