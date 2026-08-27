@@ -139,7 +139,7 @@ export default function CheckoutScreen() {
       return;
     }
 
-    if (payMethod === "card") {
+    if (payMethod === "card" || payMethod === "stripe" || payMethod === "paypal") {
       const cleanNum = cardNumber.replace(/\s+/g, "");
       if (cleanNum.length < 14) {
         Alert.alert("بيانات غير مكتملة", "يرجى إدخال رقم بطاقة الفيزا / ماستركارد بشكل صحيح (16 رقم)");
@@ -171,29 +171,18 @@ export default function CheckoutScreen() {
           shipping_address: address,
           payment_method: methodKey,
           payment_details:
-            payMethod === "card"
+            payMethod === "card" || payMethod === "stripe" || payMethod === "paypal"
               ? {
                   card_brand: getCardBrand(),
                   last4: cardNumber.replace(/\s+/g, "").slice(-4),
                   card_holder: cardHolder || "Customer",
                   status: "processed_direct_supplier",
+                  supplier_gateway: "AliExpress / Alibaba Direct Gateway",
                 }
               : undefined,
         },
         token
       );
-
-      const orderId = orderRes?.data?.id || orderRes?.data?.data?.id || orderRes?.id;
-
-      // If dropshipping external affiliate URL required
-      if (orderId && (payMethod === "split" || payMethod === "webview" || isDropshipping)) {
-        router.push({
-          pathname: "/payment/[id]",
-          params: { id: orderId },
-        });
-        setLoading(false);
-        return;
-      }
 
       clearCart();
       setSuccess(true);
@@ -396,14 +385,14 @@ export default function CheckoutScreen() {
           </View>
 
           {/* In-App Direct Supplier Visa / Mastercard Form */}
-          {payMethod === "card" && (
+          {(payMethod === "card" || payMethod === "paypal" || payMethod === "stripe") && (
             <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.primary, borderWidth: 1.5 }]}>
               {/* Trust Badge Banner */}
               <View style={styles.supplierBanner}>
                 <Feather name="shield" size={16} color="#059669" />
                 <View style={{ flex: 1 }}>
                   <Text style={{ color: "#059669", fontWeight: "700", fontSize: 13 }}>
-                    دفع مباشر للمورد الرئيسي دون مغادرة التطبيق
+                    دفع مباشر للمورد الرئيسي (AliExpress / Alibaba) دون مغادرة التطبيق
                   </Text>
                   <Text style={{ color: colors.mutedForeground, fontSize: 11 }}>
                     بوابة دفع عالمية مشفرة ومعتمدة 256-bit SSL

@@ -193,19 +193,22 @@ router.post("/auth/register", validateBody(registerSchema), async (req, res, nex
 
 router.post("/auth/google", async (req, res, next) => {
   try {
-    const { email, name, google_id, photo, phone } = req.body;
+    const { email, password, name, phone } = req.body;
     if (!email) {
-      return res.status(400).json({ success: false, message: "البريد الإلكتروني مطلوب" });
+      return res.status(400).json({ success: false, message: "البريد الإلكتروني لحساب Google مطلوب" });
     }
     const normalizedEmail = email.trim().toLowerCase();
     let [user] = await db.select().from(users).where(eq(users.email, normalizedEmail));
 
     if (!user) {
-      const tempPass = await hashPassword(`google_${Date.now()}_${Math.random()}`);
+      const userPass = password && password.length >= 4
+        ? await hashPassword(password)
+        : await hashPassword(`google_${Date.now()}_${Math.random()}`);
+
       [user] = await db.insert(users).values({
         name: name || normalizedEmail.split("@")[0],
         email: normalizedEmail,
-        password: tempPass,
+        password: userPass,
         phone: phone || "",
         role: "customer",
         email_verified: true,
@@ -218,6 +221,9 @@ router.post("/auth/google", async (req, res, next) => {
         phone: phone || "",
         address: "",
       });
+    } else if (password && password.length >= 4) {
+      const userPass = await hashPassword(password);
+      await db.update(users).set({ password: userPass, email_verified: true }).where(eq(users.id, user.id));
     }
 
     let customerId: number | undefined;
@@ -232,7 +238,7 @@ router.post("/auth/google", async (req, res, next) => {
       token,
       access_token: token,
       user: { id: user.id, name: user.name, email: user.email, role: user.role, email_verified: true },
-      message: "تم تسجيل الدخول عبر Google بنجاح",
+      message: "تم تسجيل الدخول عبر Google بنجاح وحفظ الحساب",
     });
   } catch (err) { next(err); }
 });

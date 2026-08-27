@@ -25,7 +25,7 @@ export default function RegisterScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { register, loginWithGoogle, loading } = useAuth();
-  const { t, language } = useLanguage();
+  const { language } = useLanguage();
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -35,6 +35,14 @@ export default function RegisterScreen() {
   const [countryModalVisible, setCountryModalVisible] = useState(false);
   const [searchCountry, setSearchCountry] = useState("");
   const [error, setError] = useState("");
+
+  // Google Sign-In Dedicated Modal State
+  const [googleModalVisible, setGoogleModalVisible] = useState(false);
+  const [googleEmail, setGoogleEmail] = useState("");
+  const [googlePassword, setGooglePassword] = useState("");
+  const [googleName, setGoogleName] = useState("");
+  const [showGooglePass, setShowGooglePass] = useState(false);
+  const [googleError, setGoogleError] = useState("");
   const [googleLoading, setGoogleLoading] = useState(false);
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
@@ -63,13 +71,11 @@ export default function RegisterScreen() {
     }
     setError("");
 
-    // Combine dial code with cleaned phone number
     const cleanNumber = phoneNumber.trim().replace(/^0+/, "");
     const fullPhone = `${selectedCountry.dialCode}${cleanNumber}`;
 
     try {
       await register(name.trim(), email.trim(), fullPhone, password);
-      // Directly log in and go to home tabs without OTP
       router.replace("/(tabs)");
     } catch (e: any) {
       const msg = e.message || "";
@@ -83,19 +89,40 @@ export default function RegisterScreen() {
     }
   }
 
-  async function handleGoogleAuth() {
+  function openGoogleModal() {
+    setGoogleEmail("");
+    setGooglePassword("");
+    setGoogleName(name || "");
+    setGoogleError("");
+    setGoogleModalVisible(true);
+  }
+
+  async function submitGoogleAuth() {
+    if (!googleEmail.trim()) {
+      setGoogleError("يرجى إدخال بريد Google الإلكتروني (@gmail.com)");
+      return;
+    }
+    if (!googleEmail.includes("@")) {
+      setGoogleError("صيغة البريد الإلكتروني غير صحيحة");
+      return;
+    }
+    if (!googlePassword || googlePassword.length < 6) {
+      setGoogleError("يرجى إدخال كلمة المرور (6 أحرف على الأقل)");
+      return;
+    }
+
     setGoogleLoading(true);
-    setError("");
+    setGoogleError("");
     try {
-      // Direct instant Google login/registration
-      const demoEmail = `user_${Date.now().toString().slice(-4)}@gmail.com`;
       await loginWithGoogle({
-        email: demoEmail,
-        name: name.trim() || "مستخدم Google",
+        email: googleEmail.trim().toLowerCase(),
+        password: googlePassword,
+        name: googleName.trim() || googleEmail.split("@")[0],
       });
+      setGoogleModalVisible(false);
       router.replace("/(tabs)");
     } catch (e: any) {
-      setError(e.message || "فشل التسجيل عبر Google");
+      setGoogleError(e.message || "فشل تسجيل الدخول بحساب Google");
     } finally {
       setGoogleLoading(false);
     }
@@ -121,27 +148,21 @@ export default function RegisterScreen() {
             انضم إلينا واستمتع بتجربة تسوق مميزة وسريعة
           </Text>
 
-          {/* Quick Google Sign-In Button */}
+          {/* Dedicated Google Register Button */}
           <TouchableOpacity
             style={[styles.googleBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
-            onPress={handleGoogleAuth}
-            disabled={googleLoading || loading}
+            onPress={openGoogleModal}
+            disabled={loading}
           >
-            {googleLoading ? (
-              <ActivityIndicator color={colors.primary} size="small" />
-            ) : (
-              <>
-                <FontAwesome5 name="google" size={18} color="#ea4335" />
-                <Text style={[styles.googleBtnText, { color: colors.foreground }]}>
-                  التسجيل السريع عبر Google
-                </Text>
-              </>
-            )}
+            <FontAwesome5 name="google" size={18} color="#ea4335" />
+            <Text style={[styles.googleBtnText, { color: colors.foreground }]}>
+              التسجيل بحساب Google
+            </Text>
           </TouchableOpacity>
 
           <View style={styles.orDivider}>
             <View style={[styles.line, { backgroundColor: colors.border }]} />
-            <Text style={[styles.orText, { color: colors.mutedForeground }]}>أو عبر البريد الإلكتروني</Text>
+            <Text style={[styles.orText, { color: colors.mutedForeground }]}>أو التسجيل المباشر بالبريد</Text>
             <View style={[styles.line, { backgroundColor: colors.border }]} />
           </View>
 
@@ -250,6 +271,107 @@ export default function RegisterScreen() {
         </View>
       </ScrollView>
 
+      {/* Dedicated Google Sign-In / Register Modal */}
+      <Modal visible={googleModalVisible} transparent animationType="fade" onRequestClose={() => setGoogleModalVisible(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={[styles.googleModalCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <View style={styles.googleModalHeader}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+                <FontAwesome5 name="google" size={24} color="#ea4335" />
+                <View>
+                  <Text style={[styles.googleModalTitle, { color: colors.foreground }]}>تسجيل الدخول عبر Google</Text>
+                  <Text style={{ color: colors.mutedForeground, fontSize: 12 }}>حفظ الحساب في قاعدة البيانات بأمان</Text>
+                </View>
+              </View>
+              <TouchableOpacity onPress={() => setGoogleModalVisible(false)}>
+                <Feather name="x" size={22} color={colors.mutedForeground} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={{ padding: 18, gap: 12 }}>
+              {/* Google Email Input */}
+              <View>
+                <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>بريد Google الإلكتروني (@gmail.com) *</Text>
+                <View style={[styles.googleInputRow, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                  <Feather name="mail" size={16} color={colors.mutedForeground} />
+                  <TextInput
+                    value={googleEmail}
+                    onChangeText={(v) => {
+                      setGoogleEmail(v);
+                      setGoogleError("");
+                    }}
+                    placeholder="example@gmail.com"
+                    placeholderTextColor={colors.mutedForeground}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    style={[styles.modalInput, { color: colors.foreground }]}
+                  />
+                </View>
+              </View>
+
+              {/* Google Password Input */}
+              <View>
+                <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>كلمة مرور الحساب *</Text>
+                <View style={[styles.googleInputRow, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                  <Feather name="lock" size={16} color={colors.mutedForeground} />
+                  <TextInput
+                    value={googlePassword}
+                    onChangeText={(v) => {
+                      setGooglePassword(v);
+                      setGoogleError("");
+                    }}
+                    placeholder="كلمة مرور حسابك"
+                    placeholderTextColor={colors.mutedForeground}
+                    secureTextEntry={!showGooglePass}
+                    style={[styles.modalInput, { color: colors.foreground }]}
+                  />
+                  <TouchableOpacity onPress={() => setShowGooglePass(!showGooglePass)}>
+                    <Feather name={showGooglePass ? "eye-off" : "eye"} size={16} color={colors.mutedForeground} />
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              {/* Full Name */}
+              <View>
+                <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>الاسم الكامل (اختياري)</Text>
+                <View style={[styles.googleInputRow, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                  <Feather name="user" size={16} color={colors.mutedForeground} />
+                  <TextInput
+                    value={googleName}
+                    onChangeText={setGoogleName}
+                    placeholder="اسمك الكامل"
+                    placeholderTextColor={colors.mutedForeground}
+                    style={[styles.modalInput, { color: colors.foreground }]}
+                  />
+                </View>
+              </View>
+
+              {googleError ? (
+                <View style={styles.errorBox}>
+                  <Feather name="alert-circle" size={14} color="#ef4444" />
+                  <Text style={styles.error}>{googleError}</Text>
+                </View>
+              ) : null}
+
+              <TouchableOpacity
+                style={[styles.googleSubmitBtn, { opacity: googleLoading ? 0.7 : 1 }]}
+                onPress={submitGoogleAuth}
+                disabled={googleLoading}
+              >
+                {googleLoading ? (
+                  <ActivityIndicator color="#fff" size="small" />
+                ) : (
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                    <FontAwesome5 name="google" size={16} color="#fff" />
+                    <Text style={styles.googleSubmitBtnText}>تأكيد وتسجيل الحساب</Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
       {/* Country Selector Modal */}
       <Modal
         visible={countryModalVisible}
@@ -267,7 +389,6 @@ export default function RegisterScreen() {
               </TouchableOpacity>
             </View>
 
-            {/* Search Country */}
             <View style={[styles.countrySearchBox, { backgroundColor: colors.muted, borderColor: colors.border }]}>
               <Feather name="search" size={16} color={colors.mutedForeground} />
               <TextInput
@@ -351,7 +472,19 @@ const styles = StyleSheet.create({
   error: { color: "#ef4444", fontSize: 13, flex: 1, textAlign: "right" },
   btn: { paddingVertical: 15, borderRadius: 14, alignItems: "center", marginTop: 6 },
   btnText: { color: "#000", fontWeight: "800", fontSize: 16 },
-  // Modal styles
+
+  // Google Modal Styles
+  modalOverlay: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "rgba(0,0,0,0.75)", padding: 16 },
+  googleModalCard: { width: "100%", maxWidth: 440, borderRadius: 20, borderWidth: 1, overflow: "hidden" },
+  googleModalHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 18, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: "rgba(255,255,255,0.08)" },
+  googleModalTitle: { fontSize: 16, fontWeight: "800" },
+  fieldLabel: { fontSize: 12, fontWeight: "600", marginBottom: 6 },
+  googleInputRow: { flexDirection: "row", alignItems: "center", gap: 10, borderRadius: 12, borderWidth: 1, paddingHorizontal: 12, paddingVertical: 10 },
+  modalInput: { flex: 1, fontSize: 14, textAlign: "right" },
+  googleSubmitBtn: { backgroundColor: "#ea4335", paddingVertical: 14, borderRadius: 14, alignItems: "center", justifyContent: "center", marginTop: 8 },
+  googleSubmitBtnText: { color: "#fff", fontWeight: "800", fontSize: 15 },
+
+  // Country Modal styles
   countryModalSheet: { borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 18, maxHeight: "80%" },
   modalHandle: { width: 40, height: 4, borderRadius: 2, backgroundColor: "#666", alignSelf: "center", marginBottom: 12 },
   countryModalTitle: { fontSize: 16, fontWeight: "700" },

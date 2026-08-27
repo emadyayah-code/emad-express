@@ -17,7 +17,7 @@ interface AuthCtx {
   token: string | null;
   login: (email: string, password: string) => Promise<void>;
   register: (name: string, email: string, phone: string, password: string) => Promise<void>;
-  loginWithGoogle: (googleData?: { email?: string; name?: string }) => Promise<void>;
+  loginWithGoogle: (googleData: { email: string; password?: string; name?: string }) => Promise<void>;
   logout: () => void;
   loading: boolean;
 }
@@ -52,15 +52,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await AsyncStorage.multiSet([["user", JSON.stringify(data.user)], ["token", authToken]]);
   }
 
-  async function loginWithGoogle(googleData?: { email?: string; name?: string }) {
-    const payload = googleData || {
-      email: `user_${Date.now().toString().slice(-5)}@gmail.com`,
-      name: "Google User",
-    };
+  async function loginWithGoogle(googleData: { email: string; password?: string; name?: string }) {
     const res = await fetch(`${BASE}/auth/google`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
+      body: JSON.stringify(googleData),
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) { throw new Error(data.message || "فشل تسجيل الدخول عبر Google"); }
