@@ -1235,9 +1235,9 @@ router.get("/admin/dropship/auto-fetch", requireAuth, requireRole("admin", "mana
           queries.push({ kw: queryKw, page: 1 });
           queries.push({ kw: queryKw, page: 2 });
         } else {
-          const terms = GLOBAL_DISCOVERY_TERMS.sort(() => 0.5 - Math.random()).slice(0, 2);
-          queries.push({ kw: terms[0], page: pageOffset });
-          queries.push({ kw: terms[1], page: pageOffset + 1 });
+          const highYield = ["smart watch", "wireless earbuds", "hoodie", "drone", "shoes", "car accessories", "kitchen tools", "jewelry"].sort(() => 0.5 - Math.random());
+          queries.push({ kw: highYield[0], page: 1 });
+          queries.push({ kw: highYield[1], page: 1 });
         }
 
         const results = await Promise.all(
