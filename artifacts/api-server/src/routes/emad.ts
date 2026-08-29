@@ -1226,10 +1226,20 @@ router.get("/admin/dropship/auto-fetch", requireAuth, requireRole("admin", "mana
       try {
         const pageOffset = Math.floor(Math.random() * 5) + 1;
         const targetPages = [pageOffset, pageOffset + 1, pageOffset + 2, pageOffset + 3];
-        const keywordsToSearch = queryKw ? [queryKw] : (category_id ? [queryKw || ""] : POPULAR_SEARCH_KEYWORDS.sort(() => 0.5 - Math.random()).slice(0, 15));
+        
+        let queries: { kw: string; catId?: string }[] = [];
+        if (category_id && String(category_id).trim()) {
+          queries.push({ kw: queryKw || "", catId: String(category_id).trim() });
+        } else if (queryKw) {
+          queries.push({ kw: queryKw });
+        } else {
+          const selectedKws = POPULAR_SEARCH_KEYWORDS.sort(() => 0.5 - Math.random()).slice(0, 8);
+          for (const kw of selectedKws) queries.push({ kw });
+          for (const dept of ALIEXPRESS_DEPARTMENTS.slice(0, 6)) queries.push({ kw: "", catId: dept.id });
+        }
 
-        const promises = keywordsToSearch.flatMap(kw => 
-          targetPages.map(pNum => searchAliExpressProducts(kw, creds, pNum, 50, category_id).catch(() => []))
+        const promises = queries.flatMap(q => 
+          targetPages.map(pNum => searchAliExpressProducts(q.kw, creds, pNum, 50, q.catId).catch(() => []))
         );
 
         const allBatches = await Promise.all(promises);
@@ -1290,14 +1300,26 @@ router.post("/admin/dropship/bulk-import-1000", requireAuth, requireRole("admin"
     if (platform === "aliexpress" && creds) {
       try {
         const randomPageBase = Math.floor(Math.random() * 8) + 1;
-        const targetPages = [randomPageBase, randomPageBase + 1, randomPageBase + 2, randomPageBase + 3, randomPageBase + 4];
+        const targetPages = [randomPageBase, randomPageBase + 1, randomPageBase + 2, randomPageBase + 3, randomPageBase + 4, randomPageBase + 5];
         
-        const kws = keyword && String(keyword).trim()
-          ? [String(keyword).trim()]
-          : POPULAR_SEARCH_KEYWORDS.sort(() => 0.5 - Math.random()).slice(0, 18);
+        let queries: { kw: string; catId?: string }[] = [];
+        if (category_id && String(category_id).trim()) {
+          queries.push({ kw: keyword ? String(keyword).trim() : "", catId: String(category_id).trim() });
+        } else if (keyword && String(keyword).trim()) {
+          queries.push({ kw: String(keyword).trim() });
+        } else {
+          const selectedKws = POPULAR_SEARCH_KEYWORDS.sort(() => 0.5 - Math.random()).slice(0, 10);
+          for (const kw of selectedKws) {
+            queries.push({ kw });
+          }
+          const depts = ALIEXPRESS_DEPARTMENTS.sort(() => 0.5 - Math.random()).slice(0, 10);
+          for (const dept of depts) {
+            queries.push({ kw: "", catId: dept.id });
+          }
+        }
 
-        const promises = kws.flatMap(kw => 
-          targetPages.map(pNum => searchAliExpressProducts(kw, creds, pNum, 50, category_id ? String(category_id) : undefined).catch(() => []))
+        const promises = queries.flatMap(q => 
+          targetPages.map(pNum => searchAliExpressProducts(q.kw, creds, pNum, 50, q.catId).catch(() => []))
         );
 
         const allBatches = await Promise.all(promises);
