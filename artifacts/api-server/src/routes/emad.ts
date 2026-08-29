@@ -1218,7 +1218,6 @@ const GLOBAL_DISCOVERY_TERMS = [
 router.get("/admin/dropship/auto-fetch", requireAuth, requireRole("admin", "manager"), async (req, res, next) => {
   try {
     const platform = String(req.query.platform || "aliexpress");
-    const count = parseInt(String(req.query.count || "1000"), 10) || 1000;
     const category_id = req.query.category_id ? String(req.query.category_id) : undefined;
     const queryKw = req.query.keyword ? String(req.query.keyword).trim() : "";
     const creds = await getAliExpressCreds();
@@ -1226,50 +1225,50 @@ router.get("/admin/dropship/auto-fetch", requireAuth, requireRole("admin", "mana
     let realProducts: any[] = [];
     if (platform === "aliexpress" && creds) {
       try {
-        const pageOffset = Math.floor(Math.random() * 6) + 1;
-        const targetPages = [pageOffset, pageOffset + 1, pageOffset + 2, pageOffset + 3];
+        const pageOffset = Math.floor(Math.random() * 8) + 1;
         
-        let queries: { kw: string; catId?: string }[] = [];
+        let queries: { kw: string; catId?: string; page: number }[] = [];
         if (category_id && String(category_id).trim()) {
-          queries.push({ kw: queryKw || "", catId: String(category_id).trim() });
+          queries.push({ kw: queryKw || "", catId: String(category_id).trim(), page: 1 });
+          queries.push({ kw: queryKw || "", catId: String(category_id).trim(), page: 2 });
         } else if (queryKw) {
-          queries.push({ kw: queryKw });
+          queries.push({ kw: queryKw, page: 1 });
+          queries.push({ kw: queryKw, page: 2 });
         } else {
-          const terms = GLOBAL_DISCOVERY_TERMS.sort(() => 0.5 - Math.random()).slice(0, 6);
-          for (const t of terms) queries.push({ kw: t });
+          const terms = GLOBAL_DISCOVERY_TERMS.sort(() => 0.5 - Math.random()).slice(0, 2);
+          queries.push({ kw: terms[0], page: pageOffset });
+          queries.push({ kw: terms[1], page: pageOffset + 1 });
         }
 
-        for (const q of queries) {
-          for (const pNum of targetPages) {
-            try {
-              const prods = await searchAliExpressProducts(q.kw, creds, pNum, 50, q.catId);
-              if (Array.isArray(prods)) {
-                for (const p of prods) {
-                  if (p.product_id && !realProducts.some(r => r.source_id === String(p.product_id))) {
-                    let img = p.product_main_image_url || "";
-                    if (img.startsWith("//")) img = `https:${img}`;
-                    realProducts.push({
-                      source_id: String(p.product_id),
-                      name: p.product_title,
-                      price: parseFloat(p.target_sale_price) || parseFloat(p.target_original_price) || 25,
-                      original_price: parseFloat(p.target_original_price) || 0,
-                      image: img,
-                      category_name: p.first_level_category_name || "منتجات عامة",
-                      rating: parseFloat(p.evaluate_rate) || 4.8,
-                      orders_count: parseInt(p.sales_volume) || 120,
-                      platform: "aliexpress",
-                      source_url: p.product_detail_url || `https://www.aliexpress.com/item/${p.product_id}.html`,
-                      supplier_name: p.shop_name || "AliExpress Verified Seller",
-                    });
-                  }
-                }
+        const results = await Promise.all(
+          queries.map(q => searchAliExpressProducts(q.kw, creds, q.page, 50, q.catId).catch(() => []))
+        );
+
+        for (const prods of results) {
+          if (Array.isArray(prods)) {
+            for (const p of prods) {
+              if (p.product_id && !realProducts.some(r => r.source_id === String(p.product_id))) {
+                let img = p.product_main_image_url || "";
+                if (img.startsWith("//")) img = `https:${img}`;
+                realProducts.push({
+                  source_id: String(p.product_id),
+                  name: p.product_title,
+                  price: parseFloat(p.target_sale_price) || parseFloat(p.target_original_price) || 25,
+                  original_price: parseFloat(p.target_original_price) || 0,
+                  image: img,
+                  category_name: p.first_level_category_name || "منتجات عامة",
+                  rating: parseFloat(p.evaluate_rate) || 4.8,
+                  orders_count: parseInt(p.sales_volume) || 120,
+                  platform: "aliexpress",
+                  source_url: p.product_detail_url || `https://www.aliexpress.com/item/${p.product_id}.html`,
+                  supplier_name: p.shop_name || "AliExpress Verified Seller",
+                });
               }
-            } catch {}
-            await new Promise(r => setTimeout(r, 60));
+            }
           }
         }
       } catch (err) {
-        logger.warn({ err }, "Live AliExpress multi-category search error");
+        logger.warn({ err }, "Live AliExpress search error");
       }
     }
 
@@ -1300,58 +1299,53 @@ router.post("/admin/dropship/bulk-import-1000", requireAuth, requireRole("admin"
     let liveFetched: any[] = [];
     if (platform === "aliexpress" && creds) {
       try {
-        const randomStart = Math.floor(Math.random() * 8) + 1;
-        const targetPages = category_id 
-          ? [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 14, 16]
-          : [randomStart, randomStart + 1, randomStart + 2, randomStart + 3];
+        const pageOffset = Math.floor(Math.random() * 8) + 1;
         
-        let queries: { kw: string; catId?: string }[] = [];
+        let queries: { kw: string; catId?: string; page: number }[] = [];
         if (category_id && String(category_id).trim()) {
           const catStr = String(category_id).trim();
-          queries.push({ kw: keyword ? String(keyword).trim() : "", catId: catStr });
+          for (const p of [1, 2, 3, 4]) {
+            queries.push({ kw: keyword ? String(keyword).trim() : "", catId: catStr, page: p });
+          }
         } else if (keyword && String(keyword).trim()) {
-          queries.push({ kw: String(keyword).trim() });
+          for (const p of [1, 2, 3, 4]) {
+            queries.push({ kw: String(keyword).trim(), page: p });
+          }
         } else {
-          const terms = GLOBAL_DISCOVERY_TERMS.sort(() => 0.5 - Math.random()).slice(0, 12);
+          const terms = GLOBAL_DISCOVERY_TERMS.sort(() => 0.5 - Math.random()).slice(0, 4);
           for (const t of terms) {
-            queries.push({ kw: t });
+            queries.push({ kw: t, page: pageOffset });
           }
         }
 
-        for (const q of queries) {
-          for (const pNum of targetPages) {
-            try {
-              const prods = await searchAliExpressProducts(q.kw, creds, pNum, 50, q.catId);
-              if (Array.isArray(prods)) {
-                for (const p of prods) {
-                  const srcId = String(p.product_id);
-                  if (srcId && !existingSet.has(srcId) && !liveFetched.some(l => l.source_id === srcId)) {
-                    let img = p.product_main_image_url || "";
-                    if (img.startsWith("//")) img = `https:${img}`;
-                    const cPrice = parsePrice(p.target_sale_price || p.target_original_price, 25);
-                    liveFetched.push({
-                      source_id: srcId,
-                      name: p.product_title || `AliExpress Product ${srcId}`,
-                      cost: cPrice,
-                      image: img,
-                      category_name: p.first_level_category_name || "",
-                      quantity: 500 + ((parseInt(srcId.slice(-4)) || 100) % 1500),
-                      source_url: p.product_detail_url || `https://www.aliexpress.com/item/${srcId}.html`,
-                      supplier_name: p.shop_name || "AliExpress Verified Seller",
-                    });
-                  }
-                }
+        const results = await Promise.all(
+          queries.map(q => searchAliExpressProducts(q.kw, creds, q.page, 50, q.catId).catch(() => []))
+        );
+
+        for (const prods of results) {
+          if (Array.isArray(prods)) {
+            for (const p of prods) {
+              const srcId = String(p.product_id);
+              if (srcId && !existingSet.has(srcId) && !liveFetched.some(l => l.source_id === srcId)) {
+                let img = p.product_main_image_url || "";
+                if (img.startsWith("//")) img = `https:${img}`;
+                const cPrice = parsePrice(p.target_sale_price || p.target_original_price, 25);
+                liveFetched.push({
+                  source_id: srcId,
+                  name: p.product_title || `AliExpress Product ${srcId}`,
+                  cost: cPrice,
+                  image: img,
+                  category_name: p.first_level_category_name || "",
+                  quantity: 500 + ((parseInt(srcId.slice(-4)) || 100) % 1500),
+                  source_url: p.product_detail_url || `https://www.aliexpress.com/item/${srcId}.html`,
+                  supplier_name: p.shop_name || "AliExpress Verified Seller",
+                });
               }
-              if (liveFetched.length >= count) break;
-            } catch (err) {
-              logger.warn({ err }, "AliExpress fetch page error");
             }
-            await new Promise(r => setTimeout(r, 60));
           }
-          if (liveFetched.length >= count) break;
         }
       } catch (e) {
-        logger.warn({ e }, "AliExpress live multi-category bulk fetch error");
+        logger.warn({ e }, "AliExpress live bulk fetch error");
       }
     }
 
