@@ -1299,20 +1299,23 @@ router.post("/admin/dropship/bulk-import-1000", requireAuth, requireRole("admin"
     let liveFetched: any[] = [];
     if (platform === "aliexpress" && creds) {
       try {
-        const randomPageBase = Math.floor(Math.random() * 8) + 1;
-        const targetPages = [randomPageBase, randomPageBase + 1, randomPageBase + 2, randomPageBase + 3, randomPageBase + 4, randomPageBase + 5];
+        const randomStart = Math.floor(Math.random() * 10) + 1;
+        const targetPages = category_id 
+          ? [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 14, 16, 18, 20]
+          : [randomStart, randomStart + 1, randomStart + 2, randomStart + 3, randomStart + 4, randomStart + 5, randomStart + 7, randomStart + 9];
         
         let queries: { kw: string; catId?: string }[] = [];
         if (category_id && String(category_id).trim()) {
-          queries.push({ kw: keyword ? String(keyword).trim() : "", catId: String(category_id).trim() });
+          const catStr = String(category_id).trim();
+          queries.push({ kw: keyword ? String(keyword).trim() : "", catId: catStr });
         } else if (keyword && String(keyword).trim()) {
           queries.push({ kw: String(keyword).trim() });
         } else {
-          const selectedKws = POPULAR_SEARCH_KEYWORDS.sort(() => 0.5 - Math.random()).slice(0, 10);
+          const selectedKws = POPULAR_SEARCH_KEYWORDS.sort(() => 0.5 - Math.random()).slice(0, 12);
           for (const kw of selectedKws) {
             queries.push({ kw });
           }
-          const depts = ALIEXPRESS_DEPARTMENTS.sort(() => 0.5 - Math.random()).slice(0, 10);
+          const depts = ALIEXPRESS_DEPARTMENTS.sort(() => 0.5 - Math.random()).slice(0, 12);
           for (const dept of depts) {
             queries.push({ kw: "", catId: dept.id });
           }
