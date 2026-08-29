@@ -21,9 +21,12 @@ function generateSign(params: Record<string, string>, appSecret: string): string
 }
 
 function buildApiUrl(method: string, params: Record<string, string>, creds: AliExpressCredentials): string {
-  const timestamp = new Date().toISOString().replace(/T/, " ").replace(/\..+/, "");
+  const d = new Date();
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const timestamp = `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())} ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}:${pad(d.getUTCSeconds())}`;
+  
   const baseParams: Record<string, string> = {
-    app_key: creds.appKey.trim(),
+    app_key: (creds.appKey || "540456").trim(),
     timestamp,
     sign_method: "md5",
     v: "2.0",
@@ -31,7 +34,7 @@ function buildApiUrl(method: string, params: Record<string, string>, creds: AliE
     method,
     ...params,
   };
-  const sign = generateSign(baseParams, creds.appSecret.trim());
+  const sign = generateSign(baseParams, (creds.appSecret || "VKz8Ppc40dGMXGbcLyjXRxBhrXw3itnT").trim());
   baseParams.sign = sign;
 
   const url = new URL(ALIEXPRESS_API_URL);
@@ -78,8 +81,8 @@ export async function fetchAliExpressProduct(
     }, creds);
 
     const [resAr, resEn] = await Promise.all([
-      fetch(urlAr, { signal: AbortSignal.timeout(15000) }).then(r => r.json()).catch(() => null),
-      fetch(urlEn, { signal: AbortSignal.timeout(15000) }).then(r => r.json()).catch(() => null),
+      fetch(urlAr, { headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" }, signal: AbortSignal.timeout(15000) }).then(r => r.json()).catch(() => null),
+      fetch(urlEn, { headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" }, signal: AbortSignal.timeout(15000) }).then(r => r.json()).catch(() => null),
     ]);
 
     const extractProduct = (res: any) => {
@@ -141,8 +144,8 @@ export async function searchAliExpressProducts(
     const response = await fetch(url, {
       method: "GET",
       headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
         "Accept": "application/json",
-        "Content-Type": "application/json",
       },
       signal: AbortSignal.timeout(15000),
     });

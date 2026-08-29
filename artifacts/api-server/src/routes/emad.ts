@@ -1401,13 +1401,13 @@ router.post("/admin/dropship/bulk-import-1000", requireAuth, requireRole("admin"
       }
 
       if (productRecords.length > 0) {
-        try {
-          const insertedProducts = await db.insert(products).values(productRecords).onConflictDoNothing().returning({ id: products.id, price: products.price, cost: products.cost });
-          
-          if (insertedProducts && insertedProducts.length > 0) {
-            const dropshipRows = insertedProducts.map((p, idx) => {
-              const meta = metaRecords[idx] || metaRecords[0];
-              return {
+        for (let j = 0; j < productRecords.length; j++) {
+          try {
+            const pRec = productRecords[j];
+            const meta = metaRecords[j];
+            const [p] = await db.insert(products).values(pRec).onConflictDoNothing().returning({ id: products.id, price: products.price, cost: products.cost });
+            if (p?.id) {
+              await db.insert(dropship_products).values({
                 product_id: p.id,
                 platform,
                 source_id: meta.source_id,
@@ -1417,14 +1417,12 @@ router.post("/admin/dropship/bulk-import-1000", requireAuth, requireRole("admin"
                 our_price: meta.our_price,
                 supplier_name: meta.supplier_name,
                 platform_commission_rate: 8,
-              };
-            });
-
-            await db.insert(dropship_products).values(dropshipRows).onConflictDoNothing();
-            importedCount += insertedProducts.length;
+              }).onConflictDoNothing();
+              importedCount++;
+            }
+          } catch (err) {
+            logger.warn({ err }, "Single insert skipped");
           }
-        } catch (err) {
-          logger.warn({ err }, "Chunk insert skipped");
         }
       }
     }
@@ -2262,15 +2260,18 @@ router.get("/admin/dropship/bulk-import/jobs", requireAuth, requireRole("admin",
 
 // ========== ALIEXPRESS REAL API ==========
 
-async function getAliExpressCreds(): Promise<AliExpressCredentials | null> {
-  const rows = await db.select().from(platform_settings).where(eq(platform_settings.key, "aliexpress_app_key"));
-  const appKey = rows[0]?.value;
-  const secretRows = await db.select().from(platform_settings).where(eq(platform_settings.key, "aliexpress_app_key_secret"));
-  const appSecret = secretRows[0]?.value;
-  const trackRows = await db.select().from(platform_settings).where(eq(platform_settings.key, "aliexpress_tracking_id"));
-  const trackingId = trackRows[0]?.value;
-  if (!appKey || !appSecret) return null;
-  return { appKey, appSecret, trackingId: trackingId || undefined };
+async function getAliExpressCreds(): Promise<AliExpressCredentials> {
+  try {
+    const rows = await db.select().from(platform_settings).where(eq(platform_settings.key, "aliexpress_app_key"));
+    const appKey = rows[0]?.value || process.env.ALIEXPRESS_APP_KEY || "540456";
+    const secretRows = await db.select().from(platform_settings).where(eq(platform_settings.key, "aliexpress_app_key_secret"));
+    const appSecret = secretRows[0]?.value || process.env.ALIEXPRESS_APP_KEY_SECRET || "VKz8Ppc40dGMXGbcLyjXRxBhrXw3itnT";
+    const trackRows = await db.select().from(platform_settings).where(eq(platform_settings.key, "aliexpress_tracking_id"));
+    const trackingId = trackRows[0]?.value || process.env.ALIEXPRESS_TRACKING_ID || "default";
+    return { appKey, appSecret, trackingId };
+  } catch {
+    return { appKey: "540456", appSecret: "VKz8Ppc40dGMXGbcLyjXRxBhrXw3itnT", trackingId: "default" };
+  }
 }
 
 // Fetch real product by AliExpress Product ID (source_id)
