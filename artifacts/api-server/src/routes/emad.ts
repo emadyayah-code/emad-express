@@ -1201,16 +1201,18 @@ const ALIEXPRESS_DEPARTMENTS = [
   { id: "200000297", name_ar: "الأم والطفل", name_en: "Mother & Kids" },
 ];
 
-const POPULAR_SEARCH_KEYWORDS = [
-  "smart watch", "wireless earbuds", "phone case", "fast charger", "led light", "bluetooth speaker",
-  "car accessory", "gaming headset", "power bank", "sports bag", "running shoes", "leather wallet",
-  "ring jewelry", "drone 4k", "kitchen gadgets", "air fryer accessories", "robot vacuum",
-  "makeup brush set", "perfume atomizer", "baby educational toys", "camping tent", "cycling gloves",
-  "car dash cam", "cordless drill", "rgb led strip", "security camera wifi", "smart door lock",
-  "pet cat bed", "dog harness", "stationery notebook", "gaming chair", "hd projector",
-  "mechanical keyboard", "wireless gaming mouse", "women summer dress", "men casual shirt",
-  "hoodie streetwear", "sunglasses polarized", "luxury quartz watch", "necklace silver 925",
-  "hair straightener", "facial massager", "bluetooth tracker", "action camera 4k", "table lamp modern"
+const GLOBAL_DISCOVERY_TERMS = [
+  "hoodie", "jacket", "smart ring", "tws earbuds", "camping stove", "knife set", "car vacuum",
+  "led strip rgb", "mechanical keyboard", "gaming mouse pad", "women abaya", "men sneaker",
+  "sunglasses uv400", "baby stroller", "dog collar led", "hair dryer ionic", "makeup organizer",
+  "action camera", "wireless charger 3 in 1", "desk organizer", "wall clock 3d", "fishing reel",
+  "yoga mat", "massage gun", "smart thermostat", "solar light outdoor", "travel backpack",
+  "electric toothbrush", "cctv camera wifi", "bluetooth adapter 5.3", "drone 4k camera",
+  "kitchen scale digital", "air humidifier ultrasonic", "smart watch ultra", "crystal chandelier modern",
+  "perfume bottle refillable", "diamond ring 925", "leather jacket men", "party balloon arch",
+  "drawing tablet digital", "espresso coffee maker", "rc monster truck", "car dashcam 4k",
+  "laser level 3d", "pet water fountain", "hair extension clip", "sports water bottle",
+  "wireless game controller", "gaming microphone usb", "vintage sunglasses", "men casual pants"
 ];
 
 router.get("/admin/dropship/auto-fetch", requireAuth, requireRole("admin", "manager"), async (req, res, next) => {
@@ -1224,8 +1226,8 @@ router.get("/admin/dropship/auto-fetch", requireAuth, requireRole("admin", "mana
     let realProducts: any[] = [];
     if (platform === "aliexpress" && creds) {
       try {
-        const pageOffset = Math.floor(Math.random() * 5) + 1;
-        const targetPages = [pageOffset, pageOffset + 1, pageOffset + 2, pageOffset + 3, pageOffset + 4];
+        const pageOffset = Math.floor(Math.random() * 6) + 1;
+        const targetPages = [pageOffset, pageOffset + 1, pageOffset + 2, pageOffset + 3];
         
         let queries: { kw: string; catId?: string }[] = [];
         if (category_id && String(category_id).trim()) {
@@ -1233,10 +1235,8 @@ router.get("/admin/dropship/auto-fetch", requireAuth, requireRole("admin", "mana
         } else if (queryKw) {
           queries.push({ kw: queryKw });
         } else {
-          const selectedKws = POPULAR_SEARCH_KEYWORDS.sort(() => 0.5 - Math.random()).slice(0, 4);
-          for (const kw of selectedKws) queries.push({ kw });
-          const depts = ALIEXPRESS_DEPARTMENTS.slice(0, 4);
-          for (const dept of depts) queries.push({ kw: "", catId: dept.id });
+          const terms = GLOBAL_DISCOVERY_TERMS.sort(() => 0.5 - Math.random()).slice(0, 6);
+          for (const t of terms) queries.push({ kw: t });
         }
 
         for (const q of queries) {
@@ -1302,8 +1302,8 @@ router.post("/admin/dropship/bulk-import-1000", requireAuth, requireRole("admin"
       try {
         const randomStart = Math.floor(Math.random() * 8) + 1;
         const targetPages = category_id 
-          ? [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 14, 16, 18, 20]
-          : [randomStart, randomStart + 1, randomStart + 2, randomStart + 3, randomStart + 4, randomStart + 5, randomStart + 6, randomStart + 7];
+          ? [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 14, 16]
+          : [randomStart, randomStart + 1, randomStart + 2, randomStart + 3];
         
         let queries: { kw: string; catId?: string }[] = [];
         if (category_id && String(category_id).trim()) {
@@ -1312,13 +1312,9 @@ router.post("/admin/dropship/bulk-import-1000", requireAuth, requireRole("admin"
         } else if (keyword && String(keyword).trim()) {
           queries.push({ kw: String(keyword).trim() });
         } else {
-          const selectedKws = POPULAR_SEARCH_KEYWORDS.sort(() => 0.5 - Math.random()).slice(0, 6);
-          for (const kw of selectedKws) {
-            queries.push({ kw });
-          }
-          const depts = ALIEXPRESS_DEPARTMENTS.sort(() => 0.5 - Math.random()).slice(0, 6);
-          for (const dept of depts) {
-            queries.push({ kw: "", catId: dept.id });
+          const terms = GLOBAL_DISCOVERY_TERMS.sort(() => 0.5 - Math.random()).slice(0, 12);
+          for (const t of terms) {
+            queries.push({ kw: t });
           }
         }
 
