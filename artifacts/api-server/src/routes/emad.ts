@@ -25,8 +25,8 @@ import { translateProduct, translateProducts, getProductTranslation, setProductT
 import { processPayment, confirmStripePayment, capturePayPalOrder, seedPaymentGateways, createStripeConnectAccount, getStripeConnectAccount, createSplitPaymentIntent } from "../lib/payment";
 import { seedShippingCarriers, createShipment, getOrderShipments, updateShipmentStatus } from "../lib/shipping";
 import { fulfillAliExpressOrder, fulfillAmazonOrder, fulfillAlibabaOrder, fulfillLocalVendorOrder, autoFulfillOrder, getFulfillmentTracking } from "../lib/fulfillment";
-import { fetchAliExpressProduct, searchAliExpressProducts, type AliExpressCredentials } from "../lib/aliexpress";
 import { startBulkImport, stopBulkImport, getJobStatus, getAllJobs, getActiveJob } from "../lib/bulk-import";
+import { matchCategoryId } from "../lib/category-matcher";
 
 const UPLOADS_DIR = env.UPLOADS_DIR;
 mkdirSync(UPLOADS_DIR, { recursive: true });
@@ -1869,6 +1869,7 @@ router.post("/admin/dropship/import", requireAuth, requireRole("admin", "manager
   try {
     const b = req.body;
     const skuUnique = `DS-${b.source_id?.slice(-6) || Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 6)}`;
+    const matchedCatId = await matchCategoryId(`${b.name || ""} ${b.description || ""}`, b.category_id);
     const [newProduct] = await db.insert(products).values({
       name_ar: b.name || "منتج دروبشيبينغ",
       name_en: b.name || "Dropshipping Product",
@@ -1877,7 +1878,7 @@ router.post("/admin/dropship/import", requireAuth, requireRole("admin", "manager
       cost: b.source_price || 0,
       quantity: 999,
       min_quantity: 0,
-      category_id: b.category_id || null,
+      category_id: matchedCatId,
       description_ar: sanitizeText(b.description || "منتج عالي الجودة"),
       description_en: sanitizeText(b.description || "High quality product"),
       image: b.image || "",

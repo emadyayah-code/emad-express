@@ -4,6 +4,7 @@ import { logger } from "./logger";
 import { fetchAliExpressProduct, searchAliExpressProducts, type AliExpressCredentials } from "./aliexpress";
 import { searchAmazonProducts, getAmazonProduct, type AmazonCredentials } from "./amazon";
 import { searchAlibabaProducts, getAlibabaProduct, type AlibabaCredentials } from "./alibaba";
+import { matchCategoryId } from "./category-matcher";
 
 export interface BulkImportJob {
   id: string;
@@ -82,6 +83,7 @@ async function saveProduct(
     }
 
     const ourPrice = parseFloat((price * (1 + job.marginPercent / 100)).toFixed(2));
+    const matchedCategoryId = await matchCategoryId(`${name} ${categoryName || ""}`);
 
     const [newProduct] = await db.insert(products).values({
       name: name.slice(0, 200),
@@ -90,7 +92,7 @@ async function saveProduct(
       cost: price,
       quantity: 999,
       min_quantity: 0,
-      category_id: null,
+      category_id: matchedCategoryId,
       description: categoryName ? `منتج من ${platform} - ${supplierName} - التصنيف: ${categoryName}` : `منتج من ${platform} - ${supplierName}`,
       image: image || "",
       is_active: true,
