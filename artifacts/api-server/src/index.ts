@@ -1,7 +1,7 @@
 import app from "./app";
 import { logger } from "./lib/logger";
 import { env } from "./lib/env";
-import { pool } from "@workspace/db";
+import { pool, initDbSchema } from "@workspace/db";
 import { seedIfEmpty, startPriceSyncJob } from "./routes/emad";
 
 const port = env.PORT;
@@ -14,10 +14,13 @@ const server = app.listen(port, async (err?: Error) => {
 
   logger.info({ port, nodeEnv: env.NODE_ENV }, "Server listening");
   try {
+    logger.info("Initializing database schema...");
+    await initDbSchema(pool);
+    logger.info("Database schema initialized. Seeding initial data...");
     await seedIfEmpty();
     startPriceSyncJob();
   } catch (e) {
-    logger.error({ err: e }, "Seed failed");
+    logger.error({ err: e }, "Database initialization/seed failed");
   }
 });
 

@@ -40,6 +40,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   function logout() {
     clearToken();
     setUser(null);
+    try {
+      localStorage.clear();
+      sessionStorage.clear();
+    } catch {}
   }
 
   return <AuthContext.Provider value={{ user, login, logout, loading }}>{children}</AuthContext.Provider>;

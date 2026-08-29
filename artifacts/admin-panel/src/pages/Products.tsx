@@ -116,12 +116,206 @@ function ImageUploader({ value, onChange }: { value: string; onChange: (url: str
   );
 }
 
+function PaginationControls({
+  page,
+  totalPages,
+  totalCount,
+  perPage,
+  setPage,
+  setPerPage,
+}: {
+  page: number;
+  totalPages: number;
+  totalCount: number;
+  perPage: number;
+  setPage: (p: number | ((prev: number) => number)) => void;
+  setPerPage: (n: number) => void;
+}) {
+  const [jumpPage, setJumpPage] = useState("");
+
+  const handleJump = (e: React.FormEvent) => {
+    e.preventDefault();
+    const p = parseInt(jumpPage);
+    if (!isNaN(p) && p >= 1 && p <= totalPages) {
+      setPage(p);
+      setJumpPage("");
+    }
+  };
+
+  const getPageNumbers = () => {
+    const pages: (number | string)[] = [];
+    if (totalPages <= 7) {
+      for (let i = 1; i <= totalPages; i++) pages.push(i);
+    } else {
+      pages.push(1);
+      if (page > 3) pages.push("...");
+      const start = Math.max(2, page - 1);
+      const end = Math.min(totalPages - 1, page + 1);
+      for (let i = start; i <= end; i++) {
+        if (!pages.includes(i)) pages.push(i);
+      }
+      if (page < totalPages - 2) pages.push("...");
+      if (!pages.includes(totalPages)) pages.push(totalPages);
+    }
+    return pages;
+  };
+
+  return (
+    <div
+      className="flex flex-col lg:flex-row items-center justify-between gap-3 p-3.5 rounded-2xl shadow-md"
+      style={{
+        background: "rgba(22, 17, 6, 0.75)",
+        backdropFilter: "blur(10px)",
+        border: "1px solid rgba(245, 158, 11, 0.25)",
+      }}
+    >
+      {/* Items count & Per-page selector */}
+      <div className="flex items-center gap-3 text-xs text-amber-200/80 flex-wrap justify-center sm:justify-start">
+        <span>
+          عرض <strong className="text-amber-400 font-bold">{((page - 1) * perPage + 1).toLocaleString()}</strong> إلى{" "}
+          <strong className="text-amber-400 font-bold">{Math.min(page * perPage, totalCount).toLocaleString()}</strong> من إجمالي{" "}
+          <strong className="text-amber-400 font-bold">{totalCount.toLocaleString()}</strong> منتج
+        </span>
+        <div className="flex items-center gap-1.5 bg-black/40 px-2.5 py-1 rounded-lg border border-amber-500/20">
+          <span className="text-amber-200/60">عرض:</span>
+          <select
+            value={perPage}
+            onChange={(e) => {
+              setPerPage(Number(e.target.value));
+              setPage(1);
+            }}
+            className="bg-transparent text-amber-300 font-bold text-xs outline-none cursor-pointer"
+          >
+            {[10, 25, 50, 100, 250].map((n) => (
+              <option key={n} value={n} className="bg-slate-900 text-white">
+                {n} في الصفحة
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {/* Page Numbers & Navigation Buttons */}
+      <div className="flex items-center gap-1.5 flex-wrap justify-center" dir="rtl">
+        <button
+          type="button"
+          onClick={() => setPage(1)}
+          disabled={page <= 1}
+          title="الصفحة الأولى"
+          className="px-2.5 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+          style={{
+            background: page <= 1 ? "rgba(255,255,255,0.03)" : "rgba(245,158,11,0.1)",
+            borderColor: "rgba(245,158,11,0.2)",
+            color: "#fbbf24",
+          }}
+        >
+          « الأولى
+        </button>
+        <button
+          type="button"
+          onClick={() => setPage((p) => Math.max(1, p - 1))}
+          disabled={page <= 1}
+          className="px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+          style={{
+            background: page <= 1 ? "rgba(255,255,255,0.03)" : "rgba(245,158,11,0.15)",
+            borderColor: "rgba(245,158,11,0.3)",
+            color: "#fbbf24",
+          }}
+        >
+          ‹ السابق
+        </button>
+
+        {/* Numbered Page Buttons */}
+        <div className="flex items-center gap-1">
+          {getPageNumbers().map((p, idx) =>
+            typeof p === "number" ? (
+              <button
+                key={p}
+                type="button"
+                onClick={() => setPage(p)}
+                className="min-w-[32px] h-8 px-2 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-sm"
+                style={{
+                  background:
+                    page === p
+                      ? "linear-gradient(135deg, #f59e0b, #d97706)"
+                      : "rgba(255, 255, 255, 0.05)",
+                  border:
+                    page === p
+                      ? "1px solid #fbbf24"
+                      : "1px solid rgba(245, 158, 11, 0.15)",
+                  color: page === p ? "#000" : "#fde68a",
+                  boxShadow: page === p ? "0 0 12px rgba(245,158,11,0.4)" : "none",
+                }}
+              >
+                {p}
+              </button>
+            ) : (
+              <span key={`dots-${idx}`} className="px-1 text-amber-400/50 text-xs">
+                ...
+              </span>
+            )
+          )}
+        </div>
+
+        <button
+          type="button"
+          onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+          disabled={page >= totalPages}
+          className="px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+          style={{
+            background: page >= totalPages ? "rgba(255,255,255,0.03)" : "rgba(245,158,11,0.15)",
+            borderColor: "rgba(245,158,11,0.3)",
+            color: "#fbbf24",
+          }}
+        >
+          التالي ›
+        </button>
+        <button
+          type="button"
+          onClick={() => setPage(totalPages)}
+          disabled={page >= totalPages}
+          title="الصفحة الأخيرة"
+          className="px-2.5 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+          style={{
+            background: page >= totalPages ? "rgba(255,255,255,0.03)" : "rgba(245,158,11,0.1)",
+            borderColor: "rgba(245,158,11,0.2)",
+            color: "#fbbf24",
+          }}
+        >
+          الأخيرة »
+        </button>
+      </div>
+
+      {/* Direct Jump to page */}
+      <form onSubmit={handleJump} className="flex items-center gap-1.5">
+        <span className="text-xs text-amber-200/60">صفحة:</span>
+        <input
+          type="number"
+          min={1}
+          max={totalPages}
+          value={jumpPage}
+          onChange={(e) => setJumpPage(e.target.value)}
+          placeholder={String(page)}
+          className="w-14 bg-black/40 border border-amber-500/30 rounded-lg px-2 py-1 text-xs text-center text-amber-300 font-bold outline-none focus:border-amber-400"
+        />
+        <button
+          type="submit"
+          disabled={!jumpPage}
+          className="bg-amber-500 hover:bg-amber-400 disabled:opacity-30 text-black px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer"
+        >
+          انتقال
+        </button>
+      </form>
+    </div>
+  );
+}
+
 export default function Products() {
   const qc = useQueryClient();
   const { t, language } = useI18n();
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
-  const [perPage, setPerPage] = useState(50);
+  const [perPage, setPerPage] = useState(25);
   const [selectedCategory, setSelectedCategory] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [modal, setModal] = useState<"add" | "edit" | null>(null);
@@ -149,7 +343,7 @@ export default function Products() {
   const products: Product[] = Array.isArray(data) ? data : data?.data || [];
   const categoriesList = Array.isArray(cats) ? cats : cats?.data || [];
   const totalCount: number = data?.total ?? products.length;
-  const totalPages: number = data?.total_pages ?? Math.ceil(totalCount / perPage) ?? 1;
+  const totalPages: number = data?.total_pages ?? Math.max(1, Math.ceil(totalCount / perPage));
 
   const [clearing, setClearing] = useState(false);
   const handleClearAll = async () => {
@@ -171,7 +365,7 @@ export default function Products() {
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-bold" style={{ color: "#f59e0b" }}>المنتجات</h1>
-          <p className="text-xs text-amber-200/60 mt-1">إجمالي المنتجات: {totalCount.toLocaleString()} منتج</p>
+          <p className="text-xs text-amber-200/60 mt-1">إجمالي المنتجات: {totalCount.toLocaleString()} منتج (صفحة {page} من {totalPages})</p>
         </div>
         <div className="flex items-center gap-2.5 flex-wrap">
           {totalCount > 0 && (
@@ -225,6 +419,18 @@ export default function Products() {
         </div>
       </div>
 
+      {/* Top Pagination Controls */}
+      {totalCount > 0 && (
+        <PaginationControls
+          page={page}
+          totalPages={totalPages}
+          totalCount={totalCount}
+          perPage={perPage}
+          setPage={setPage}
+          setPerPage={setPerPage}
+        />
+      )}
+
       <div className="rounded-xl overflow-hidden" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(245,158,11,0.15)" }}>
         {isLoading ? (
           <div className="flex items-center justify-center h-32">
@@ -249,37 +455,37 @@ export default function Products() {
                 {products.map(p => (
                   <tr key={p.id} style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }} className="hover:bg-white/5 transition-colors">
                     <td className="px-4 py-3">
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-3 max-w-lg">
                         {p.image ? (
-                          <img src={p.image} alt={p.name} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" style={{ border: "1px solid rgba(245,158,11,0.2)" }} referrerPolicy="no-referrer" />
+                          <img src={p.image} alt={p.name} className="w-12 h-12 rounded-lg object-cover flex-shrink-0" style={{ border: "1px solid rgba(245,158,11,0.2)" }} referrerPolicy="no-referrer" />
                         ) : (
-                          <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: "rgba(245,158,11,0.1)", border: "1px solid rgba(245,158,11,0.2)" }}>
-                            <ImageIcon size={16} className="text-amber-500/50" />
+                          <div className="w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: "rgba(245,158,11,0.1)", border: "1px solid rgba(245,158,11,0.2)" }}>
+                            <ImageIcon size={18} className="text-amber-500/50" />
                           </div>
                         )}
-                        <div>
-                          <p className="font-medium text-white/90">
+                        <div className="min-w-0">
+                          <p className="font-semibold text-white/90 line-clamp-2 leading-relaxed text-xs sm:text-sm">
                             {getProductLocalizedName(p, language)}
                           </p>
-                          <p className="text-xs text-white/40">
-                            {getProductLocalizedDesc(p, language).slice(0, 50)}...
+                          <p className="text-xs text-white/40 line-clamp-1 mt-0.5">
+                            {getProductLocalizedDesc(p, language)}
                           </p>
                         </div>
                       </div>
                     </td>
-                    <td className="px-4 py-3 font-mono text-xs" style={{ color: "rgba(255,255,255,0.5)" }}>{p.sku}</td>
-                    <td className="px-4 py-3 font-semibold text-amber-400">{p.price.toLocaleString()} ر</td>
-                    <td className="px-4 py-3" style={{ color: "rgba(255,255,255,0.6)" }}>{p.cost.toLocaleString()} ر</td>
-                    <td className="px-4 py-3">
-                      <span className={`text-xs px-2 py-1 rounded-full ${p.quantity <= p.min_quantity ? "bg-red-500/20 text-red-400" : "bg-green-500/20 text-green-400"}`}>{p.quantity}</span>
+                    <td className="px-4 py-3 font-mono text-xs whitespace-nowrap" style={{ color: "rgba(255,255,255,0.5)" }}>{p.sku}</td>
+                    <td className="px-4 py-3 font-bold text-amber-400 whitespace-nowrap">{p.price.toLocaleString()} ر</td>
+                    <td className="px-4 py-3 whitespace-nowrap" style={{ color: "rgba(255,255,255,0.6)" }}>{p.cost.toLocaleString()} ر</td>
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      <span className={`text-xs px-2.5 py-1 font-bold rounded-full ${p.quantity <= p.min_quantity ? "bg-red-500/20 text-red-400 border border-red-500/30" : "bg-green-500/20 text-green-400 border border-green-500/30"}`}>{p.quantity}</span>
                     </td>
-                    <td className="px-4 py-3">
-                      <span className={`text-xs px-2 py-1 rounded-full ${p.is_active ? "bg-green-500/20 text-green-400" : "bg-gray-500/20 text-gray-400"}`}>{p.is_active ? "نشط" : "غير نشط"}</span>
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      <span className={`text-xs px-2.5 py-1 font-bold rounded-full ${p.is_active ? "bg-green-500/20 text-green-400 border border-green-500/30" : "bg-gray-500/20 text-gray-400 border border-gray-500/30"}`}>{p.is_active ? "نشط" : "غير نشط"}</span>
                     </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
-                        <button onClick={() => openEdit(p)} className="text-blue-400 hover:text-blue-300 transition-colors cursor-pointer"><Edit size={15} /></button>
-                        <button onClick={() => confirm("حذف هذا المنتج بالكامل؟") && deleteMut.mutate(p.id)} className="text-red-400 hover:text-red-300 transition-colors cursor-pointer"><Trash2 size={15} /></button>
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      <div className="flex items-center gap-2.5">
+                        <button onClick={() => openEdit(p)} title="تعديل" className="p-1.5 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/30 transition-colors cursor-pointer"><Edit size={14} /></button>
+                        <button onClick={() => confirm("حذف هذا المنتج بالكامل؟") && deleteMut.mutate(p.id)} title="حذف" className="p-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 transition-colors cursor-pointer"><Trash2 size={14} /></button>
                       </div>
                     </td>
                   </tr>
@@ -290,64 +496,16 @@ export default function Products() {
         )}
       </div>
 
-      {/* Pagination Bar */}
+      {/* Bottom Pagination Controls */}
       {totalCount > 0 && (
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 rounded-xl" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(245,158,11,0.15)" }}>
-          <div className="flex items-center gap-3 text-xs text-amber-200/80 flex-wrap">
-            <span>
-              عرض <strong className="text-amber-400">{((page - 1) * perPage + 1).toLocaleString()}</strong> إلى <strong className="text-amber-400">{Math.min(page * perPage, totalCount).toLocaleString()}</strong> من إجمالي <strong className="text-amber-400">{totalCount.toLocaleString()}</strong> منتج
-            </span>
-            <div className="flex items-center gap-1.5 mr-2">
-              <span>عرض في الصفحة:</span>
-              <select
-                value={perPage}
-                onChange={e => { setPerPage(Number(e.target.value)); setPage(1); }}
-                className="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-amber-400 outline-none cursor-pointer"
-              >
-                {[25, 50, 100, 250, 500, 1000].map(n => (
-                  <option key={n} value={n}>{n} منتج</option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          {/* Pagination Navigation */}
-          <div className="flex items-center gap-1.5" dir="ltr">
-            <button
-              onClick={() => setPage(1)}
-              disabled={page <= 1}
-              className="px-2.5 py-1 rounded-lg text-xs font-bold border border-slate-700 bg-slate-900 text-slate-300 hover:text-white disabled:opacity-30 cursor-pointer"
-            >
-              « الأولى
-            </button>
-            <button
-              onClick={() => setPage(p => Math.max(1, p - 1))}
-              disabled={page <= 1}
-              className="px-2.5 py-1 rounded-lg text-xs font-bold border border-slate-700 bg-slate-900 text-slate-300 hover:text-white disabled:opacity-30 cursor-pointer"
-            >
-              ‹ السابق
-            </button>
-
-            <span className="text-xs font-bold px-3 py-1 bg-amber-500/20 text-amber-300 border border-amber-500/40 rounded-lg">
-              صفحة {page} من {totalPages}
-            </span>
-
-            <button
-              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-              disabled={page >= totalPages}
-              className="px-2.5 py-1 rounded-lg text-xs font-bold border border-slate-700 bg-slate-900 text-slate-300 hover:text-white disabled:opacity-30 cursor-pointer"
-            >
-              التالي ›
-            </button>
-            <button
-              onClick={() => setPage(totalPages)}
-              disabled={page >= totalPages}
-              className="px-2.5 py-1 rounded-lg text-xs font-bold border border-slate-700 bg-slate-900 text-slate-300 hover:text-white disabled:opacity-30 cursor-pointer"
-            >
-              الأخيرة »
-            </button>
-          </div>
-        </div>
+        <PaginationControls
+          page={page}
+          totalPages={totalPages}
+          totalCount={totalCount}
+          perPage={perPage}
+          setPage={setPage}
+          setPerPage={setPerPage}
+        />
       )}
 
       {modal && (

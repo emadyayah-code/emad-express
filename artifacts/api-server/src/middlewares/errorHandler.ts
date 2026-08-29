@@ -30,10 +30,28 @@ export function errorHandler(err: ApiError, _req: Request, res: Response, _next:
     });
   }
 
+  let userMessage = err.message || "حدث خطأ ما";
+
+  // Sanitize internal database errors and raw SQL queries
+  if (
+    userMessage.includes("Failed query:") ||
+    userMessage.includes("select \"") ||
+    userMessage.includes("insert into") ||
+    userMessage.includes("update \"") ||
+    userMessage.includes("delete from") ||
+    userMessage.includes("relation \"") ||
+    userMessage.includes("column \"") ||
+    userMessage.includes("Database unreachable") ||
+    userMessage.includes("ECONNREFUSED") ||
+    userMessage.includes("ENOTFOUND")
+  ) {
+    userMessage = "تعذر الاتصال بقاعدة البيانات أو معالجة الطلب حالياً، يرجى المحاولة لاحقاً";
+  }
+
   res.status(statusCode).json({
     success: false,
-    message: err.message || "حدث خطأ ما",
-    ...(isDev ? { stack: err.stack } : {}),
+    message: userMessage,
+    ...(isDev ? { stack: err.stack, details: err.message } : {}),
   });
 }
 

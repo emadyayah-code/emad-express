@@ -11,15 +11,15 @@ if (!process.env.DATABASE_URL) {
 }
 
 const isProduction = process.env.NODE_ENV === "production";
+const dbUrl = process.env.DATABASE_URL;
+const needsSsl = dbUrl.includes("sslmode=require") || dbUrl.includes("neon.tech") || dbUrl.includes("render.com") || dbUrl.includes(".aws.") || isProduction;
 
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
+  connectionString: dbUrl,
   max: 20, // maximum pool size
   idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 5000,
-  ...(isProduction && process.env.DATABASE_URL.includes("sslmode=require")
-    ? { ssl: { rejectUnauthorized: false } }
-    : {}),
+  connectionTimeoutMillis: 10000,
+  ...(needsSsl ? { ssl: { rejectUnauthorized: false } } : {}),
 });
 
 // Handle pool errors to prevent crashes
@@ -31,3 +31,4 @@ export { pool };
 export const db = drizzle(pool, { schema });
 
 export * from "./schema";
+export * from "./migrations";

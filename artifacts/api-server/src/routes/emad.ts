@@ -1597,11 +1597,67 @@ router.get("/admin/dropship/fetch-url", requireAuth, requireRole("admin", "manag
 router.post("/admin/dropship/sync-stock", requireAuth, requireRole("admin", "manager"), async (_req, res, next) => {
   try {
     const dropships = await db.select().from(dropship_products);
+    const settings = await db.select().from(platform_settings);
+    const cfg: Record<string, string> = {}; settings.forEach(s => { cfg[s.key] = s.value; });
+    const hasAliKey = cfg["aliexpress_app_key"] && cfg["aliexpress_app_key_secret"];
+    const aliCreds: AliExpressCredentials | null = hasAliKey ? {
+      appKey: cfg["aliexpress_app_key"],
+      appSecret: cfg["aliexpress_app_key_secret"],
+      trackingId: cfg["aliexpress_tracking_id"],
+    } : null;
+
     let updatedCount = 0;
+    let deletedCount = 0;
 
     for (const dp of dropships) {
-      if (dp.product_id) {
-        // Sync stock quantity and price
+      if (dp.platform === "aliexpress" && aliCreds && dp.source_id) {
+        try {
+          const aliProduct = await fetchAliExpressProduct(dp.source_id, aliCreds);
+          if (!aliProduct) {
+            // Product removed / out of stock -> Delete from database
+            if (dp.product_id) {
+              await db.update(products).set({ deleted_at: new Date(), is_active: false, quantity: 0 }).where(eq(products.id, dp.product_id));
+            }
+            await db.delete(dropship_products).where(eq(dropship_products.id, dp.id));
+            deletedCount++;
+            continue;
+          }
+
+          const targetSalePrice = parseFloat(aliProduct.target_sale_price) || 0;
+          const targetOrigPrice = parseFloat(aliProduct.target_original_price) || 0;
+          const newSourcePrice = targetSalePrice || targetOrigPrice;
+
+          if (newSourcePrice <= 0) {
+            // Out of stock -> Delete from database
+            if (dp.product_id) {
+              await db.update(products).set({ deleted_at: new Date(), is_active: false, quantity: 0 }).where(eq(products.id, dp.product_id));
+            }
+            await db.delete(dropship_products).where(eq(dropship_products.id, dp.id));
+            deletedCount++;
+            continue;
+          }
+
+          const margin = dp.source_price > 0 ? dp.our_price / dp.source_price : 1.3;
+          const newOurPrice = parseFloat((newSourcePrice * margin).toFixed(2));
+          await db.update(dropship_products).set({
+            source_price: newSourcePrice,
+            our_price: newOurPrice,
+            supplier_name: aliProduct.shop_name || dp.supplier_name,
+          }).where(eq(dropship_products.id, dp.id));
+
+          if (dp.product_id) {
+            await db.update(products).set({
+              price: newOurPrice,
+              cost: newSourcePrice,
+              is_active: true,
+            }).where(eq(products.id, dp.product_id));
+          }
+          updatedCount++;
+        } catch {
+          // If error during API call, keep current state
+        }
+      } else if (dp.product_id) {
+        // Fallback simulated stock sync
         const randomStockVariation = 150 + ((dp.id * 37) % 850);
         await db.update(products).set({
           quantity: randomStockVariation,
@@ -1613,8 +1669,9 @@ router.post("/admin/dropship/sync-stock", requireAuth, requireRole("admin", "man
 
     return res.json({
       success: true,
-      message: `تمت مزامنة المخزون والكميات بنجاح لـ ${updatedCount} منتج مع منصة علي إكسبرس!`,
+      message: `تمت مزامنة المخزون بنجاح (تحديث ${updatedCount} منتج، وحذف ${deletedCount} منتج نفد مخزونه من علي إكسبرس)!`,
       synced_count: updatedCount,
+      deleted_count: deletedCount,
     });
   } catch (err) { next(err); }
 });
@@ -1854,7 +1911,7 @@ router.get("/admin/dropship/api-search", requireAuth, requireRole("admin", "mana
   } catch (err) { next(err); }
 });
 
-// ========== AUTO PRICE SYNC ==========
+// ========== AUTO PRICE & STOCK SYNC ==========
 export function startPriceSyncJob() {
   const INTERVAL_MS = 30 * 60 * 1000;
   async function syncPrices() {
@@ -1864,6 +1921,8 @@ export function startPriceSyncJob() {
       const settings = await db.select().from(platform_settings);
       const cfg: Record<string, string> = {}; settings.forEach(s => { cfg[s.key] = s.value; });
       let synced = 0;
+      let deletedOutOfStock = 0;
+
       for (const dp of dps) {
         const hasAliKey = dp.platform === "aliexpress" && cfg["aliexpress_app_key"] && cfg["aliexpress_app_key_secret"];
         const hasAmazonKey = dp.platform === "amazon" && cfg["amazon_access_key"];
@@ -1877,25 +1936,51 @@ export function startPriceSyncJob() {
               trackingId: cfg["aliexpress_tracking_id"],
             };
             const aliProduct = await fetchAliExpressProduct(dp.source_id, aliCreds);
-            if (aliProduct) {
-              const newSourcePrice = parseFloat(aliProduct.target_sale_price) || parseFloat(aliProduct.target_original_price) || dp.source_price;
-              const margin = dp.source_price > 0 ? dp.our_price / dp.source_price : 1.3;
-              const newOurPrice = parseFloat((newSourcePrice * margin).toFixed(2));
-              await db.update(dropship_products).set({
-                source_price: newSourcePrice,
-                our_price: newOurPrice,
-                supplier_name: aliProduct.shop_name || dp.supplier_name,
-              }).where(eq(dropship_products.id, dp.id));
+            
+            // If product is no longer found or removed from AliExpress -> Auto delete
+            if (!aliProduct) {
+              logger.warn({ source_id: dp.source_id, product_id: dp.product_id }, "AliExpress product not found / removed. Deleting from database...");
               if (dp.product_id) {
-                await db.update(products).set({
-                  price: newOurPrice,
-                  cost: newSourcePrice,
-                  name: aliProduct.product_title || undefined,
-                  image: aliProduct.product_main_image_url || undefined,
-                }).where(eq(products.id, dp.product_id));
+                await db.update(products).set({ deleted_at: new Date(), is_active: false, quantity: 0 }).where(eq(products.id, dp.product_id));
               }
-              synced++;
+              await db.delete(dropship_products).where(eq(dropship_products.id, dp.id));
+              deletedOutOfStock++;
+              continue;
             }
+
+            const targetSalePrice = parseFloat(aliProduct.target_sale_price) || 0;
+            const targetOrigPrice = parseFloat(aliProduct.target_original_price) || 0;
+            const newSourcePrice = targetSalePrice || targetOrigPrice;
+
+            // If price is 0 or out of stock -> Auto delete from database
+            if (newSourcePrice <= 0) {
+              logger.warn({ source_id: dp.source_id, product_id: dp.product_id }, "AliExpress product is out of stock (price 0). Deleting from database...");
+              if (dp.product_id) {
+                await db.update(products).set({ deleted_at: new Date(), is_active: false, quantity: 0 }).where(eq(products.id, dp.product_id));
+              }
+              await db.delete(dropship_products).where(eq(dropship_products.id, dp.id));
+              deletedOutOfStock++;
+              continue;
+            }
+
+            const margin = dp.source_price > 0 ? dp.our_price / dp.source_price : 1.3;
+            const newOurPrice = parseFloat((newSourcePrice * margin).toFixed(2));
+            await db.update(dropship_products).set({
+              source_price: newSourcePrice,
+              our_price: newOurPrice,
+              supplier_name: aliProduct.shop_name || dp.supplier_name,
+            }).where(eq(dropship_products.id, dp.id));
+
+            if (dp.product_id) {
+              await db.update(products).set({
+                price: newOurPrice,
+                cost: newSourcePrice,
+                name: aliProduct.product_title || undefined,
+                image: aliProduct.product_main_image_url || undefined,
+                is_active: true,
+              }).where(eq(products.id, dp.product_id));
+            }
+            synced++;
           } catch (e) {
             logger.error({ err: e, source_id: dp.source_id }, "AliExpress sync failed for product");
           }
@@ -1910,7 +1995,7 @@ export function startPriceSyncJob() {
           synced++;
         }
       }
-      logger.info({ synced }, "Price sync completed");
+      logger.info({ synced, deletedOutOfStock }, "Price and stock sync completed");
     } catch (e) { logger.error({ err: e }, "Price sync error"); }
   }
   setTimeout(syncPrices, 2 * 60 * 1000);

@@ -1,17 +1,33 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/lib/auth";
 
 export default function Login() {
   const { login, loading } = useAuth();
-  const [email, setEmail] = useState("ealakhly@gmail.com");
-  const [password, setPassword] = useState("772223645");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const emailRef = useRef<HTMLInputElement>(null);
+  const pwdRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    setEmail("");
+    setPassword("");
+    const timer = setTimeout(() => {
+      if (emailRef.current) emailRef.current.value = "";
+      if (pwdRef.current) pwdRef.current.value = "";
+    }, 150);
+    return () => clearTimeout(timer);
+  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
     try {
       await login(email, password);
+      setEmail("");
+      setPassword("");
+      if (emailRef.current) emailRef.current.value = "";
+      if (pwdRef.current) pwdRef.current.value = "";
     } catch (err: any) {
       setError(err.message || "فشل تسجيل الدخول");
     }
@@ -71,14 +87,22 @@ export default function Login() {
         >
           <h2 className="text-center text-lg font-semibold text-amber-300 mb-6">تسجيل الدخول للمدير</h2>
 
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form onSubmit={handleSubmit} className="space-y-5" autoComplete="off">
+            {/* Decoy hidden inputs to prevent browser autofill */}
+            <input type="text" name="prevent_autofill_user" style={{ display: "none" }} tabIndex={-1} autoComplete="off" />
+            <input type="password" name="prevent_autofill_pwd" style={{ display: "none" }} tabIndex={-1} autoComplete="new-password" />
+
             <div>
               <label className="block text-sm font-medium text-amber-200/80 mb-2">البريد الإلكتروني</label>
               <input
+                ref={emailRef}
                 type="email"
+                name="admin_login_email_field"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
-                placeholder="ealakhly@gmail.com"
+                placeholder="أدخل البريد الإلكتروني"
+                autoComplete="off"
+                required
                 className="w-full rounded-xl px-4 py-3 text-sm text-white outline-none transition-all"
                 style={{
                   background: "rgba(255,255,255,0.05)",
@@ -91,9 +115,14 @@ export default function Login() {
             <div>
               <label className="block text-sm font-medium text-amber-200/80 mb-2">كلمة المرور</label>
               <input
+                ref={pwdRef}
                 type="password"
+                name="admin_login_pass_field"
                 value={password}
                 onChange={e => setPassword(e.target.value)}
+                placeholder="أدخل كلمة المرور"
+                autoComplete="new-password"
+                required
                 className="w-full rounded-xl px-4 py-3 text-sm text-white outline-none transition-all"
                 style={{
                   background: "rgba(255,255,255,0.05)",
