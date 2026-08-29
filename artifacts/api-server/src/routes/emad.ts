@@ -93,15 +93,40 @@ export async function seedIfEmpty() {
   }
 
   try {
-    const existingCats = await db.select().from(categories).where(isNull(categories.deleted_at)).limit(1);
-    if (existingCats.length === 0) {
-      await db.insert(categories).values([
-        { name_ar: "هواتف ذكية", name_en: "Smartphones", icon: "📱", image: "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=400", description_ar: "أحدث الهواتف الذكية", description_en: "Latest smartphones", is_active: true },
-        { name_ar: "أجهزة كمبيوتر", name_en: "Computers", icon: "💻", image: "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=400", description_ar: "لابتوبات وأجهزة مكتبية", description_en: "Laptops and desktop computers", is_active: true },
-        { name_ar: "سماعات", name_en: "Headphones", icon: "🎧", image: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400", description_ar: "سماعات لاسلكية وسلكية", description_en: "Wireless and wired headphones", is_active: true },
-        { name_ar: "تلفزيونات", name_en: "TVs", icon: "📺", image: "https://images.unsplash.com/photo-1593359677879-a4bb92f829e1?w=400", description_ar: "تلفزيونات ذكية بدقة عالية", description_en: "Smart TVs with high resolution", is_active: true },
-        { name_ar: "كاميرات", name_en: "Cameras", icon: "📷", image: "https://images.unsplash.com/photo-1502920917128-1aa500764cbd?w=400", description_ar: "كاميرات احترافية", description_en: "Professional cameras", is_active: true },
-      ]);
+    const existingCats = await db.select().from(categories).where(isNull(categories.deleted_at));
+    if (existingCats.length < 10) {
+      const allAliCategories = [
+        { name_ar: "هواتف ذكية وملحقاتها", name_en: "Phones & Telecommunications", icon: "📱", image: "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=600", description_ar: "أحدث الهواتف الذكية، كفرات، شواحن، واقيات شاشة وإكسسوارات الهواتف", description_en: "Latest smartphones, cases, chargers, screen protectors and accessories" },
+        { name_ar: "إلكترونيات استهلاكية", name_en: "Consumer Electronics", icon: "🎧", image: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=600", description_ar: "سماعات لاسلكية، مكبرات صوت، أجهزة ألعاب وساعات ذكية", description_en: "Wireless headphones, speakers, gaming gear and smartwatches" },
+        { name_ar: "أجهزة كمبيوتر ومكاتب", name_en: "Computer & Office", icon: "💻", image: "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=600", description_ar: "لابتوبات، شاشات، لوحات مفاتيح، طابعات ومستلزمات مكتبية", description_en: "Laptops, monitors, keyboards, printers and office essentials" },
+        { name_ar: "أزياء وملابس نسائية", name_en: "Women's Clothing", icon: "👗", image: "https://images.unsplash.com/photo-1483985988355-763728e1935b?w=600", description_ar: "فساتين، بلوزات، عبايات، ملابس شتوية وصيفية بأحدث الموديلات", description_en: "Dresses, tops, abayas, winter and summer trendy fashion" },
+        { name_ar: "أزياء وملابس رجالية", name_en: "Men's Clothing", icon: "👔", image: "https://images.unsplash.com/photo-1490578474895-699cd4e2cf59?w=600", description_ar: "قمصان، بناطيل، هوديز، سترات وأحدث صيحات الموضة الرجالية", description_en: "Shirts, trousers, hoodies, jackets and trendy men fashion" },
+        { name_ar: "ساعات ومجوهرات وإكسسوارات", name_en: "Jewelry & Watches", icon: "⌚", image: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600", description_ar: "ساعات يد ذكية وفاخرة، خواتم، أساور وقلائد نسائية ورجالية", description_en: "Luxury and smartwatches, rings, bracelets and necklaces" },
+        { name_ar: "حقائب وأحذية", name_en: "Bags & Shoes", icon: "👟", image: "https://images.unsplash.com/photo-1549298916-b41d501d3772?w=600", description_ar: "أحذية رياضية ورسمية، حقائب يد، حقائب سفر وحقائب ظهر", description_en: "Sneakers, formal shoes, handbags, luggage and backpacks" },
+        { name_ar: "المنزل والحديقة والمطبخ", name_en: "Home & Garden", icon: "🏠", image: "https://images.unsplash.com/photo-1513694203232-719a280e022f?w=600", description_ar: "أدوات مطبخ، ديكورات منزلية، مستلزمات الحديقة والتخزين والتنظيم", description_en: "Kitchenware, home decor, garden supplies and storage solutions" },
+        { name_ar: "أجهزة منزلية كهربائية", name_en: "Home Appliances", icon: "🔌", image: "https://images.unsplash.com/photo-1585338107529-13afc5f02586?w=600", description_ar: "قلايات هوائية، مكانس روبوت، غلايات، ماكينات قهوة وأجهزة ذكية", description_en: "Air fryers, robot vacuums, kettles, coffee makers and smart home devices" },
+        { name_ar: "الجمال والصحة والعناية الشخصية", name_en: "Beauty & Health", icon: "💄", image: "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=600", description_ar: "مستحضرات تجميل، عناية بالبشرة والشعر، عطور وأجهزة العناية", description_en: "Cosmetics, skincare, haircare, perfumes and grooming tools" },
+        { name_ar: "ألعاب وأطفال ورضع", name_en: "Toys, Kids & Babies", icon: "🧸", image: "https://images.unsplash.com/photo-1566576912321-d58ddd7a6088?w=600", description_ar: "ألعاب تعليمية، ملابس أطفال ورضع، عربات وألعاب تحكم عن بعد", description_en: "Educational toys, baby clothing, strollers and RC toys" },
+        { name_ar: "رياضة ولياقة بدنية وخارجية", name_en: "Sports & Outdoors", icon: "⚽", image: "https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=600", description_ar: "معدات تمارين، ملابس رياضية، مستلزمات التخييم والدراجات الهوائية", description_en: "Fitness gear, sportswear, camping equipment and bicycles" },
+        { name_ar: "سيارات ودراجات نارية وقطع غيار", name_en: "Automotive & Motorcycles", icon: "🚗", image: "https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=600", description_ar: "إكسسوارات سيارات، شواحن، إضاءات LED، أدوات صيانة وقطع غيار", description_en: "Car accessories, chargers, LED lights, tools and spare parts" },
+        { name_ar: "تحسين المنزل والعدد والأدوات", name_en: "Tools & Home Improvement", icon: "🛠️", image: "https://images.unsplash.com/photo-1581244277943-fe4a9c777189?w=600", description_ar: "دريلات، أدوات يدوية وكهربائية، معدات قياس وتركيبات سباكة", description_en: "Power drills, hand tools, measuring devices and plumbing fixtures" },
+        { name_ar: "أضواء وإنارة ذكية", name_en: "Lights & Lighting", icon: "💡", image: "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?w=600", description_ar: "أشرطة RGB LED، إنارة ليلية، مصابيح مكتبية وإنارة خارجية", description_en: "RGB LED strips, night lights, desk lamps and outdoor illumination" },
+        { name_ar: "أمن وحماية وكاميرات مراقبة", name_en: "Security & Protection", icon: "🔒", image: "https://images.unsplash.com/photo-1557597774-9d273605dfa9?w=600", description_ar: "كاميرات مراقبة ذكية، أقفال إلكترونية، أنظمة إنذار وحساسات", description_en: "Smart security cameras, smart door locks, alarm systems and sensors" },
+        { name_ar: "مستلزمات الحيوانات الأليفة", name_en: "Pet Supplies", icon: "🐾", image: "https://images.unsplash.com/photo-1543466835-00a7907e9de1?w=600", description_ar: "أطواق، ألعاب للقطط والكلاب، أسرّة ومستلزمات تنظيف", description_en: "Collars, pet toys, beds, carriers and grooming supplies" },
+        { name_ar: "أدوات مكتبية ومدرسية", name_en: "Office & School Supplies", icon: "📚", image: "https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=600", description_ar: "دفاتر، أقلام، حقائب مدرسية ومستلزمات فنية ورسم", description_en: "Notebooks, pens, school bags and artistic materials" },
+        { name_ar: "أثاث وديكور منزلي", name_en: "Furniture & Home Decor", icon: "🛋️", image: "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=600", description_ar: "كراسي قيمنق ومكتبية، طاولات، رفوف ولوحات جدارية", description_en: "Gaming chairs, office chairs, desks, shelves and wall art" },
+        { name_ar: "كاميرات وبصريات وطائرات درون", name_en: "Cameras & Drones", icon: "📷", image: "https://images.unsplash.com/photo-1502920917128-1aa500764cbd?w=600", description_ar: "كاميرات احترافية، درون تصوير جوي، عدسات وحوامل تثبيت", description_en: "Professional cameras, photography drones, lenses and tripods" },
+        { name_ar: "أجهزة ذكية وإنترنت الأشياء", name_en: "Smart Home & IoT", icon: "🤖", image: "https://images.unsplash.com/photo-1558002038-1055907df827?w=600", description_ar: "حساسات ذكية، مفاتيح ذكية تعمل بالواي فاي والتحكم الصوتي", description_en: "Smart sensors, Wi-Fi switches and voice-controlled devices" },
+        { name_ar: "شعر مستعار وباروكات", name_en: "Hair Extensions & Wigs", icon: "💇", image: "https://images.unsplash.com/photo-1560869713-7d0a29430803?w=600", description_ar: "خصلات شعر طبيعية وصناعية، باروكات وإكسسوارات تصفيف", description_en: "Synthetic and human hair wigs, extensions and styling accessories" },
+        { name_ar: "مستلزمات الحفلات والمناسبات", name_en: "Event & Party Supplies", icon: "🎉", image: "https://images.unsplash.com/photo-1530103862676-de8c9debad1d?w=600", description_ar: "بالونات، أزياء تنكرية، زينة أعياد ومناسبات وهدايا", description_en: "Balloons, costumes, event decorations and gift supplies" },
+        { name_ar: "أقمشة وحرف يدوية وخياطة", name_en: "Arts, Crafts & Sewing", icon: "🧵", image: "https://images.unsplash.com/photo-1528458876885-5b6eac7b949b?w=600", description_ar: "خيوط، ماكينات خياطة، خرز ومستلزمات الأعمال الفنية", description_en: "Threads, sewing machines, beads and art craft accessories" },
+      ];
+      for (const cat of allAliCategories) {
+        const [exists] = await db.select().from(categories).where(eq(categories.name_en, cat.name_en)).limit(1);
+        if (!exists) {
+          await db.insert(categories).values({ ...cat, is_active: true });
+        }
+      }
     }
   } catch {}
 
