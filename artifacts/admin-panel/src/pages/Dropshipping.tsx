@@ -821,6 +821,7 @@ const ALI_CATEGORIES = [
 function AutoFetchButton({ platform, onResults }: { platform: string; onResults: (r: any[]) => void }) {
   const qc = useQueryClient();
   const [selectedCat, setSelectedCat] = useState("");
+  const [keyword, setKeyword] = useState("");
   const [loading, setLoading] = useState(false);
   const [importingDirect, setImportingDirect] = useState(false);
   const [error, setError] = useState("");
@@ -830,7 +831,8 @@ function AutoFetchButton({ platform, onResults }: { platform: string; onResults:
     setLoading(true); setError(""); setSuccessMsg("");
     try {
       const catParam = selectedCat ? `&category_id=${selectedCat}` : "";
-      const r = await api.get(`/admin/dropship/auto-fetch?platform=${platform}&count=1000${catParam}`);
+      const kwParam = keyword ? `&keyword=${encodeURIComponent(keyword)}` : "";
+      const r = await api.get(`/admin/dropship/auto-fetch?platform=${platform}&count=1000${catParam}${kwParam}`);
       onResults(r.results || []);
       setSuccessMsg(`تم جلب ${r.count || 0} منتج من سيرفرات علي إكسبرس الحقيقية للتصفح!`);
       setTimeout(() => setSuccessMsg(""), 4000);
@@ -844,11 +846,17 @@ function AutoFetchButton({ platform, onResults }: { platform: string; onResults:
   const import1000Directly = async () => {
     setImportingDirect(true); setError(""); setSuccessMsg("");
     try {
-      const res = await api.post("/admin/dropship/bulk-import-1000", { platform, count: 1000, margin_percent: 35, category_id: selectedCat || undefined });
+      const res = await api.post("/admin/dropship/bulk-import-1000", { 
+        platform, 
+        count: 1000, 
+        margin_percent: 35, 
+        category_id: selectedCat || undefined,
+        keyword: keyword || undefined 
+      });
       qc.invalidateQueries({ queryKey: ["dropship-products"] });
       qc.invalidateQueries({ queryKey: ["products"] });
       setSuccessMsg(res.message || "تم استيراد المنتجات وحفظها في قاعدة البيانات بنجاح!");
-      setTimeout(() => setSuccessMsg(""), 6000);
+      setTimeout(() => setSuccessMsg(""), 8000);
     } catch (e: any) {
       const msg = e?.message || "";
       if (msg.includes("Failed query") || msg.includes("insert into")) {

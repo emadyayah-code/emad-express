@@ -1202,7 +1202,15 @@ const ALIEXPRESS_DEPARTMENTS = [
 ];
 
 const POPULAR_SEARCH_KEYWORDS = [
-  "smart watch", "wireless earbuds", "phone case", "fast charger", "led light", "bluetooth speaker", "car accessory", "gaming headset", "power bank", "sports bag", "running shoes", "leather wallet", "ring jewelry", "drone 4k", "kitchen gadgets"
+  "smart watch", "wireless earbuds", "phone case", "fast charger", "led light", "bluetooth speaker",
+  "car accessory", "gaming headset", "power bank", "sports bag", "running shoes", "leather wallet",
+  "ring jewelry", "drone 4k", "kitchen gadgets", "air fryer accessories", "robot vacuum",
+  "makeup brush set", "perfume atomizer", "baby educational toys", "camping tent", "cycling gloves",
+  "car dash cam", "cordless drill", "rgb led strip", "security camera wifi", "smart door lock",
+  "pet cat bed", "dog harness", "stationery notebook", "gaming chair", "hd projector",
+  "mechanical keyboard", "wireless gaming mouse", "women summer dress", "men casual shirt",
+  "hoodie streetwear", "sunglasses polarized", "luxury quartz watch", "necklace silver 925",
+  "hair straightener", "facial massager", "bluetooth tracker", "action camera 4k", "table lamp modern"
 ];
 
 router.get("/admin/dropship/auto-fetch", requireAuth, requireRole("admin", "manager"), async (req, res, next) => {
@@ -1210,27 +1218,23 @@ router.get("/admin/dropship/auto-fetch", requireAuth, requireRole("admin", "mana
     const platform = String(req.query.platform || "aliexpress");
     const count = parseInt(String(req.query.count || "1000"), 10) || 1000;
     const category_id = req.query.category_id ? String(req.query.category_id) : undefined;
+    const queryKw = req.query.keyword ? String(req.query.keyword).trim() : "";
     const creds = await getAliExpressCreds();
     
     let realProducts: any[] = [];
     if (platform === "aliexpress" && creds) {
       try {
-        const deptsToFetch = category_id ? [{ id: category_id, name_ar: "القسم المحدد", name_en: "Selected" }] : ALIEXPRESS_DEPARTMENTS;
-        const targetPages = category_id ? [1, 2, 3, 4, 5, 6, 7, 8] : [1, 2, 3];
-        
-        // Fetch category pages in parallel
-        const pagePromises = targetPages.flatMap(pNum => 
-          deptsToFetch.map(dept => searchAliExpressProducts("", creds, pNum, 50, dept.id).catch(() => []))
+        const pageOffset = Math.floor(Math.random() * 5) + 1;
+        const targetPages = [pageOffset, pageOffset + 1, pageOffset + 2, pageOffset + 3];
+        const keywordsToSearch = queryKw ? [queryKw] : (category_id ? [queryKw || ""] : POPULAR_SEARCH_KEYWORDS.sort(() => 0.5 - Math.random()).slice(0, 15));
+
+        const promises = keywordsToSearch.flatMap(kw => 
+          targetPages.map(pNum => searchAliExpressProducts(kw, creds, pNum, 50, category_id).catch(() => []))
         );
 
-        // Also fetch popular keywords in parallel
-        const kwPromises = !category_id ? POPULAR_SEARCH_KEYWORDS.flatMap(kw => 
-          [1, 2].map(pNum => searchAliExpressProducts(kw, creds, pNum, 50).catch(() => []))
-        ) : [];
+        const allBatches = await Promise.all(promises);
 
-        const allDeptBatches = await Promise.all([...pagePromises, ...kwPromises]);
-
-        for (const prods of allDeptBatches) {
+        for (const prods of allBatches) {
           if (Array.isArray(prods)) {
             for (const p of prods) {
               if (p.product_id && !realProducts.some(r => r.source_id === String(p.product_id))) {
@@ -1264,23 +1268,9 @@ router.get("/admin/dropship/auto-fetch", requireAuth, requireRole("admin", "mana
 
 router.post("/admin/dropship/bulk-import-1000", requireAuth, requireRole("admin", "manager"), async (req, res, next) => {
   try {
-    const { platform = "aliexpress", count = 1000, margin_percent = 30, category_id } = req.body || {};
+    const { platform = "aliexpress", count = 1000, margin_percent = 30, category_id, keyword } = req.body || {};
     const margin = (100 + (margin_percent || 30)) / 100;
     const creds = await getAliExpressCreds();
-
-    let [defaultCategory] = await db.select().from(categories).limit(1);
-    if (!defaultCategory) {
-      const [newCat] = await db.insert(categories).values({
-        name: "منتجات عامة",
-        name_ar: "منتجات عامة",
-        name_en: "General Products",
-        slug: `general-${Date.now()}`,
-        description: "منتجات متنوعة ومستوردة",
-        is_active: true,
-      }).returning();
-      defaultCategory = newCat;
-    }
-    const defaultCatId = defaultCategory ? defaultCategory.id : null;
 
     // Fetch existing source_ids to prevent duplicate insertion
     const existingDropships = await db.select({ source_id: dropship_products.source_id }).from(dropship_products);
@@ -1296,22 +1286,22 @@ router.post("/admin/dropship/bulk-import-1000", requireAuth, requireRole("admin"
       return fallback;
     }
 
-    // Fetch real products across all AliExpress departments concurrently (1,000 to 3,000+ items)
     let liveFetched: any[] = [];
     if (platform === "aliexpress" && creds) {
       try {
-        const deptsToFetch = category_id ? [{ id: String(category_id), name_ar: "القسم المحدد", name_en: "Selected" }] : ALIEXPRESS_DEPARTMENTS;
-        const targetPages = category_id ? [1, 2, 3, 4, 5, 6, 7, 8] : [1, 2, 3];
+        const randomPageBase = Math.floor(Math.random() * 8) + 1;
+        const targetPages = [randomPageBase, randomPageBase + 1, randomPageBase + 2, randomPageBase + 3, randomPageBase + 4];
         
-        const pagePromises = targetPages.flatMap(pNum => 
-          deptsToFetch.map(dept => searchAliExpressProducts("", creds, pNum, 50, dept.id).catch(() => []))
-        );
-        const kwPromises = !category_id ? POPULAR_SEARCH_KEYWORDS.flatMap(kw => 
-          [1, 2].map(pNum => searchAliExpressProducts(kw, creds, pNum, 50).catch(() => []))
-        ) : [];
+        const kws = keyword && String(keyword).trim()
+          ? [String(keyword).trim()]
+          : POPULAR_SEARCH_KEYWORDS.sort(() => 0.5 - Math.random()).slice(0, 18);
 
-        const allDeptBatches = await Promise.all([...pagePromises, ...kwPromises]);
-        for (const prods of allDeptBatches) {
+        const promises = kws.flatMap(kw => 
+          targetPages.map(pNum => searchAliExpressProducts(kw, creds, pNum, 50, category_id ? String(category_id) : undefined).catch(() => []))
+        );
+
+        const allBatches = await Promise.all(promises);
+        for (const prods of allBatches) {
           if (Array.isArray(prods)) {
             for (const p of prods) {
               const srcId = String(p.product_id);
@@ -1324,7 +1314,7 @@ router.post("/admin/dropship/bulk-import-1000", requireAuth, requireRole("admin"
                   name: p.product_title || `AliExpress Product ${srcId}`,
                   cost: cPrice,
                   image: img,
-                  category_name: p.first_level_category_name || "منتجات عامة",
+                  category_name: p.first_level_category_name || "",
                   quantity: 500 + ((parseInt(srcId.slice(-4)) || 100) % 1500),
                   source_url: p.product_detail_url || `https://www.aliexpress.com/item/${srcId}.html`,
                   supplier_name: p.shop_name || "AliExpress Verified Seller",
@@ -1339,6 +1329,7 @@ router.post("/admin/dropship/bulk-import-1000", requireAuth, requireRole("admin"
     }
 
     let importedCount = 0;
+    let skippedCount = 0;
     const chunkSize = 40;
 
     for (let i = 0; i < liveFetched.length; i += chunkSize) {
@@ -1347,12 +1338,16 @@ router.post("/admin/dropship/bulk-import-1000", requireAuth, requireRole("admin"
       const metaRecords: any[] = [];
 
       for (const item of chunk) {
-        if (existingSet.has(item.source_id)) continue;
+        if (existingSet.has(item.source_id)) {
+          skippedCount++;
+          continue;
+        }
         existingSet.add(item.source_id);
 
         const sourcePrice = parsePrice(item.cost, 25);
         const salePrice = Number((sourcePrice * margin).toFixed(2));
         const skuUnique = `ALI-${item.source_id}`;
+        const autoCatId = await matchCategoryId(`${item.name} ${item.category_name || ""}`, category_id ? Number(category_id) : null);
 
         productRecords.push({
           name_ar: String(item.name || `AliExpress Product ${item.source_id}`).slice(0, 450),
@@ -1362,7 +1357,7 @@ router.post("/admin/dropship/bulk-import-1000", requireAuth, requireRole("admin"
           cost: sourcePrice,
           quantity: Number(item.quantity) || 500,
           min_quantity: 5,
-          category_id: defaultCatId,
+          category_id: autoCatId,
           description_ar: `${item.name} - منتج أصلي عالي الجودة متوفر للشحن السريع والتسليم الفوري.`,
           description_en: `${item.name_en || item.name} - Premium quality genuine product with fast direct delivery.`,
           image: String(item.image || ""),
@@ -1407,10 +1402,19 @@ router.post("/admin/dropship/bulk-import-1000", requireAuth, requireRole("admin"
       }
     }
 
+    const [{ totalInDb = 0 } = {}] = await db.select({ totalInDb: sql<number>`COUNT(*)` }).from(products).where(isNull(products.deleted_at));
+
+    let msg = `تم استيراد ${importedCount} منتج جديد بنجاح وتوزيعها تلقائياً على فئاتها! (إجمالي المنتجات في متجرك الآن: ${Number(totalInDb).toLocaleString()} منتج)`;
+    if (importedCount === 0) {
+      msg = `جميع المنتجات المجلوبة في هذه الصفحة موجودة بالفعل في متجرك (${Number(totalInDb).toLocaleString()} منتج حالياً). يمكنك كتابة كلمة بحث جديدة أو اختيار فئة معينة لجلب منتجات جديدة فوراً!`;
+    }
+
     return res.json({
       success: true,
-      message: `تم استيراد ${importedCount} منتج حقيقي بالكامل من كافة أقسام علي إكسبرس وحفظها في قاعدة البيانات بنجاح!`,
+      message: msg,
       imported: importedCount,
+      skipped: skippedCount,
+      total_in_db: Number(totalInDb),
       platform,
     });
   } catch (err) { next(err); }
