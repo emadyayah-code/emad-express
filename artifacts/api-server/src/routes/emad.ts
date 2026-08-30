@@ -1449,7 +1449,6 @@ router.post("/admin/dropship/bulk-import-1000", requireAuth, requireRole("admin"
       total_in_db: Number(totalInDb),
       platform,
       debug: {
-        queries_count: queries.length,
         live_fetched: liveFetched.length,
         creds_found: Boolean(creds),
       }
