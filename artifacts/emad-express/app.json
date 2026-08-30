@@ -24,7 +24,7 @@
     },
     "android": {
       "package": "com.emadexpress.app",
-      "versionCode": 6,
+      "versionCode": 7,
       "minSdkVersion": 24,
       "compileSdkVersion": 35,
       "targetSdkVersion": 35,
