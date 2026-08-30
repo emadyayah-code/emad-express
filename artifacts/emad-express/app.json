@@ -25,9 +25,6 @@
     "android": {
       "package": "com.emadexpress.app",
       "versionCode": 7,
-      "minSdkVersion": 24,
-      "compileSdkVersion": 35,
-      "targetSdkVersion": 35,
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#0a0a0a"
@@ -50,10 +47,10 @@
       "expo-font",
       "expo-web-browser"
     ],
-    "owner": "emad-express",
+    "owner": "emadexpree",
     "extra": {
       "eas": {
-        "projectId": "7e66819e-ffaf-421e-977f-0952510fedf5"
+        "projectId": "837ca35a-e29b-41f3-8959-b3a977beef74"
       }
     }
   }
