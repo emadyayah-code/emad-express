@@ -156,10 +156,18 @@ export async function searchAliExpressProducts(
     }
 
     const data = await response.json();
+    if (data?.error_response) {
+      logger.error({ error_response: data.error_response, url }, "AliExpress returned error_response");
+    }
+
     const resp = data?.aliexpress_affiliate_product_query_response;
     const result = resp?.resp_result || resp?.result || resp;
 
-    let rawProducts = result?.result?.products?.product || result?.products?.product || result?.products || [];
+    let rawProducts = result?.result?.products?.product || 
+                      result?.products?.product || 
+                      result?.products || 
+                      data?.aliexpress_affiliate_product_query_response?.resp_result?.result?.products?.product ||
+                      [];
     if (!Array.isArray(rawProducts) && rawProducts && typeof rawProducts === "object") {
       rawProducts = [rawProducts];
     }
