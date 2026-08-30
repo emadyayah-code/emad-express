@@ -1223,10 +1223,11 @@ router.get("/admin/dropship/auto-fetch", requireAuth, requireRole("admin", "mana
     const creds = await getAliExpressCreds();
     
     let realProducts: any[] = [];
+    let executedQueries: any[] = [];
+    let resultsCounts: number[] = [];
+
     if (platform === "aliexpress" && creds) {
       try {
-        const pageOffset = Math.floor(Math.random() * 8) + 1;
-        
         let queries: { kw: string; catId?: string; page: number }[] = [];
         if (category_id && String(category_id).trim()) {
           queries.push({ kw: queryKw || "", catId: String(category_id).trim(), page: 1 });
@@ -1239,10 +1240,12 @@ router.get("/admin/dropship/auto-fetch", requireAuth, requireRole("admin", "mana
           queries.push({ kw: highYield[0], page: 1 });
           queries.push({ kw: highYield[1], page: 1 });
         }
+        executedQueries = queries;
 
         const results = await Promise.all(
           queries.map(q => searchAliExpressProducts(q.kw, creds, q.page, 50, q.catId).catch(() => []))
         );
+        resultsCounts = results.map(r => r?.length || 0);
 
         for (const prods of results) {
           if (Array.isArray(prods)) {
@@ -1272,7 +1275,18 @@ router.get("/admin/dropship/auto-fetch", requireAuth, requireRole("admin", "mana
       }
     }
 
-    return res.json({ success: true, count: realProducts.length, platform, results: realProducts });
+    return res.json({ 
+      success: true, 
+      count: realProducts.length, 
+      platform, 
+      debug: {
+        creds_found: Boolean(creds?.appKey),
+        appKey: creds?.appKey,
+        queries: executedQueries,
+        results_count: resultsCounts,
+      },
+      results: realProducts 
+    });
   } catch (err) { next(err); }
 });
 
