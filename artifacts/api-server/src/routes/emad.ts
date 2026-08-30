@@ -18,6 +18,7 @@ import {
   dropshipImportSchema, fulfillmentSchema, trackingSchema,
   idParamSchema,
 } from "../validation/schemas";
+import { searchAliExpressProducts, fetchAliExpressProduct, type AliExpressCredentials } from "../lib/aliexpress";
 import { searchAmazonItems, fetchAmazonItems, type AmazonCredentials } from "../lib/amazon";
 import { searchAlibabaProducts, getAlibabaProduct, type AlibabaCredentials } from "../lib/alibaba";
 import { convertCurrency, formatCurrency, seedCurrencies, getExchangeRates } from "../lib/currency";
