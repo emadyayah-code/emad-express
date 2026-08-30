@@ -1408,7 +1408,7 @@ router.post("/admin/dropship/bulk-import-1000", requireAuth, requireRole("admin"
 
       if (productRecords.length > 0) {
         try {
-          const inserted = await db.insert(products).values(productRecords).onConflictDoNothing().returning({ id: products.id, sku: products.sku });
+          const inserted = await db.insert(products).values(productRecords).onConflictDoNothing({ target: products.sku }).returning({ id: products.id, sku: products.sku });
           if (inserted && inserted.length > 0) {
             const metaMap = new Map(metaRecords.map(m => [`ALI-${m.source_id}`, m]));
             const dropshipRows = inserted.map(p => {
@@ -1425,7 +1425,7 @@ router.post("/admin/dropship/bulk-import-1000", requireAuth, requireRole("admin"
                 platform_commission_rate: 8,
               };
             });
-            await db.insert(dropship_products).values(dropshipRows).onConflictDoNothing();
+            await db.insert(dropship_products).values(dropshipRows);
             importedCount += inserted.length;
           }
         } catch (err) {
