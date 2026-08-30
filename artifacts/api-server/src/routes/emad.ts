@@ -1407,13 +1407,13 @@ router.post("/admin/dropship/bulk-import-1000", requireAuth, requireRole("admin"
       }
 
       if (productRecords.length > 0) {
-        for (let j = 0; j < productRecords.length; j++) {
-          try {
-            const pRec = productRecords[j];
-            const meta = metaRecords[j];
-            const [p] = await db.insert(products).values(pRec).onConflictDoNothing().returning({ id: products.id, price: products.price, cost: products.cost });
-            if (p?.id) {
-              await db.insert(dropship_products).values({
+        try {
+          const inserted = await db.insert(products).values(productRecords).onConflictDoNothing().returning({ id: products.id, sku: products.sku });
+          if (inserted && inserted.length > 0) {
+            const metaMap = new Map(metaRecords.map(m => [`ALI-${m.source_id}`, m]));
+            const dropshipRows = inserted.map(p => {
+              const meta = metaMap.get(p.sku) || metaRecords[0];
+              return {
                 product_id: p.id,
                 platform,
                 source_id: meta.source_id,
@@ -1423,12 +1423,13 @@ router.post("/admin/dropship/bulk-import-1000", requireAuth, requireRole("admin"
                 our_price: meta.our_price,
                 supplier_name: meta.supplier_name,
                 platform_commission_rate: 8,
-              }).onConflictDoNothing();
-              importedCount++;
-            }
-          } catch (err) {
-            logger.warn({ err }, "Single insert skipped");
+              };
+            });
+            await db.insert(dropship_products).values(dropshipRows).onConflictDoNothing();
+            importedCount += inserted.length;
           }
+        } catch (err) {
+          logger.warn({ err }, "Bulk chunk insert error");
         }
       }
     }
