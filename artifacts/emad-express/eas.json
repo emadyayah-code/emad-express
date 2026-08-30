@@ -1,16 +1,12 @@
 {
   "cli": {
-    "version": ">= 14.0.0"
+    "version": ">= 14.0.0",
+    "appVersionSource": "local"
   },
   "build": {
     "preview": {
       "android": {
-        "buildType": "apk",
-        "image": "latest"
-      },
-      "ios": {
-        "simulator": false,
-        "image": "latest"
+        "buildType": "apk"
       },
       "env": {
         "EXPO_PUBLIC_DOMAIN": "emadexpress.ayadicmed.com"
@@ -18,11 +14,7 @@
     },
     "production": {
       "android": {
-        "buildType": "app-bundle",
-        "image": "latest"
-      },
-      "ios": {
-        "image": "latest"
+        "buildType": "app-bundle"
       },
       "env": {
         "EXPO_PUBLIC_DOMAIN": "emadexpress.ayadicmed.com"
