@@ -93,6 +93,7 @@ export const ar = {
     login: "تسجيل الدخول",
     register: "إنشاء حساب جديد",
     my_orders: "طلباتي",
+    returns: "المرتجعات واسترداد الأموال",
     favorites: "المفضلة",
     addresses: "عناويني",
     settings: "الإعدادات",
@@ -104,6 +105,7 @@ export const ar = {
     language: "اللغة",
     language_value: "العربية",
     about: "من نحن",
+    privacy_policy: "سياسة الخصوصية",
     contact: "تواصل معنا",
   },
   about: {
@@ -122,6 +124,7 @@ export const ar = {
     login_sub: "أدخل بياناتك للمتابعة",
     email: "البريد الإلكتروني",
     password: "كلمة المرور",
+    forgot_password: "نسيت كلمة المرور؟",
     login_btn: "تسجيل الدخول",
     logging_in: "جارٍ الدخول...",
     no_account: "ليس لديك حساب؟",

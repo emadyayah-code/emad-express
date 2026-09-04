@@ -34,9 +34,13 @@ function RootLayoutNav() {
       <Stack.Screen name="product/[id]" options={{ headerShown: false, presentation: "card" }} />
       <Stack.Screen name="auth/login" options={{ headerShown: false, presentation: "modal" }} />
       <Stack.Screen name="auth/register" options={{ headerShown: false, presentation: "modal" }} />
+      <Stack.Screen name="auth/forgot-password" options={{ headerShown: false, presentation: "modal" }} />
       <Stack.Screen name="checkout" options={{ headerShown: false, presentation: "card" }} />
       <Stack.Screen name="addresses" options={{ headerShown: false, presentation: "card" }} />
       <Stack.Screen name="favorites" options={{ headerShown: false, presentation: "card" }} />
+      <Stack.Screen name="returns" options={{ headerShown: false, presentation: "card" }} />
+      <Stack.Screen name="privacy-policy" options={{ headerShown: false, presentation: "card" }} />
+      <Stack.Screen name="privacy" options={{ headerShown: false, presentation: "card" }} />
     </Stack>
   );
 }

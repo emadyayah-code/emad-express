@@ -1,4 +1,4 @@
-﻿import React, { useState } from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -27,7 +27,7 @@ export default function LoginScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { login, loginWithGoogle, loading } = useAuth();
-  const { t } = useLanguage();
+  const { t, isRTL } = useLanguage();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -156,6 +156,15 @@ export default function LoginScreen() {
               />
               <TouchableOpacity onPress={() => setShowPass(!showPass)}>
                 <Feather name={showPass ? "eye-off" : "eye"} size={18} color={colors.mutedForeground} />
+              </TouchableOpacity>
+            </View>
+
+            {/* Forgot Password Link */}
+            <View style={{ marginBottom: 14, alignSelf: isRTL ? "flex-start" : "flex-end" }}>
+              <TouchableOpacity onPress={() => router.push("/auth/forgot-password")}>
+                <Text style={{ color: "#f59e0b", fontSize: 13, fontWeight: "700" }}>
+                  {(t.auth as any).forgot_password || "نسيت كلمة المرور؟"}
+                </Text>
               </TouchableOpacity>
             </View>
 

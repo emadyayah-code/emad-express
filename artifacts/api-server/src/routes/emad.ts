@@ -3,7 +3,7 @@ import multer from "multer";
 import { extname } from "path";
 import { mkdirSync } from "fs";
 import sanitizeHtml from "sanitize-html";
-import { db, pool, products, categories, customers, vendors, orders, users, affiliates, affiliate_conversions, dropship_products, platform_settings, supplier_payments, vendor_stripe_accounts, currencies, payment_gateways, shipping_carriers, shipments, product_translations } from "@workspace/db";
+import { db, pool, products, categories, customers, vendors, orders, users, affiliates, affiliate_conversions, dropship_products, platform_settings, supplier_payments, vendor_stripe_accounts, currencies, payment_gateways, shipping_carriers, shipments, product_translations, returns_refunds } from "@workspace/db";
 import { eq, and, or, like, desc, sql, isNull } from "drizzle-orm";
 import { signToken, getSession, requireAuth, requireRole, hashPassword, verifyPassword } from "../lib/auth";
 import { env } from "../lib/env";
@@ -1001,6 +1001,204 @@ router.get("/orders/:id", requireAuth, validateParams(idParamSchema), async (req
     return res.json({ success: true, data: order });
   } catch (err) { next(err); }
 });
+
+// ========== RETURNS & REFUNDS (Customer & Admin) ==========
+
+// Customer: Submit a return & refund request for an order
+router.post("/orders/:id/returns", requireAuth, validateParams(idParamSchema), async (req, res, next) => {
+  try {
+    const session = (req as any).session;
+    if (!session.customerId && session.role !== "admin") {
+      return res.status(403).json({ success: false, message: "يجب تسجيل الدخول كعميل لتقديم طلب إرجاع" });
+    }
+
+    const [order] = await db.select().from(orders).where(eq(orders.id, req.params.id));
+    if (!order) return res.status(404).json({ success: false, message: "الطلب غير موجود" });
+    
+    if (session.role !== "admin" && order.customer_id !== session.customerId) {
+      return res.status(403).json({ success: false, message: "غير مصرح لك بطلب إرجاع لهذا الطلب" });
+    }
+
+    // Check if there is already a pending or active return request for this order
+    const [existing] = await db.select().from(returns_refunds).where(
+      and(
+        eq(returns_refunds.order_id, order.id),
+        or(
+          eq(returns_refunds.status, "pending"),
+          eq(returns_refunds.status, "approved"),
+          eq(returns_refunds.status, "items_received")
+        )
+      )
+    );
+
+    if (existing) {
+      return res.status(400).json({
+        success: false,
+        message: "يوجد طلب إرجاع نشط بالفعل لهذا الطلب حالياً",
+        data: existing,
+      });
+    }
+
+    const {
+      reason,
+      details = "",
+      type = "return_and_refund",
+      refund_method = "original_payment",
+      bank_name = "",
+      bank_iban = "",
+      bank_account_name = "",
+      items = order.items,
+      refund_amount = order.total,
+    } = req.body || {};
+
+    if (!reason || typeof reason !== "string" || !reason.trim()) {
+      return res.status(400).json({ success: false, message: "يرجى تحديد سبب الإرجاع" });
+    }
+
+    const [customer] = order.customer_id 
+      ? await db.select().from(customers).where(eq(customers.id, order.customer_id))
+      : [null];
+
+    const [newReturn] = await db.insert(returns_refunds).values({
+      order_id: order.id,
+      order_number: order.order_number,
+      customer_id: order.customer_id || session.customerId || 0,
+      customer_name: order.customer_name || (customer ? customer.name : "عميل"),
+      customer_email: order.customer_email || (customer ? customer.email : ""),
+      customer_phone: order.customer_phone || (customer ? customer.phone : ""),
+      items: Array.isArray(items) ? items : (order.items as any[]),
+      refund_amount: parseFloat(String(refund_amount)) || order.total,
+      currency: order.currency || "SAR",
+      type: type || "return_and_refund",
+      reason: reason.trim(),
+      details: sanitizeText(details || ""),
+      refund_method: refund_method || "original_payment",
+      bank_name: sanitizeText(bank_name || ""),
+      bank_iban: sanitizeText(bank_iban || ""),
+      bank_account_name: sanitizeText(bank_account_name || ""),
+      status: "pending",
+      admin_notes: "",
+    }).returning();
+
+    return res.status(201).json({
+      success: true,
+      message: "تم تقديم طلب الإرجاع والاسترداد بنجاح، وسيتم مراجعته من قبل الإدارة",
+      data: newReturn,
+    });
+  } catch (err) { next(err); }
+});
+
+// Customer: Get all return requests for logged-in user
+router.get("/my-returns", requireAuth, async (req, res, next) => {
+  try {
+    const session = (req as any).session;
+    if (!session.customerId) return res.json({ success: true, data: [], total: 0 });
+
+    const data = await db.select().from(returns_refunds)
+      .where(eq(returns_refunds.customer_id, session.customerId))
+      .orderBy(desc(returns_refunds.id));
+
+    return res.json({ success: true, data, total: data.length });
+  } catch (err) { next(err); }
+});
+
+// Customer: Alias route /returns
+router.get("/returns", requireAuth, async (req, res, next) => {
+  try {
+    const session = (req as any).session;
+    if (!session.customerId && session.role !== "admin") {
+      return res.json({ success: true, data: [], total: 0 });
+    }
+
+    const cond = session.role === "admin" ? undefined : eq(returns_refunds.customer_id, session.customerId);
+    const data = await db.select().from(returns_refunds).where(cond).orderBy(desc(returns_refunds.id));
+    return res.json({ success: true, data, total: data.length });
+  } catch (err) { next(err); }
+});
+
+// Customer & Admin: Get single return request
+router.get("/returns/:id", requireAuth, validateParams(idParamSchema), async (req, res, next) => {
+  try {
+    const session = (req as any).session;
+    const [ret] = await db.select().from(returns_refunds).where(eq(returns_refunds.id, req.params.id));
+    if (!ret) return res.status(404).json({ success: false, message: "طلب الإرجاع غير موجود" });
+
+    if (session.role !== "admin" && ret.customer_id !== session.customerId) {
+      return res.status(403).json({ success: false, message: "غير مصرح" });
+    }
+
+    const [order] = await db.select().from(orders).where(eq(orders.id, ret.order_id));
+    return res.json({ success: true, data: { ...ret, order } });
+  } catch (err) { next(err); }
+});
+
+// Admin: Get all returns with filters & search
+router.get("/admin/returns", requireAuth, requireRole("admin", "manager", "support", "sales"), async (req, res, next) => {
+  try {
+    const { page = "1", per_page = "20", search = "", status = "" } = req.query as Record<string, string>;
+    const p = Math.max(1, parseInt(page) || 1);
+    const pp = Math.min(100, Math.max(1, parseInt(per_page) || 20));
+
+    const conds = [];
+    if (status) conds.push(eq(returns_refunds.status, status));
+    if (search) {
+      conds.push(
+        or(
+          like(returns_refunds.order_number, `%${escapeLike(search)}%`),
+          like(returns_refunds.customer_name, `%${escapeLike(search)}%`),
+          like(returns_refunds.customer_phone, `%${escapeLike(search)}%`)
+        )
+      );
+    }
+
+    const where = conds.length ? and(...conds) : undefined;
+    const [{ count = 0 } = {}] = await db.select({ count: sql<number>`COUNT(*)` }).from(returns_refunds).where(where);
+    const data = await db.select().from(returns_refunds).where(where).orderBy(desc(returns_refunds.id)).limit(pp).offset((p - 1) * pp);
+
+    return res.json({ success: true, data, total: Number(count) });
+  } catch (err) { next(err); }
+});
+
+// Admin: Update return request status and admin notes
+router.put("/admin/returns/:id/status", requireAuth, requireRole("admin", "manager", "support"), validateParams(idParamSchema), async (req, res, next) => {
+  try {
+    const { status, admin_notes = "" } = req.body || {};
+    const allowedStatuses = ["pending", "approved", "items_received", "refunded", "rejected"];
+    if (!status || !allowedStatuses.includes(status)) {
+      return res.status(400).json({ success: false, message: "حالة غير صالحة" });
+    }
+
+    const [existing] = await db.select().from(returns_refunds).where(eq(returns_refunds.id, req.params.id));
+    if (!existing) return res.status(404).json({ success: false, message: "طلب الإرجاع غير موجود" });
+
+    const upd: any = {
+      status,
+      admin_notes: sanitizeText(admin_notes || existing.admin_notes || ""),
+      updated_at: new Date(),
+    };
+
+    if (status === "refunded" || status === "rejected") {
+      upd.resolved_at = new Date();
+    }
+
+    const [updatedReturn] = await db.update(returns_refunds).set(upd).where(eq(returns_refunds.id, req.params.id)).returning();
+
+    // If marked as refunded, optionally update the order's payment_status to 'refunded'
+    if (status === "refunded") {
+      await db.update(orders).set({
+        payment_status: "refunded",
+        status: "cancelled",
+      }).where(eq(orders.id, existing.order_id));
+    }
+
+    return res.json({
+      success: true,
+      message: "تم تحديث حالة طلب الإرجاع بنجاح",
+      data: updatedReturn,
+    });
+  } catch (err) { next(err); }
+});
+
 
 // ========== FILE UPLOAD ==========
 router.post("/upload", requireAuth, uploadRateLimiter, upload.single("image"), (req, res) => {

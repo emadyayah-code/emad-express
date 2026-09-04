@@ -92,6 +92,7 @@ export const fr = {
     language: "Langue",
     language_value: "Français",
     about: "À propos",
+    privacy_policy: "Politique de confidentialité",
     contact: "Contactez-nous",
   },
   about: {

@@ -247,3 +247,35 @@ export const shipments = pgTable("shipments", {
   created_at: timestamp("created_at").defaultNow().notNull(),
   updated_at: timestamp("updated_at").defaultNow().notNull(),
 });
+
+export const returns_refunds = pgTable("returns_refunds", {
+  id: serial("id").primaryKey(),
+  order_id: integer("order_id").notNull(),
+  order_number: text("order_number").notNull(),
+  customer_id: integer("customer_id").notNull(),
+  customer_name: text("customer_name").notNull(),
+  customer_email: text("customer_email").default(""),
+  customer_phone: text("customer_phone").default(""),
+  items: jsonb("items").$type<Array<{
+    product_id?: number;
+    product_name: string;
+    quantity: number;
+    price: number;
+    total: number;
+  }>>().default([]).notNull(),
+  refund_amount: real("refund_amount").default(0).notNull(),
+  currency: text("currency").default("SAR").notNull(),
+  type: text("type").default("return_and_refund").notNull(), // return_and_refund, refund_only, exchange
+  reason: text("reason").notNull(), // damaged, wrong_item, defective, changed_mind, not_as_described, other
+  details: text("details").default(""),
+  refund_method: text("refund_method").default("original_payment").notNull(), // original_payment, bank_transfer, wallet
+  bank_name: text("bank_name").default(""),
+  bank_iban: text("bank_iban").default(""),
+  bank_account_name: text("bank_account_name").default(""),
+  status: text("status").default("pending").notNull(), // pending, approved, items_received, refunded, rejected
+  admin_notes: text("admin_notes").default(""),
+  created_at: timestamp("created_at").defaultNow().notNull(),
+  updated_at: timestamp("updated_at").defaultNow().notNull(),
+  resolved_at: timestamp("resolved_at"),
+});
+

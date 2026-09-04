@@ -8,6 +8,7 @@ import Dashboard from "@/pages/Dashboard";
 import Products from "@/pages/Products";
 import Categories from "@/pages/Categories";
 import Orders from "@/pages/Orders";
+import Returns from "@/pages/Returns";
 import Customers from "@/pages/Customers";
 import Vendors from "@/pages/Vendors";
 import Accounting from "@/pages/Accounting";
@@ -19,6 +20,7 @@ import SupplierPayments from "@/pages/SupplierPayments";
 import Settings from "@/pages/Settings";
 import AffiliateSettings from "@/pages/AffiliateSettings";
 import PartnerAds from "@/pages/PartnerAds";
+import Privacy from "@/pages/Privacy";
 import { Layout } from "@/components/Sidebar";
 
 const queryClient = new QueryClient({
@@ -78,6 +80,7 @@ function ProtectedRoutes() {
         <Route path="/products" component={Products} />
         <Route path="/categories" component={Categories} />
         <Route path="/orders" component={Orders} />
+        <Route path="/returns" component={Returns} />
         <Route path="/customers" component={Customers} />
         <Route path="/vendors" component={Vendors} />
         <Route path="/dropshipping" component={Dropshipping} />
@@ -89,6 +92,8 @@ function ProtectedRoutes() {
         <Route path="/settings" component={Settings} />
         <Route path="/affiliate-settings" component={AffiliateSettings} />
         <Route path="/partner-ads" component={PartnerAds} />
+        <Route path="/privacy-policy" component={Privacy} />
+        <Route path="/privacy" component={Privacy} />
       </Switch>
     </Layout>
   );
@@ -100,12 +105,23 @@ function App() {
       <QueryClientProvider client={queryClient}>
         <I18nProvider>
           <AuthProvider>
-            <ProtectedRoutes />
+            <AppRoutes />
           </AuthProvider>
         </I18nProvider>
       </QueryClientProvider>
     </ErrorBoundary>
   );
+}
+
+function AppRoutes() {
+  const { user } = useAuth();
+
+  // If visitor is not logged in and directly visits /privacy-policy, show it standalone
+  if (!user && (window.location.pathname === "/privacy-policy" || window.location.pathname === "/privacy")) {
+    return <Privacy />;
+  }
+
+  return <ProtectedRoutes />;
 }
 
 export default App;

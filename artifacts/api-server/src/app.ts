@@ -5,6 +5,7 @@ import pinoHttp from "pino-http";
 import { mkdirSync } from "fs";
 import { join, resolve } from "path";
 import router from "./routes";
+import privacyRouter from "./routes/privacy";
 import { logger } from "./lib/logger";
 import { env } from "./lib/env";
 import { globalRateLimiter } from "./middlewares/rateLimiter";
@@ -99,6 +100,9 @@ app.use("/uploads", express.static(UPLOADS_DIR, {
   maxAge: "1d",
   dotfiles: "deny",
 }));
+
+// Public Privacy Policy endpoint (Google Play / App Store / Web verified)
+app.use(privacyRouter);
 
 // API routes
 app.use("/api", router);

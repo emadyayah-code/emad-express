@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: emad-express-app
+    env: node
+    plan: free
+    buildCommand: pnpm --filter=!@workspace/emad-express install --no-frozen-lockfile && pnpm --filter=@workspace/admin-panel build && pnpm --filter=@workspace/api-server build
+    startCommand: node server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: CI
+        value: false

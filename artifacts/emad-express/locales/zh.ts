@@ -91,6 +91,7 @@ export const zh = {
     logout_cancel: "取消",
     logout_confirm_yes: "退出",
     about: "关于我们",
+    privacy_policy: "隐私政策",
     contact: "联系我们",
   },
   about: {

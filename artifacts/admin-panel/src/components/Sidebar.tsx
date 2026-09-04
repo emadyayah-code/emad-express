@@ -1,7 +1,7 @@
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
-import { LayoutDashboard, Package, ShoppingCart, Users, Store, Calculator, BarChart2, LogOut, Menu, X, Tag, Globe, Share2, DollarSign, CreditCard, Settings, TrendingUp, Languages } from "lucide-react";
+import { LayoutDashboard, Package, ShoppingCart, RotateCcw, Users, Store, Calculator, BarChart2, LogOut, Menu, X, Tag, Globe, Share2, DollarSign, CreditCard, Settings, TrendingUp, Languages, Shield } from "lucide-react";
 import { useState } from "react";
 
 export function Sidebar({ onClose }: { onClose?: () => void }) {
@@ -14,6 +14,7 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
     { path: "/products", icon: Package, label: t.products },
     { path: "/categories", icon: Tag, label: t.categories },
     { path: "/orders", icon: ShoppingCart, label: t.orders },
+    { path: "/returns", icon: RotateCcw, label: t.returns },
     { path: "/customers", icon: Users, label: t.customers },
     { path: "/vendors", icon: Store, label: t.vendors },
     { path: "/dropshipping", icon: Globe, label: t.dropshipping },
@@ -25,6 +26,7 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
     { path: "/partner-ads", icon: TrendingUp, label: t.partner_ads },
     { path: "/affiliate-settings", icon: Globe, label: t.affiliate_settings },
     { path: "/settings", icon: Settings, label: t.settings },
+    { path: "/privacy-policy", icon: Shield, label: t.privacy_policy },
   ];
 
   return (

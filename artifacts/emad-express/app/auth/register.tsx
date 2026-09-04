@@ -1,4 +1,4 @@
-﻿import React, { useState } from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -261,6 +261,16 @@ export default function RegisterScreen() {
           >
             {loading ? <ActivityIndicator color="#000" size="small" /> : <Text style={styles.btnText}>إنشاء الحساب فوراً</Text>}
           </TouchableOpacity>
+
+          {/* Privacy Policy Terms Notice */}
+          <View style={{ flexDirection: "row", flexWrap: "wrap", justifyContent: "center", alignItems: "center", marginTop: 14, gap: 4 }}>
+            <Text style={{ color: colors.mutedForeground, fontSize: 12 }}>بالتسجيل أنت توافق على</Text>
+            <TouchableOpacity onPress={() => router.push("/privacy-policy")}>
+              <Text style={{ color: colors.primary, fontSize: 12, fontWeight: "700", textDecorationLine: "underline" }}>
+                سياسة الخصوصية
+              </Text>
+            </TouchableOpacity>
+          </View>
 
           <View style={{ flexDirection: "row", justifyContent: "center", gap: 6, marginTop: 20 }}>
             <Text style={{ color: colors.mutedForeground }}>لديك حساب بالفعل؟</Text>

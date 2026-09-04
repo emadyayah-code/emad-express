@@ -93,6 +93,7 @@ export const en = {
     login: "Sign In",
     register: "Create New Account",
     my_orders: "My Orders",
+    returns: "Returns & Refunds",
     favorites: "Favorites",
     addresses: "My Addresses",
     settings: "Settings",
@@ -104,6 +105,7 @@ export const en = {
     language: "Language",
     language_value: "English",
     about: "About Us",
+    privacy_policy: "Privacy Policy",
     contact: "Contact Us",
   },
   about: {
@@ -122,6 +124,7 @@ export const en = {
     login_sub: "Enter your details to continue",
     email: "Email",
     password: "Password",
+    forgot_password: "Forgot Password?",
     login_btn: "Sign In",
     logging_in: "Signing in...",
     no_account: "Don't have an account?",

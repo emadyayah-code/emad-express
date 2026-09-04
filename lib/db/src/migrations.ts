@@ -308,8 +308,36 @@ export async function initDbSchema(pool: Pool): Promise<void> {
       );
     `);
 
+    // 18. returns_refunds table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS returns_refunds (
+        id SERIAL PRIMARY KEY,
+        order_id INTEGER NOT NULL,
+        order_number TEXT NOT NULL,
+        customer_id INTEGER NOT NULL,
+        customer_name TEXT NOT NULL,
+        customer_email TEXT DEFAULT '',
+        customer_phone TEXT DEFAULT '',
+        items JSONB NOT NULL DEFAULT '[]'::jsonb,
+        refund_amount REAL NOT NULL DEFAULT 0,
+        currency TEXT NOT NULL DEFAULT 'SAR',
+        type TEXT NOT NULL DEFAULT 'return_and_refund',
+        reason TEXT NOT NULL,
+        details TEXT DEFAULT '',
+        refund_method TEXT NOT NULL DEFAULT 'original_payment',
+        bank_name TEXT DEFAULT '',
+        bank_iban TEXT DEFAULT '',
+        bank_account_name TEXT DEFAULT '',
+        status TEXT NOT NULL DEFAULT 'pending',
+        admin_notes TEXT DEFAULT '',
+        created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        resolved_at TIMESTAMP
+      );
+    `);
+
     await client.query("COMMIT");
-    console.log("Database schema initialized successfully (17 tables verified)");
+    console.log("Database schema initialized successfully (18 tables verified)");
   } catch (error) {
     await client.query("ROLLBACK");
     console.error("Error initializing database schema:", error);

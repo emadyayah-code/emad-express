@@ -117,41 +117,95 @@ export async function sendVerificationEmail(
   const fromAddress = active?.from || "emadyayah@gmail.com";
 
   try {
+function renderOtpDigits(code: string): string {
+  const digits = code.split("");
+  return digits
+    .map(
+      (d) =>
+        `<span style="display: inline-block; width: 42px; height: 52px; line-height: 52px; margin: 0 4px; background: #1a160c; border: 2px solid #f59e0b; border-radius: 12px; font-size: 28px; font-weight: 800; color: #fbbf24; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, monospace; text-align: center; box-shadow: 0 4px 14px rgba(245, 158, 11, 0.25);">${d}</span>`
+    )
+    .join("");
+}
+
+export async function sendVerificationEmail(
+  to: string,
+  name: string,
+  code: string,
+  customTransporter?: nodemailer.Transporter
+): Promise<boolean> {
+  const active = await getActiveEmailConfig();
+  const mailer = customTransporter || active?.transporter;
+  if (!mailer) {
+    logger.warn({ to }, "Cannot send verification email - SMTP not configured");
+    return false;
+  }
+
+  const fromAddress = active?.from || "emadyayah@gmail.com";
+
+  try {
     await mailer.sendMail({
       from: `"عماد إكسبرس" <${fromAddress}>`,
       to,
-      subject: "كود التحقق من البريد الإلكتروني 🔐",
+      subject: `رمز التحقق الخاص بك: ${code} 🔐 - عماد إكسبرس`,
       html: `
-        <div dir="rtl" style="font-family: 'Segoe UI', Tahoma, sans-serif; max-width: 500px; margin: 0 auto; padding: 30px; background: #f8fafc; border-radius: 16px;">
-          <div style="text-align: center; margin-bottom: 24px;">
-            <h1 style="color: #059669; margin: 0;">عماد إكسبرس</h1>
-            <p style="color: #64748b; margin: 8px 0 0 0;">منصة التجارة الإلكترونية</p>
-          </div>
+        <!DOCTYPE html>
+        <html lang="ar" dir="rtl">
+        <head>
+          <meta charset="UTF-8">
+          <style>
+            body { margin: 0; padding: 0; background-color: #06080d; font-family: 'Segoe UI', Tahoma, Arial, sans-serif; color: #f3f4f6; }
+          </style>
+        </head>
+        <body style="margin: 0; padding: 30px 10px; background-color: #06080d;">
+          <table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 520px; background: #0f131c; border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 24px; overflow: hidden; box-shadow: 0 20px 40px rgba(0,0,0,0.6);">
+            <!-- Header -->
+            <tr>
+              <td style="padding: 32px 24px 20px; text-align: center; background: linear-gradient(180deg, rgba(245, 158, 11, 0.12) 0%, rgba(15, 19, 28, 0) 100%);">
+                <div style="display: inline-block; padding: 8px 18px; border-radius: 12px; background: rgba(245, 158, 11, 0.15); border: 1px solid #f59e0b; color: #f59e0b; font-weight: 800; font-size: 14px; letter-spacing: 1px; margin-bottom: 12px;">
+                  عماد إكسبرس • EMAD EXPRESS
+                </div>
+                <h1 style="color: #ffffff; font-size: 22px; font-weight: 800; margin: 8px 0 4px;">تأكيد البريد الإلكتروني</h1>
+                <p style="color: #9ca3af; font-size: 13px; margin: 0;">بوابتك للتسوق الإلكتروني الأسرع والأكثر أماناً</p>
+              </td>
+            </tr>
 
-          <div style="background: white; border-radius: 12px; padding: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-            <h2 style="color: #1e293b; margin: 0 0 16px 0; font-size: 18px;">مرحباً ${name} 👋</h2>
-            <p style="color: #475569; line-height: 1.6; margin: 0 0 20px 0;">
-              شكراً لتسجيلك في عماد إكسبرس. لإكمال عملية التسجيل، يرجى إدخال كود التحقق التالي:
-            </p>
+            <!-- Body -->
+            <tr>
+              <td style="padding: 10px 28px 28px; text-align: center;">
+                <p style="color: #e5e7eb; font-size: 15px; line-height: 1.7; margin: 0 0 22px;">
+                  مرحباً <strong>${name}</strong> 👋<br>
+                  شكراً لانضمامك إلى عماد إكسبرس. يرجى استخدام رمز التحقق التالي لإكمال تفعيل حسابك:
+                </p>
 
-            <div style="background: #ecfdf5; border: 2px dashed #10b981; border-radius: 12px; padding: 20px; text-align: center; margin: 20px 0;">
-              <div style="font-size: 32px; font-weight: bold; color: #059669; letter-spacing: 8px; font-family: monospace;">
-                ${code}
-              </div>
-              <p style="color: #059669; font-size: 12px; margin: 8px 0 0 0;">صالح لمدة 15 دقيقة</p>
-            </div>
+                <!-- Digits Box -->
+                <div style="padding: 24px 12px; margin: 20px 0; background: #07090e; border: 1px dashed rgba(245, 158, 11, 0.4); border-radius: 18px;">
+                  <div style="margin-bottom: 12px;">
+                    ${renderOtpDigits(code)}
+                  </div>
+                  <div style="color: #fbbf24; font-size: 12px; font-weight: 700; margin-top: 10px;">
+                    ⏱️ الرمز صالح لمدة 15 دقيقة فقط
+                  </div>
+                </div>
 
-            <p style="color: #64748b; font-size: 13px; line-height: 1.6; margin: 16px 0 0 0;">
-              إذا لم تقم بطلب هذا الكود، يمكنك تجاهل هذه الرسالة بأمان.
-            </p>
-          </div>
+                <p style="color: #6b7280; font-size: 12px; line-height: 1.6; margin: 18px 0 0;">
+                  إذا لم تطلب هذا الرمز، يُرجى تجاهل هذه الرسالة أو التواصل معنا فوراً للحفاظ على أمان حسابك.
+                </p>
+              </td>
+            </tr>
 
-          <div style="text-align: center; margin-top: 20px;">
-            <p style="color: #94a3b8; font-size: 12px;">© عماد إكسبرس. جميع الحقوق محفوظة.</p>
-          </div>
-        </div>
+            <!-- Footer -->
+            <tr>
+              <td style="padding: 18px 24px; text-align: center; border-top: 1px solid rgba(255,255,255,0.06); background: #0b0e15;">
+                <p style="color: #6b7280; font-size: 11px; margin: 0;">
+                  © 2026 عماد إكسبرس. جميع الحقوق محفوظة.
+                </p>
+              </td>
+            </tr>
+          </table>
+        </body>
+        </html>
       `,
-      text: `مرحباً ${name}،\n\nكود التحقق الخاص بك هو: ${code}\n\nصالح لمدة 15 دقيقة.\n\nعماد إكسبرس`,
+      text: `مرحباً ${name}،\n\nرمز التحقق الخاص بك في عماد إكسبرس هو: ${code}\nصالح لمدة 15 دقيقة.\n\nعماد إكسبرس`,
     });
 
     logger.info({ to, from: fromAddress }, "Verification email sent successfully");
@@ -167,27 +221,85 @@ export async function sendPasswordResetEmail(
   name: string,
   code: string
 ): Promise<boolean> {
-  const mailer = await getTransporter();
-  if (!mailer) return false;
+  const active = await getActiveEmailConfig();
+  const mailer = active?.transporter;
+  if (!mailer) {
+    logger.warn({ to }, "Cannot send password reset email - SMTP not configured");
+    return false;
+  }
 
-  const from = process.env.SMTP_FROM || process.env.SMTP_USER || "no-reply@emadexpress.com";
+  const from = active?.from || process.env.SMTP_FROM || process.env.SMTP_USER || "support@emadexpress.com";
 
   try {
     await mailer.sendMail({
       from: `"عماد إكسبرس" <${from}>`,
       to,
-      subject: "إعادة تعيين كلمة المرور 🔐",
+      subject: `رمز إعادة تعيين كلمة المرور: ${code} 🔐 - عماد إكسبرس`,
       html: `
-        <div dir="rtl" style="font-family: 'Segoe UI', Tahoma, sans-serif; max-width: 500px; margin: 0 auto; padding: 30px; background: #f8fafc; border-radius: 16px;">
-          <h2 style="color: #1e293b;">إعادة تعيين كلمة المرور</h2>
-          <p>مرحباً ${name}،</p>
-          <p>لقد طلبت إعادة تعيين كلمة المرور. استخدم الكود التالي:</p>
-          <div style="background: #ecfdf5; border: 2px dashed #10b981; border-radius: 12px; padding: 20px; text-align: center; margin: 20px 0;">
-            <div style="font-size: 32px; font-weight: bold; color: #059669; letter-spacing: 8px;">${code}</div>
-          </div>
-          <p style="color: #64748b; font-size: 13px;">صالح لمدة 15 دقيقة. إذا لم تطلب هذا، تجاهل الرسالة.</p>
-        </div>
+        <!DOCTYPE html>
+        <html lang="ar" dir="rtl">
+        <head>
+          <meta charset="UTF-8">
+          <style>
+            body { margin: 0; padding: 0; background-color: #06080d; font-family: 'Segoe UI', Tahoma, Arial, sans-serif; color: #f3f4f6; }
+          </style>
+        </head>
+        <body style="margin: 0; padding: 30px 10px; background-color: #06080d;">
+          <table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 520px; background: #0f131c; border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 24px; overflow: hidden; box-shadow: 0 20px 40px rgba(0,0,0,0.6);">
+            <!-- Header -->
+            <tr>
+              <td style="padding: 32px 24px 20px; text-align: center; background: linear-gradient(180deg, rgba(245, 158, 11, 0.12) 0%, rgba(15, 19, 28, 0) 100%);">
+                <div style="display: inline-block; padding: 8px 18px; border-radius: 12px; background: rgba(245, 158, 11, 0.15); border: 1px solid #f59e0b; color: #f59e0b; font-weight: 800; font-size: 14px; letter-spacing: 1px; margin-bottom: 12px;">
+                  عماد إكسبرس • EMAD EXPRESS
+                </div>
+                <h1 style="color: #ffffff; font-size: 22px; font-weight: 800; margin: 8px 0 4px;">إعادة تعيين كلمة المرور</h1>
+                <p style="color: #9ca3af; font-size: 13px; margin: 0;">طلب استعادة الحساب وتعيين كلمة مرور جديدة</p>
+              </td>
+            </tr>
+
+            <!-- Body -->
+            <tr>
+              <td style="padding: 10px 28px 28px; text-align: center;">
+                <p style="color: #e5e7eb; font-size: 15px; line-height: 1.7; margin: 0 0 22px;">
+                  مرحباً <strong>${name}</strong> 👋<br>
+                  تلقينا طلباً لإعادة تعيين كلمة المرور الخاصة بحسابك. استخدم رمز التحقق التالي للمتابعة:
+                </p>
+
+                <!-- Digits Box -->
+                <div style="padding: 24px 12px; margin: 20px 0; background: #07090e; border: 1px dashed rgba(245, 158, 11, 0.4); border-radius: 18px;">
+                  <div style="margin-bottom: 12px;">
+                    ${renderOtpDigits(code)}
+                  </div>
+                  <div style="color: #fbbf24; font-size: 12px; font-weight: 700; margin-top: 10px;">
+                    ⏱️ الرمز صالح لمدة 15 دقيقة فقط
+                  </div>
+                </div>
+
+                <div style="background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 12px; padding: 12px; margin-top: 16px;">
+                  <p style="color: #f87171; font-size: 12px; line-height: 1.5; margin: 0;">
+                    🔒 تنبيه أمني: لا تشارك هذا الرمز مع أي شخص، حتى موظفي خدمة العملاء.
+                  </p>
+                </div>
+
+                <p style="color: #6b7280; font-size: 12px; line-height: 1.6; margin: 18px 0 0;">
+                  إذا لم تطلب استعادة كلمة المرور، يُرجى تجاهل هذه الرسالة وستبقى كلمة مرورك الحالية آمنة.
+                </p>
+              </td>
+            </tr>
+
+            <!-- Footer -->
+            <tr>
+              <td style="padding: 18px 24px; text-align: center; border-top: 1px solid rgba(255,255,255,0.06); background: #0b0e15;">
+                <p style="color: #6b7280; font-size: 11px; margin: 0;">
+                  © 2026 عماد إكسبرس. جميع الحقوق محفوظة.
+                </p>
+              </td>
+            </tr>
+          </table>
+        </body>
+        </html>
       `,
+      text: `مرحباً ${name}،\n\nرمز إعادة تعيين كلمة المرور الخاص بك في عماد إكسبرس هو: ${code}\nصالح لمدة 15 دقيقة.\n\nعماد إكسبرس`,
     });
     return true;
   } catch (err: any) {

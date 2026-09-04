@@ -8,6 +8,7 @@ export interface Translations {
   products: string;
   categories: string;
   orders: string;
+  returns: string;
   customers: string;
   vendors: string;
   dropshipping: string;
@@ -19,6 +20,7 @@ export interface Translations {
   partner_ads: string;
   affiliate_settings: string;
   settings: string;
+  privacy_policy: string;
   logout: string;
   admin_panel: string;
   
@@ -53,6 +55,7 @@ const translations: Record<Language, Translations> = {
     products: "المنتجات",
     categories: "الفئات والأقسام",
     orders: "الطلبات والمبيعات",
+    returns: "المرتجعات والاسترداد",
     customers: "العملاء",
     vendors: "البائعون والتجار",
     dropshipping: "الدروبشيبينغ",
@@ -64,6 +67,7 @@ const translations: Record<Language, Translations> = {
     partner_ads: "إعلانات الشركاء",
     affiliate_settings: "المنصات العالمية",
     settings: "الإعدادات العامة",
+    privacy_policy: "سياسة الخصوصية",
     logout: "تسجيل الخروج",
     admin_panel: "لوحة إدارة عماد إكسبريس",
     
@@ -94,6 +98,7 @@ const translations: Record<Language, Translations> = {
     products: "Products",
     categories: "Categories",
     orders: "Orders & Sales",
+    returns: "Returns & Refunds",
     customers: "Customers",
     vendors: "Vendors & Sellers",
     dropshipping: "Dropshipping",
@@ -105,6 +110,7 @@ const translations: Record<Language, Translations> = {
     partner_ads: "Partner Ads",
     affiliate_settings: "Global Platforms",
     settings: "Settings",
+    privacy_policy: "Privacy Policy",
     logout: "Logout",
     admin_panel: "Emad Express Admin Panel",
     

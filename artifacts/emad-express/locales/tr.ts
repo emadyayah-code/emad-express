@@ -92,6 +92,7 @@ export const tr = {
     language: "Dil",
     language_value: "Türkçe",
     about: "Hakkımızda",
+    privacy_policy: "Gizlilik Politikası",
     contact: "Bize Ulaşın",
   },
   about: {

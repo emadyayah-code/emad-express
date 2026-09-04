@@ -104,6 +104,7 @@ function LanguageModal({ visible, onClose }: { visible: boolean; onClose: () => 
 }
 
 function AboutModal({ visible, onClose }: { visible: boolean; onClose: () => void }) {
+  const router = useRouter();
   const colors = useColors();
   const { t, language } = useLanguage();
   const insets = useSafeAreaInsets();
@@ -169,6 +170,21 @@ function AboutModal({ visible, onClose }: { visible: boolean; onClose: () => voi
               <Text style={styles.socialLabel}>{about.twitter || "Twitter"}</Text>
             </TouchableOpacity>
           </View>
+
+          {/* Privacy Policy Link */}
+          <TouchableOpacity
+            style={[styles.aboutPrivacyBtn, { borderColor: colors.border, backgroundColor: colors.muted }]}
+            onPress={() => {
+              onClose();
+              router.push("/privacy-policy");
+            }}
+          >
+            <Feather name="shield" size={16} color="#f59e0b" />
+            <Text style={{ color: colors.foreground, fontSize: 13, fontWeight: "600" }}>
+              {isRTL ? "سياسة الخصوصية" : "Privacy Policy"}
+            </Text>
+            <Feather name={isRTL ? "chevron-left" : "chevron-right"} size={16} color={colors.mutedForeground} />
+          </TouchableOpacity>
 
           {/* Copyright Badge */}
           <View style={[styles.copyrightBadge, { backgroundColor: "rgba(245,158,11,0.06)", borderColor: "rgba(245,158,11,0.2)" }]}>
@@ -253,9 +269,15 @@ export default function ProfileScreen() {
           <Text style={{ color: colors.foreground, fontSize: 13, fontWeight: "600" }}>{currency.code}</Text>
         </TouchableOpacity>
       </View>
-      <TouchableOpacity onPress={() => setShowAbout(true)}>
-        <Text style={{ color: colors.mutedForeground, fontSize: 13 }}>{t.profile.about || "About Us"}</Text>
-      </TouchableOpacity>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 14, marginTop: 4 }}>
+        <TouchableOpacity onPress={() => setShowAbout(true)}>
+          <Text style={{ color: colors.mutedForeground, fontSize: 13 }}>{t.profile.about || "About Us"}</Text>
+        </TouchableOpacity>
+        <Text style={{ color: colors.border }}>•</Text>
+        <TouchableOpacity onPress={() => router.push("/privacy-policy")}>
+          <Text style={{ color: colors.primary, fontSize: 13, fontWeight: "600" }}>{t.profile.privacy_policy || (language === "ar" ? "سياسة الخصوصية" : "Privacy Policy")}</Text>
+        </TouchableOpacity>
+      </View>
 
       {/* Copyright Badge */}
       <View style={[styles.copyrightBadge, { width: "90%", marginTop: 12, backgroundColor: "rgba(245,158,11,0.05)", borderColor: "rgba(245,158,11,0.2)" }]}>
@@ -292,10 +314,12 @@ export default function ProfileScreen() {
 
           <View style={{ padding: 16, gap: 10 }}>
             <MenuItem icon="package"     label={t.profile.my_orders}                              onPress={() => router.push("/(tabs)/orders")} />
+            <MenuItem icon="rotate-ccw"  label={(t.profile as any).returns || (language === "ar" ? "المرتجعات واسترداد الأموال" : "Returns & Refunds")} onPress={() => router.push("/returns")} />
             <MenuItem icon="heart"       label={t.profile.favorites}                              onPress={() => router.push("/favorites")} />
             <MenuItem icon="map-pin"     label={t.profile.addresses}                              onPress={() => router.push("/addresses")} />
             <MenuItem icon="globe"       label={t.profile.language}   rightEl={<LangBadge />}     onPress={() => setShowLanguage(true)} />
             <MenuItem icon="dollar-sign" label={language === "ar" ? "العملة" : "Currency"} rightEl={<CurrencyBadge />} onPress={() => setShowCurrency(true)} />
+            <MenuItem icon="shield"      label={t.profile.privacy_policy || (language === "ar" ? "سياسة الخصوصية" : "Privacy Policy")} onPress={() => router.push("/privacy-policy")} />
             <MenuItem icon="info"        label={(t.profile as any).about || "About Us"}            onPress={() => setShowAbout(true)} />
             <MenuItem icon="log-out"     label={t.profile.logout}                                 onPress={handleLogout} danger />
 
@@ -346,4 +370,5 @@ const styles = StyleSheet.create({
   socialBtn: { flex: 1, alignItems: "center", justifyContent: "center", paddingVertical: 12, borderRadius: 14, gap: 4 },
   socialIcon: { fontSize: 20, color: "#fff", fontWeight: "900" },
   socialLabel: { color: "#fff", fontSize: 12, fontWeight: "600" },
+  aboutPrivacyBtn: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", padding: 12, borderRadius: 12, borderWidth: 1, marginTop: 4 },
 });
