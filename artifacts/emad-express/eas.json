@@ -10,7 +10,8 @@
       },
       "env": {
         "EXPO_PUBLIC_DOMAIN": "emadexpress.ayadicmed.com"
-      }
+      },
+      "installCommand": "pnpm install --no-frozen-lockfile"
     },
     "production": {
       "android": {
@@ -18,7 +19,8 @@
       },
       "env": {
         "EXPO_PUBLIC_DOMAIN": "emadexpress.ayadicmed.com"
-      }
+      },
+      "installCommand": "pnpm install --no-frozen-lockfile"
     }
   },
   "submit": {
