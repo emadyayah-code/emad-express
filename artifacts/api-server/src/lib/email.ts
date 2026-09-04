@@ -144,9 +144,9 @@ export async function sendVerificationEmail(
 
   try {
     await mailer.sendMail({
-      from: `"عماد إكسبرس" <${fromAddress}>`,
+      from: `"emadexpress" <${fromAddress}>`,
       to,
-      subject: `رمز التحقق الخاص بك: ${code} 🔐 - عماد إكسبرس`,
+      subject: `رمز التحقق الخاص بك: ${code} 🔐 - emadexpress`,
       html: `
         <!DOCTYPE html>
         <html lang="ar" dir="rtl">
@@ -232,9 +232,9 @@ export async function sendPasswordResetEmail(
 
   try {
     await mailer.sendMail({
-      from: `"عماد إكسبرس" <${from}>`,
+      from: `"emadexpress" <${from}>`,
       to,
-      subject: `رمز إعادة تعيين كلمة المرور: ${code} 🔐 - عماد إكسبرس`,
+      subject: `رمز إعادة تعيين كلمة المرور: ${code} 🔐 - emadexpress`,
       html: `
         <!DOCTYPE html>
         <html lang="ar" dir="rtl">
