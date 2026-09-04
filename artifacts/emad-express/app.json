@@ -47,10 +47,13 @@
       "expo-font",
       "expo-web-browser"
     ],
-    "owner": "emadexpree",
+    "owner": "emadexperss",
     "extra": {
+      "router": {
+        "origin": "https://replit.com/"
+      },
       "eas": {
-        "projectId": "837ca35a-e29b-41f3-8959-b3a977beef74"
+        "projectId": "fc146045-629d-4f02-8caa-45ab5419a618"
       }
     }
   }
