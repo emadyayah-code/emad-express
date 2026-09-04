@@ -332,7 +332,7 @@ router.post("/auth/verify-email", async (req, res, next) => {
       });
     }
 
-    if (user.verification_code !== code && code !== "123456" && code !== "000000") {
+    if (!user.verification_code || user.verification_code !== code) {
       return res.status(400).json({ success: false, message: "كود التحقق غير صحيح" });
     }
 
