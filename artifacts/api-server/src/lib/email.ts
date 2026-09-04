@@ -101,22 +101,6 @@ export async function getTransporter(): Promise<nodemailer.Transporter | null> {
   return active ? active.transporter : null;
 }
 
-export async function sendVerificationEmail(
-  to: string,
-  name: string,
-  code: string,
-  customTransporter?: nodemailer.Transporter
-): Promise<boolean> {
-  const active = await getActiveEmailConfig();
-  const mailer = customTransporter || active?.transporter;
-  if (!mailer) {
-    logger.warn({ to }, "Cannot send verification email - SMTP not configured");
-    return false;
-  }
-
-  const fromAddress = active?.from || "emadyayah@gmail.com";
-
-  try {
 function renderOtpDigits(code: string): string {
   const digits = code.split("");
   return digits
