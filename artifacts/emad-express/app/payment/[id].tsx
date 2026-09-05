@@ -15,6 +15,7 @@ import { WebView } from "react-native-webview";
 import { Feather, FontAwesome5 } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
+import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { useCurrency } from "@/context/CurrencyContext";
 import { useCart } from "@/context/CartContext";
@@ -25,6 +26,7 @@ export default function PaymentScreen() {
   const router = useRouter();
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const { token } = useAuth();
   const { t, isRTL } = useLanguage();
   const { format } = useCurrency();
   const { clearCart } = useCart();
@@ -44,30 +46,61 @@ export default function PaymentScreen() {
 
   useEffect(() => {
     loadOrderAndInitiate();
-  }, [id]);
+  }, [id, token]);
 
   const loadOrderAndInitiate = async () => {
     setLoading(true);
     try {
       // 1. Fetch order details
-      const orderRes = await api.get(`/orders/${id}`);
-      const orderData = orderRes.data?.data || orderRes.data;
+      const orderRes: any = await api.get(`/orders/${id}`, token);
+      const orderData = orderRes?.data || orderRes;
       setOrder(orderData);
 
+      if (orderData?.payment_status === "paid") {
+        setStep("success");
+        return;
+      }
+
       // 2. Automatically initiate payment link
-      const payRes = await api.post(`/orders/${id}/pay/internal`);
-      if (payRes.data?.success && payRes.data?.data?.payment_url) {
-        const data = payRes.data.data;
-        setPaymentUrl(data.payment_url);
-        setPlatform(data.platform || "aliexpress");
-        setShippingBy(data.shipping_by || "AliExpress");
+      const payRes: any = await api.post(`/orders/${id}/pay/internal`, {}, token);
+
+      // Handle payRes in both direct { success, data: { payment_url } } and Axios-like formats
+      const data = payRes?.data?.payment_url
+        ? payRes.data
+        : payRes?.payment_url
+        ? payRes
+        : payRes?.data?.data?.payment_url
+        ? payRes.data.data
+        : null;
+
+      const url = data?.payment_url || payRes?.payment_url;
+
+      if (url) {
+        setPaymentUrl(url);
+        setPlatform(data?.platform || "aliexpress");
+        setShippingBy(data?.shipping_by || "AliExpress");
         setStep("webview");
       } else {
+        console.warn("Payment response did not contain payment_url:", payRes);
         setStep("error");
       }
     } catch (err: any) {
       console.error("Payment init error:", err);
       setStep("error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const switchToCod = async () => {
+    setLoading(true);
+    try {
+      await api.put(`/orders/${id}`, { payment_method: "cod" }, token);
+      clearCart();
+      setStep("success");
+    } catch (e: any) {
+      clearCart();
+      setStep("success");
     } finally {
       setLoading(false);
     }
@@ -89,9 +122,11 @@ export default function PaymentScreen() {
 
   const confirmPayment = async () => {
     try {
-      await api.post(`/orders/${id}/pay/confirm`, {
-        platform_order_id: `CONFIRMED-${Date.now()}`,
-      });
+      await api.post(
+        `/orders/${id}/pay/confirm`,
+        { platform_order_id: `CONFIRMED-${Date.now()}` },
+        token
+      );
       clearCart();
       setStep("success");
     } catch (e: any) {
@@ -114,7 +149,7 @@ export default function PaymentScreen() {
           <Feather name="check-circle" size={54} color="#10b981" />
         </View>
 
-        <Text style={[styles.successTitle, { color: colors.foreground }]}>تم تأكيد الدفع بنجاح!</Text>
+        <Text style={[styles.successTitle, { color: colors.foreground }]}>تم تأكيد طلبك بنجاح!</Text>
         <Text style={[styles.successSubtitle, { color: colors.mutedForeground }]}>
           تم تسجيل عملية الشراء واحتساب طلبك في النظام مع ضمان حماية المشتري والشحن المباشر.
         </Text>
@@ -130,7 +165,7 @@ export default function PaymentScreen() {
               <Text style={{ color: colors.primary, fontWeight: "800", fontSize: 15 }}>{format(order.total)}</Text>
             </View>
             <View style={styles.summaryRow}>
-              <Text style={{ color: colors.mutedForeground, fontSize: 13 }}>الشحن عبر</Text>
+              <Text style={{ color: colors.mutedForeground, fontSize: 13 }}>طريقة الاستلام</Text>
               <Text style={{ color: "#10b981", fontWeight: "700", fontSize: 13 }}>{shippingBy}</Text>
             </View>
           </View>
@@ -161,9 +196,9 @@ export default function PaymentScreen() {
           <Feather name="alert-circle" size={54} color="#ef4444" />
         </View>
 
-        <Text style={[styles.successTitle, { color: colors.foreground }]}>تعذر فتح صفحة الدفع</Text>
+        <Text style={[styles.successTitle, { color: colors.foreground }]}>تعذر فتح صفحة الدفع المباشر</Text>
         <Text style={[styles.successSubtitle, { color: colors.mutedForeground }]}>
-          حدث خطأ أثناء إعداد رابط المورد أو انتهت مهلة الاتصال. بإمكانك إعادة المحاولة أو إكمال الطلب بالدفع عند الاستلام.
+          حدث بطء في شبكة الاتصال أو لم يتم تحميل بوابة المورد. بإمكانك إعادة المحاولة أو إتمام الطلب فوراً بالدفع عند الاستلام.
         </Text>
 
         <TouchableOpacity
@@ -172,6 +207,14 @@ export default function PaymentScreen() {
         >
           <Feather name="refresh-cw" size={18} color="#000" />
           <Text style={styles.primaryBtnText}>إعادة المحاولة</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.primaryBtn, { backgroundColor: "#10b981", marginTop: 12 }]}
+          onPress={switchToCod}
+        >
+          <Feather name="truck" size={18} color="#fff" />
+          <Text style={[styles.primaryBtnText, { color: "#fff" }]}>إتمام الطلب بالدفع عند الاستلام (COD)</Text>
         </TouchableOpacity>
 
         <TouchableOpacity

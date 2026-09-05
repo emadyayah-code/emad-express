@@ -105,8 +105,10 @@ export default function CheckoutScreen() {
         token
       );
 
-      const newOrder = orderRes.data?.data || orderRes.data;
-      const orderId = newOrder?.id;
+      const orderId =
+        (orderRes as any)?.data?.id ||
+        (orderRes as any)?.id ||
+        (orderRes as any)?.data?.data?.id;
 
       clearCart();
 
