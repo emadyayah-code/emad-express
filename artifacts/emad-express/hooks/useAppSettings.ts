@@ -27,10 +27,10 @@ const DEFAULTS: AppSettings = {
 
 let cached: AppSettings | null = null;
 
-export function useAppSettings(): AppSettings {
+export function useAppSettings(refreshTrigger?: boolean | number): AppSettings {
   const [settings, setSettings] = useState<AppSettings>(cached ?? DEFAULTS);
 
-  useEffect(() => {
+  const loadSettings = () => {
     fetch(`${BASE}/app-settings?_t=${Date.now()}`)
       .then(r => (r.ok ? r.json() : null))
       .then(data => {
@@ -42,7 +42,11 @@ export function useAppSettings(): AppSettings {
         }
       })
       .catch(() => {});
-  }, []);
+  };
+
+  useEffect(() => {
+    loadSettings();
+  }, [refreshTrigger]);
 
   return settings;
 }

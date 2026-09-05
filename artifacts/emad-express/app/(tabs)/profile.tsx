@@ -108,7 +108,7 @@ function AboutModal({ visible, onClose }: { visible: boolean; onClose: () => voi
   const colors = useColors();
   const { t, language } = useLanguage();
   const insets = useSafeAreaInsets();
-  const settings = useAppSettings();
+  const settings = useAppSettings(visible);
   const isRTL = language === "ar";
 
   const about = (t as any).about ?? {};
