@@ -4,7 +4,7 @@ export const env = cleanEnv(process.env, {
   NODE_ENV: str({ choices: ["development", "production", "test"], default: "development" }),
   PORT: port({ default: 3000 }),
   SESSION_SECRET: str({ default: "dev-secret-change-me-please" }),
-  DATABASE_URL: url(),
+  DATABASE_URL: str({ default: "" }),
   UPLOADS_DIR: str({ default: "./assets/uploads" }),
   ADMIN_PANEL_DIR: str({ default: "./artifacts/admin-panel/dist/public" }),
   LOG_LEVEL: str({ choices: ["trace", "debug", "info", "warn", "error", "fatal"], default: "info" }),

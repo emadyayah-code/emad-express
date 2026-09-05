@@ -6,7 +6,7 @@ import { seedIfEmpty, startPriceSyncJob } from "./routes/emad";
 
 const port = env.PORT;
 
-const server = app.listen(port, async (err?: Error) => {
+const server = app.listen(port, "0.0.0.0", async () => {
   if (err) {
     logger.error({ err }, "Error listening on port");
     process.exit(1);

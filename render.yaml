@@ -12,3 +12,9 @@ services:
         value: 3000
       - key: CI
         value: false
+      - key: TRUST_PROXY
+        value: "true"
+      - key: DATABASE_URL
+        sync: false
+
+
