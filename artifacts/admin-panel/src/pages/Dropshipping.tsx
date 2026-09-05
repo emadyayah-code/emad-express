@@ -300,7 +300,10 @@ export default function Dropshipping() {
       {tab === "search" && (
         <div className="space-y-4">
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-            <h3 className="font-semibold text-gray-800 mb-4">استيراد منتج من منصة خارجية</h3>
+            <div className="flex items-center justify-between flex-wrap gap-3 mb-4">
+              <h3 className="font-semibold text-gray-800">استيراد منتج من منصة خارجية</h3>
+              <AutoFetchButton platform={platform} onResults={(results) => setBrowseList(results)} />
+            </div>
             <div className="flex flex-wrap gap-3 mb-4">
               {PLATFORMS.map(p => (
                 <button
@@ -402,6 +405,17 @@ export default function Dropshipping() {
             <ManualImportForm platform={platform} onImport={(d) => importMut.mutate(d)} loading={importMut.isPending} />
           </div>
         </div>
+      )}
+
+      {/* Bulk Import Tab */}
+      {tab === "bulk" && (
+        <BulkImportSection
+          onBrowse={(results) => {
+            setBrowseList(results);
+            setTab("search");
+          }}
+          onGoProducts={() => setTab("products")}
+        />
       )}
 
       {/* Settings Tab */}
@@ -822,6 +836,7 @@ function AutoFetchButton({ platform, onResults }: { platform: string; onResults:
   const qc = useQueryClient();
   const [selectedCat, setSelectedCat] = useState("");
   const [keyword, setKeyword] = useState("");
+  const [targetCount, setTargetCount] = useState(1000);
   const [loading, setLoading] = useState(false);
   const [importingDirect, setImportingDirect] = useState(false);
   const [error, setError] = useState("");
@@ -832,7 +847,7 @@ function AutoFetchButton({ platform, onResults }: { platform: string; onResults:
     try {
       const catParam = selectedCat ? `&category_id=${selectedCat}` : "";
       const kwParam = keyword ? `&keyword=${encodeURIComponent(keyword)}` : "";
-      const r = await api.get(`/admin/dropship/auto-fetch?platform=${platform}&count=1000${catParam}${kwParam}`);
+      const r = await api.get(`/admin/dropship/auto-fetch?platform=${platform}&count=${targetCount}${catParam}${kwParam}`);
       onResults(r.results || []);
       setSuccessMsg(`تم جلب ${r.count || 0} منتج من سيرفرات علي إكسبرس الحقيقية للتصفح!`);
       setTimeout(() => setSuccessMsg(""), 4000);
@@ -848,15 +863,15 @@ function AutoFetchButton({ platform, onResults }: { platform: string; onResults:
     try {
       const res = await api.post("/admin/dropship/bulk-import-1000", { 
         platform, 
-        count: 1000, 
+        count: targetCount, 
         margin_percent: 35, 
         category_id: selectedCat || undefined,
         keyword: keyword || undefined 
       });
       qc.invalidateQueries({ queryKey: ["dropship-products"] });
       qc.invalidateQueries({ queryKey: ["products"] });
-      setSuccessMsg(res.message || "تم استيراد المنتجات وحفظها في قاعدة البيانات بنجاح!");
-      setTimeout(() => setSuccessMsg(""), 8000);
+      setSuccessMsg(res.message || `تم استيراد ${res.imported || targetCount} منتج وحفظها في قاعدة البيانات بنجاح!`);
+      setTimeout(() => setSuccessMsg(""), 10000);
     } catch (e: any) {
       const msg = e?.message || "";
       if (msg.includes("Failed query") || msg.includes("insert into")) {
@@ -873,6 +888,18 @@ function AutoFetchButton({ platform, onResults }: { platform: string; onResults:
     <div className="flex flex-col items-end gap-2.5">
       <div className="flex items-center gap-2 flex-wrap justify-end">
         <select
+          value={targetCount}
+          onChange={e => setTargetCount(Number(e.target.value))}
+          className="bg-slate-900 border border-amber-500/40 text-amber-300 rounded-xl px-2.5 py-2 text-xs font-bold outline-none cursor-pointer"
+        >
+          <option value={100}>100 منتج</option>
+          <option value={250}>250 منتج</option>
+          <option value={500}>500 منتج</option>
+          <option value={1000}>1000 منتج 🚀</option>
+          <option value={2000}>2000 منتج</option>
+        </select>
+
+        <select
           value={selectedCat}
           onChange={e => setSelectedCat(e.target.value)}
           className="bg-slate-900 border border-amber-500/40 text-amber-300 rounded-xl px-3 py-2 text-xs font-bold outline-none cursor-pointer"
@@ -888,9 +915,9 @@ function AutoFetchButton({ platform, onResults }: { platform: string; onResults:
           className="flex items-center gap-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black px-4 py-2 rounded-xl text-xs font-extrabold shadow-md hover:shadow-amber-500/20 disabled:opacity-60 transition-all cursor-pointer"
         >
           {importingDirect ? (
-            <><Loader2 size={14} className="animate-spin text-black" /> جارٍ استيراد المنتجات الحقيقية لقاعدة البيانات...</>
+            <><Loader2 size={14} className="animate-spin text-black" /> جارٍ استيراد {targetCount} منتج لقاعدة البيانات...</>
           ) : (
-            <><Database size={14} /> استيراد 1000 منتج لقاعدة البيانات فوراً 🚀</>
+            <><Database size={14} /> استيراد {targetCount} منتج لقاعدة البيانات فوراً 🚀</>
           )}
         </button>
 
@@ -899,7 +926,7 @@ function AutoFetchButton({ platform, onResults }: { platform: string; onResults:
           disabled={loading || importingDirect}
           className="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/30 px-3.5 py-2 rounded-xl text-xs font-semibold disabled:opacity-60 transition-all cursor-pointer"
         >
-          {loading ? <><Loader2 size={13} className="animate-spin" /> جارٍ الجلب...</> : <><Download size={13} /> تصفح المنتجات الحقيقية</>}
+          {loading ? <><Loader2 size={13} className="animate-spin" /> جارٍ الجلب...</> : <><Download size={13} /> تصفح المنتجات</>}
         </button>
       </div>
 
@@ -908,3 +935,253 @@ function AutoFetchButton({ platform, onResults }: { platform: string; onResults:
     </div>
   );
 }
+
+function BulkImportSection({ onBrowse, onGoProducts }: { onBrowse: (r: any[]) => void; onGoProducts: () => void }) {
+  const qc = useQueryClient();
+  const [platform, setPlatform] = useState("aliexpress");
+  const [selectedCat, setSelectedCat] = useState("");
+  const [keyword, setKeyword] = useState("");
+  const [count, setCount] = useState(1000);
+  const [margin, setMargin] = useState(35);
+  const [importing, setImporting] = useState(false);
+  const [browsing, setBrowsing] = useState(false);
+  const [result, setResult] = useState<any>(null);
+  const [error, setError] = useState("");
+
+  const handleImport = async () => {
+    setImporting(true); setError(""); setResult(null);
+    try {
+      const res = await api.post("/admin/dropship/bulk-import-1000", {
+        platform,
+        count,
+        margin_percent: margin,
+        category_id: selectedCat || undefined,
+        keyword: keyword.trim() || undefined,
+      });
+      qc.invalidateQueries({ queryKey: ["dropship-products"] });
+      qc.invalidateQueries({ queryKey: ["products"] });
+      setResult(res);
+    } catch (e: any) {
+      setError(e?.message || "حدث خطأ أثناء الاستيراد");
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  const handleBrowse = async () => {
+    setBrowsing(true); setError("");
+    try {
+      const catParam = selectedCat ? `&category_id=${selectedCat}` : "";
+      const kwParam = keyword.trim() ? `&keyword=${encodeURIComponent(keyword.trim())}` : "";
+      const r = await api.get(`/admin/dropship/auto-fetch?platform=${platform}&count=${count}${catParam}${kwParam}`);
+      onBrowse(r.results || []);
+    } catch (e: any) {
+      setError(e?.message || "فشل جلب المنتجات للتصفح");
+    } finally {
+      setBrowsing(false);
+    }
+  };
+
+  return (
+    <div className="space-y-6 text-right" dir="rtl">
+      {/* Header Banner */}
+      <div className="bg-gradient-to-r from-amber-500/20 via-slate-900 to-slate-900 border border-amber-500/40 rounded-3xl p-6 shadow-xl">
+        <div className="flex items-center gap-3 mb-2">
+          <div className="p-3 bg-amber-500/20 rounded-2xl border border-amber-500/40 text-amber-400">
+            <Database size={26} />
+          </div>
+          <div>
+            <h2 className="text-xl font-black text-white">نظام الاستيراد الجماعي الفوري (Bulk Import 1000+)</h2>
+            <p className="text-xs text-amber-200/70 mt-0.5">
+              اسحب وجلب حتى 1000 أو 2000 منتج حقيقي بضغطة زر واحدة من علي إكسبرس مع المزامنة التلقائية للأسعار وتصنيف الأقسام.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Control Panel */}
+      <div className="bg-slate-900/90 border border-amber-500/30 rounded-3xl p-6 space-y-6 shadow-2xl">
+        {/* Step 1: Select Platform */}
+        <div>
+          <label className="text-xs font-bold text-amber-300 block mb-2">1. اختر منصة التوريد العالمية:</label>
+          <div className="grid grid-cols-3 gap-3">
+            {[
+              { id: "aliexpress", name: "علي إكسبرس (رسمي)", flag: "🇨🇳", desc: "API مفعل وشغال 100%" },
+              { id: "amazon", name: "أمازون", flag: "📦", desc: "PA-API شريك" },
+              { id: "alibaba", name: "علي بابا بالجملة", flag: "🏪", desc: "Alibaba Open API" },
+            ].map(p => (
+              <button
+                key={p.id}
+                type="button"
+                onClick={() => setPlatform(p.id)}
+                className={`p-4 rounded-2xl border text-right transition-all cursor-pointer ${platform === p.id ? "bg-amber-500/15 border-amber-400 shadow-lg shadow-amber-500/10" : "bg-slate-950/60 border-slate-800 hover:border-slate-700"}`}
+              >
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-2xl">{p.flag}</span>
+                  <span className="font-bold text-white text-sm">{p.name}</span>
+                </div>
+                <p className="text-[11px] text-amber-200/60">{p.desc}</p>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Step 2: Target Quantity Chips */}
+        <div>
+          <label className="text-xs font-bold text-amber-300 block mb-2">2. كمية المنتجات المراد استيرادها في هذه النقرة:</label>
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
+            {[
+              { val: 100, label: "100 منتج" },
+              { val: 250, label: "250 منتج" },
+              { val: 500, label: "500 منتج" },
+              { val: 1000, label: "1000 منتج 🚀", badge: "موصى به" },
+              { val: 2000, label: "2000 منتج 🔥" },
+            ].map(item => (
+              <button
+                key={item.val}
+                type="button"
+                onClick={() => setCount(item.val)}
+                className={`py-3 px-3 rounded-2xl border font-bold text-xs transition-all flex flex-col items-center justify-center gap-1 cursor-pointer ${count === item.val ? "bg-amber-500 text-black border-amber-400 shadow-lg font-black" : "bg-slate-950/80 text-white border-slate-800 hover:border-amber-500/40"}`}
+              >
+                <span>{item.label}</span>
+                {item.badge && (
+                  <span className={`text-[10px] px-2 py-0.5 rounded-full ${count === item.val ? "bg-black/20 text-black font-extrabold" : "bg-amber-500/20 text-amber-300"}`}>
+                    {item.badge}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Step 3: Filters: Category & Keyword */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="text-xs font-bold text-amber-300 block mb-1.5">3. الفئة أو القسم:</label>
+            <select
+              value={selectedCat}
+              onChange={e => setSelectedCat(e.target.value)}
+              className="w-full bg-slate-950/90 border border-slate-700 text-white rounded-xl px-4 py-3 text-sm outline-none focus:border-amber-400 cursor-pointer"
+            >
+              {ALI_CATEGORIES.map(c => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
+            <p className="text-[11px] text-slate-400 mt-1">اختر فئة معينة أو اتركها على "جميع الأقسام" للتنويع الشامل.</p>
+          </div>
+
+          <div>
+            <label className="text-xs font-bold text-amber-300 block mb-1.5">4. كلمة بحث اختيارية (Keyword):</label>
+            <input
+              type="text"
+              value={keyword}
+              onChange={e => setKeyword(e.target.value)}
+              placeholder="مثال: ساعات رجالية، سماعات بلوتوث، أحذية رياضية..."
+              className="w-full bg-slate-950/90 border border-slate-700 text-white rounded-xl px-4 py-3 text-sm outline-none focus:border-amber-400"
+            />
+            <p className="text-[11px] text-slate-400 mt-1">اتركه فارغاً لجلب المنتجات الأكثر مبيعاً والأعلى تقييماً تلقائياً.</p>
+          </div>
+        </div>
+
+        {/* Step 4: Margin */}
+        <div className="bg-slate-950/60 border border-slate-800 rounded-2xl p-4 flex items-center justify-between flex-wrap gap-3">
+          <div>
+            <span className="font-bold text-white text-sm">نسبة هامش ربحك التلقائي فوق سعر المورد:</span>
+            <p className="text-xs text-slate-400 mt-0.5">سيتم حساب سعر البيع تلقائياً: سعر المورد + {margin}%</p>
+          </div>
+          <div className="flex items-center gap-2">
+            {[20, 30, 35, 50, 75].map(m => (
+              <button
+                key={m}
+                type="button"
+                onClick={() => setMargin(m)}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${margin === m ? "bg-amber-500 text-black" : "bg-slate-800 text-slate-300 hover:text-white"}`}
+              >
+                +{m}%
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Actions */}
+        <div className="flex items-center gap-3 pt-2 flex-wrap">
+          <button
+            type="button"
+            onClick={handleImport}
+            disabled={importing || browsing}
+            className="flex-1 min-w-[280px] flex items-center justify-center gap-2.5 bg-gradient-to-r from-amber-500 via-amber-400 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black py-4 rounded-2xl text-base font-black shadow-xl shadow-amber-500/20 disabled:opacity-60 transition-all cursor-pointer"
+          >
+            {importing ? (
+              <>
+                <Loader2 size={20} className="animate-spin text-black" />
+                <span>جارٍ استيراد {count} منتج من سيرفرات علي إكسبرس وتصنيفها وحفظها...</span>
+              </>
+            ) : (
+              <>
+                <Database size={20} />
+                <span>🚀 بدء استيراد {count} منتج لقاعدة البيانات دفعة واحدة الآن</span>
+              </>
+            )}
+          </button>
+
+          <button
+            type="button"
+            onClick={handleBrowse}
+            disabled={importing || browsing}
+            className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/40 px-6 py-4 rounded-2xl text-sm font-bold disabled:opacity-60 transition-all cursor-pointer"
+          >
+            {browsing ? <><Loader2 size={16} className="animate-spin" /> جارٍ التحميل...</> : <><Download size={16} /> تصفح المنتجات فقط</>}
+          </button>
+        </div>
+
+        {/* Results / Error Alerts */}
+        {result && (
+          <div className="bg-emerald-950/70 border border-emerald-500/40 text-emerald-200 rounded-2xl p-5 space-y-3 animate-in fade-in">
+            <div className="flex items-center gap-2 text-emerald-400 font-black text-base">
+              <CheckCircle size={20} />
+              <span>{result.message || `تمت عملية الاستيراد بنجاح!`}</span>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1 text-xs">
+              <div className="bg-emerald-900/40 border border-emerald-500/30 p-3 rounded-xl">
+                <span className="text-emerald-400 block font-bold">المنتجات المستوردة حديثاً</span>
+                <span className="text-lg font-black text-white">{result.imported || 0}</span>
+              </div>
+              <div className="bg-emerald-900/40 border border-emerald-500/30 p-3 rounded-xl">
+                <span className="text-emerald-400 block font-bold">المتخطاة (موجودة مسبقاً)</span>
+                <span className="text-lg font-black text-white">{result.skipped || 0}</span>
+              </div>
+              <div className="bg-emerald-900/40 border border-emerald-500/30 p-3 rounded-xl">
+                <span className="text-emerald-400 block font-bold">إجمالي المتجر الحالي</span>
+                <span className="text-lg font-black text-white">{result.total_in_db || "—"} منتج</span>
+              </div>
+              <div className="bg-emerald-900/40 border border-emerald-500/30 p-3 rounded-xl flex items-center justify-center">
+                <button
+                  onClick={onGoProducts}
+                  className="bg-emerald-500 hover:bg-emerald-400 text-black px-4 py-2 rounded-xl font-bold text-xs transition-all"
+                >
+                  عرض المنتجات المستوردة 📦
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {error && (
+          <div className="bg-red-950/70 border border-red-500/40 text-red-200 rounded-2xl p-4 flex items-center gap-2 text-sm font-bold">
+            <AlertCircle size={18} className="text-red-400 flex-shrink-0" />
+            <span>{error}</span>
+          </div>
+        )}
+      </div>
+
+      {/* Info Card */}
+      <div className="bg-slate-900/40 border border-slate-800 rounded-2xl p-4 text-xs text-slate-400 space-y-1">
+        <p className="font-bold text-amber-300">💡 كيف يعمل نظام الاستيراد المتدفق؟</p>
+        <p>• يتم الاتصال بسيرفرات علي إكسبرس الرسمية عبر بروتوكول الشراكة المباشر.</p>
+        <p>• يقوم النظام تلقائياً بتجاوز المنتجات المكررة لحماية قاعدة بياناتك وتوفير مساحتها.</p>
+        <p>• كل منتج يتم استيراده يُربط بكود فريد للمورد، وتُضاف الصور عالية الدقة والوصف والأسعار وهامش الربح تلقائياً.</p>
+      </div>
+    </div>
+  );
+}
+

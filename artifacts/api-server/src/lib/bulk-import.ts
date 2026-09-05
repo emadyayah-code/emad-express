@@ -86,14 +86,16 @@ async function saveProduct(
     const matchedCategoryId = await matchCategoryId(`${name} ${categoryName || ""}`);
 
     const [newProduct] = await db.insert(products).values({
-      name: name.slice(0, 200),
+      name_ar: name.slice(0, 450),
+      name_en: name.slice(0, 450),
       sku: `${platform.toUpperCase().slice(0, 3)}-${sourceId.slice(-12)}`,
       price: ourPrice,
       cost: price,
       quantity: 999,
       min_quantity: 0,
       category_id: matchedCategoryId,
-      description: categoryName ? `منتج من ${platform} - ${supplierName} - التصنيف: ${categoryName}` : `منتج من ${platform} - ${supplierName}`,
+      description_ar: categoryName ? `منتج من ${platform} - ${supplierName} - التصنيف: ${categoryName}` : `منتج من ${platform} - ${supplierName}`,
+      description_en: categoryName ? `Product from ${platform} - ${supplierName} - Category: ${categoryName}` : `Product from ${platform} - ${supplierName}`,
       image: image || "",
       is_active: true,
     }).returning();
@@ -128,10 +130,10 @@ async function importAliExpress(job: BulkImportJob): Promise<void> {
 
   while (job.imported + job.skipped + job.failed < job.maxProducts && job.status === "running") {
     try {
-      const { products: items, totalResults } = await searchAliExpressProducts(job.keywords, creds, page, pageSize);
-      if (!items.length) break;
+      const items = await searchAliExpressProducts(job.keywords, creds, page, pageSize, job.category);
+      if (!items || !items.length) break;
 
-      job.totalPages = Math.ceil((totalResults || items.length) / pageSize);
+      job.totalPages = Math.ceil(job.maxProducts / pageSize);
       job.currentPage = page;
 
       for (const item of items) {
