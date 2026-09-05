@@ -14,7 +14,11 @@ export interface EmailConfig {
 }
 
 export function createTransporter(config: EmailConfig): nodemailer.Transporter {
-  return nodemailer.createTransporter({
+  const createTransportFn =
+    (nodemailer as any).createTransport ||
+    (nodemailer as any).default?.createTransport ||
+    nodemailer;
+  return createTransportFn({
     host: config.host,
     port: config.port,
     secure: config.secure,
