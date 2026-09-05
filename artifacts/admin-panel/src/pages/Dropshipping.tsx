@@ -39,13 +39,19 @@ export default function Dropshipping() {
     setImportingAllBrowse(true);
     setImportAllSuccess("");
     try {
-      const res = await api.post("/admin/dropship/import-batch", {
-        items: browseList,
-        margin_percent: 35,
-      });
+      let totalImported = 0;
+      const batchSize = 50;
+      for (let i = 0; i < browseList.length; i += batchSize) {
+        const batch = browseList.slice(i, i + batchSize);
+        const res = await api.post("/admin/dropship/import-batch", {
+          items: batch,
+          margin_percent: 35,
+        });
+        totalImported += res.imported || 0;
+      }
       qc.invalidateQueries({ queryKey: ["dropship-products"] });
       qc.invalidateQueries({ queryKey: ["products"] });
-      setImportAllSuccess(res.message || `تم استيراد ${res.imported || browseList.length} منتج بنجاح إلى متجرك!`);
+      setImportAllSuccess(`تم استيراد ${totalImported} منتج بنجاح إلى متجرك وحفظها في قاعدة البيانات!`);
       setTimeout(() => setImportAllSuccess(""), 8000);
     } catch (e: any) {
       alert(e?.message || "فشل استيراد المنتجات");
@@ -881,49 +887,86 @@ function AutoFetchButton({ platform, onResults }: { platform: string; onResults:
   const [keyword, setKeyword] = useState("");
   const [targetCount, setTargetCount] = useState(1000);
   const [loading, setLoading] = useState(false);
+  const [fetchProgress, setFetchProgress] = useState<{ current: number; total: number; percent: number } | null>(null);
   const [importingDirect, setImportingDirect] = useState(false);
+  const [importProgress, setImportProgress] = useState<{ current: number; total: number; percent: number } | null>(null);
   const [error, setError] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
 
   const fetchBrowse = async () => {
     setLoading(true); setError(""); setSuccessMsg("");
+    setFetchProgress({ current: 0, total: targetCount, percent: 0 });
     try {
       const catParam = selectedCat ? `&category_id=${selectedCat}` : "";
       const kwParam = keyword ? `&keyword=${encodeURIComponent(keyword)}` : "";
-      const r = await api.get(`/admin/dropship/auto-fetch?platform=${platform}&count=${targetCount}${catParam}${kwParam}`);
-      onResults(r.results || []);
-      setSuccessMsg(`تم جلب ${r.count || 0} منتج من سيرفرات علي إكسبرس الحقيقية للتصفح!`);
-      setTimeout(() => setSuccessMsg(""), 4000);
+      const numPages = Math.ceil(targetCount / 50);
+      const allFetched: any[] = [];
+
+      for (let p = 1; p <= numPages; p++) {
+        try {
+          const r = await api.get(`/admin/dropship/fetch-chunk?platform=${platform}&page=${p}&page_size=50${catParam}${kwParam}`);
+          const newProds = r.products || [];
+          for (const np of newProds) {
+            if (!allFetched.some(item => item.source_id === np.source_id)) {
+              allFetched.push(np);
+            }
+          }
+          const pct = Math.min(100, Math.round((allFetched.length / targetCount) * 100));
+          setFetchProgress({ current: allFetched.length, total: targetCount, percent: pct });
+          onResults([...allFetched]);
+
+          if (allFetched.length >= targetCount) break;
+          if (newProds.length === 0 && (selectedCat || keyword)) break;
+        } catch (err) {
+          console.warn("Fetch chunk error:", err);
+        }
+      }
+
+      setSuccessMsg(`تم جلب ${allFetched.length} منتج بنجاح من علي إكسبرس للتصفح والمعاينة!`);
+      setTimeout(() => setSuccessMsg(""), 6000);
     } catch (e: any) {
       setError(e?.message || "فشل الجلب");
     } finally {
       setLoading(false);
+      setFetchProgress(null);
     }
   };
 
   const import1000Directly = async () => {
     setImportingDirect(true); setError(""); setSuccessMsg("");
+    setImportProgress({ current: 0, total: targetCount, percent: 0 });
     try {
-      const res = await api.post("/admin/dropship/bulk-import-1000", { 
-        platform, 
-        count: targetCount, 
-        margin_percent: 35, 
-        category_id: selectedCat || undefined,
-        keyword: keyword || undefined 
-      });
+      const numPages = Math.ceil(targetCount / 50);
+      let totalImported = 0;
+      let lastTotalInDb = 0;
+
+      for (let p = 1; p <= numPages; p++) {
+        try {
+          const res = await api.post("/admin/dropship/import-chunk", { 
+            platform, 
+            page: p,
+            margin_percent: 35, 
+            category_id: selectedCat || undefined,
+            keyword: keyword || undefined 
+          });
+          totalImported += res.imported || 0;
+          if (res.total_in_db) lastTotalInDb = res.total_in_db;
+          const pct = Math.min(100, Math.round((p / numPages) * 100));
+          setImportProgress({ current: totalImported, total: targetCount, percent: pct });
+        } catch (err) {
+          console.warn("Import chunk error:", err);
+        }
+      }
+
       qc.invalidateQueries({ queryKey: ["dropship-products"] });
       qc.invalidateQueries({ queryKey: ["products"] });
-      setSuccessMsg(res.message || `تم استيراد ${res.imported || targetCount} منتج وحفظها في قاعدة البيانات بنجاح!`);
+      setSuccessMsg(`تم بنجاح استيراد ${totalImported} منتج جديد وحفظها في قاعدة البيانات! (إجمالي المتجر: ${lastTotalInDb.toLocaleString()} منتج)`);
       setTimeout(() => setSuccessMsg(""), 10000);
     } catch (e: any) {
-      const msg = e?.message || "";
-      if (msg.includes("Failed query") || msg.includes("insert into")) {
-        setError("حدث خطأ أثناء إدراج البيانات. تم تصحيح المعالجة، يرجى المحاولة الآن.");
-      } else {
-        setError(msg || "فشل الاستيراد المباشر");
-      }
+      setError(e?.message || "فشل الاستيراد المباشر");
     } finally {
       setImportingDirect(false);
+      setImportProgress(null);
     }
   };
 
@@ -958,7 +1001,7 @@ function AutoFetchButton({ platform, onResults }: { platform: string; onResults:
           className="flex items-center gap-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black px-4 py-2 rounded-xl text-xs font-extrabold shadow-md hover:shadow-amber-500/20 disabled:opacity-60 transition-all cursor-pointer"
         >
           {importingDirect ? (
-            <><Loader2 size={14} className="animate-spin text-black" /> جارٍ استيراد {targetCount} منتج وحفظها بالمتجر...</>
+            <><Loader2 size={14} className="animate-spin text-black" /> جارٍ الاستيراد: {importProgress?.current || 0} منتج ({importProgress?.percent || 0}%)</>
           ) : (
             <><Database size={14} /> ⚡ استيراد {targetCount} منتج لقاعدة البيانات فوراً 🚀</>
           )}
@@ -969,7 +1012,7 @@ function AutoFetchButton({ platform, onResults }: { platform: string; onResults:
           disabled={loading || importingDirect}
           className="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/30 px-3.5 py-2 rounded-xl text-xs font-semibold disabled:opacity-60 transition-all cursor-pointer"
         >
-          {loading ? <><Loader2 size={13} className="animate-spin" /> جارٍ جلب {targetCount} منتج...</> : <><Download size={13} /> 📥 جلب {targetCount} منتج للمعاينة والتصفح</>}
+          {loading ? <><Loader2 size={13} className="animate-spin" /> جارٍ جلب المنتجات ({fetchProgress?.current || 0} / {targetCount}) - {fetchProgress?.percent || 0}%</> : <><Download size={13} /> 📥 جلب {targetCount} منتج للمعاينة والتصفح</>}
         </button>
       </div>
 
@@ -987,41 +1030,90 @@ function BulkImportSection({ onBrowse, onGoProducts }: { onBrowse: (r: any[]) =>
   const [count, setCount] = useState(1000);
   const [margin, setMargin] = useState(35);
   const [importing, setImporting] = useState(false);
+  const [importProgress, setImportProgress] = useState<{ current: number; total: number; percent: number; imported: number } | null>(null);
   const [browsing, setBrowsing] = useState(false);
+  const [browseProgress, setBrowseProgress] = useState<{ current: number; total: number; percent: number } | null>(null);
   const [result, setResult] = useState<any>(null);
   const [error, setError] = useState("");
 
   const handleImport = async () => {
     setImporting(true); setError(""); setResult(null);
+    setImportProgress({ current: 0, total: count, percent: 0, imported: 0 });
     try {
-      const res = await api.post("/admin/dropship/bulk-import-1000", {
-        platform,
-        count,
-        margin_percent: margin,
-        category_id: selectedCat || undefined,
-        keyword: keyword.trim() || undefined,
-      });
+      const numPages = Math.ceil(count / 50);
+      let totalImported = 0;
+      let totalSkipped = 0;
+      let lastTotalInDb = 0;
+
+      for (let p = 1; p <= numPages; p++) {
+        try {
+          const res = await api.post("/admin/dropship/import-chunk", {
+            platform,
+            page: p,
+            margin_percent: margin,
+            category_id: selectedCat || undefined,
+            keyword: keyword.trim() || undefined,
+          });
+          totalImported += res.imported || 0;
+          totalSkipped += res.skipped || 0;
+          if (res.total_in_db) lastTotalInDb = res.total_in_db;
+          const pct = Math.min(100, Math.round((p / numPages) * 100));
+          setImportProgress({ current: Math.min(p * 50, count), total: count, percent: pct, imported: totalImported });
+        } catch (chunkErr) {
+          console.warn("Bulk chunk import err:", chunkErr);
+        }
+      }
+
       qc.invalidateQueries({ queryKey: ["dropship-products"] });
       qc.invalidateQueries({ queryKey: ["products"] });
-      setResult(res);
+      setResult({
+        success: true,
+        message: `تمت عملية الاستيراد المتدفق بنجاح! تم استيراد وحفظ ${totalImported} منتج جديد في متجرك.`,
+        imported: totalImported,
+        skipped: totalSkipped,
+        total_in_db: lastTotalInDb,
+      });
     } catch (e: any) {
       setError(e?.message || "حدث خطأ أثناء الاستيراد");
     } finally {
       setImporting(false);
+      setImportProgress(null);
     }
   };
 
   const handleBrowse = async () => {
     setBrowsing(true); setError("");
+    setBrowseProgress({ current: 0, total: count, percent: 0 });
     try {
       const catParam = selectedCat ? `&category_id=${selectedCat}` : "";
       const kwParam = keyword.trim() ? `&keyword=${encodeURIComponent(keyword.trim())}` : "";
-      const r = await api.get(`/admin/dropship/auto-fetch?platform=${platform}&count=${count}${catParam}${kwParam}`);
-      onBrowse(r.results || []);
+      const numPages = Math.ceil(count / 50);
+      const allFetched: any[] = [];
+
+      for (let p = 1; p <= numPages; p++) {
+        try {
+          const r = await api.get(`/admin/dropship/fetch-chunk?platform=${platform}&page=${p}&page_size=50${catParam}${kwParam}`);
+          const newProds = r.products || [];
+          for (const np of newProds) {
+            if (!allFetched.some(item => item.source_id === np.source_id)) {
+              allFetched.push(np);
+            }
+          }
+          const pct = Math.min(100, Math.round((allFetched.length / count) * 100));
+          setBrowseProgress({ current: allFetched.length, total: count, percent: pct });
+          onBrowse([...allFetched]);
+
+          if (allFetched.length >= count) break;
+          if (newProds.length === 0 && (selectedCat || keyword.trim())) break;
+        } catch (chunkErr) {
+          console.warn("Bulk browse chunk err:", chunkErr);
+        }
+      }
     } catch (e: any) {
       setError(e?.message || "فشل جلب المنتجات للتصفح");
     } finally {
       setBrowsing(false);
+      setBrowseProgress(null);
     }
   };
 
@@ -1036,7 +1128,7 @@ function BulkImportSection({ onBrowse, onGoProducts }: { onBrowse: (r: any[]) =>
           <div>
             <h2 className="text-xl font-black text-white">نظام الاستيراد الجماعي الفوري (Bulk Import 1000+)</h2>
             <p className="text-xs text-amber-200/70 mt-0.5">
-              اسحب وجلب حتى 1000 أو 2000 منتج حقيقي بضغطة زر واحدة من علي إكسبرس مع المزامنة التلقائية للأسعار وتصنيف الأقسام.
+              اسحب وجلب حتى 1000 أو 2000 منتج حقيقي بضغطة زر واحدة من علي إكسبرس مع المزامنة التلقائية للأسعار وتصنيف الأقسام بدون أي انقطاع.
             </p>
           </div>
         </div>
@@ -1146,6 +1238,46 @@ function BulkImportSection({ onBrowse, onGoProducts }: { onBrowse: (r: any[]) =>
           </div>
         </div>
 
+        {/* Live Progress Bars */}
+        {importProgress && (
+          <div className="bg-slate-950/80 border border-amber-500/40 rounded-2xl p-4 space-y-2 animate-in fade-in">
+            <div className="flex items-center justify-between text-xs font-bold text-amber-300">
+              <span className="flex items-center gap-2">
+                <Loader2 size={14} className="animate-spin text-amber-400" />
+                🚀 جارٍ استيراد المنتجات بالتدفق فائق السرعة وبدون انقطاع...
+              </span>
+              <span>{importProgress.percent}% (تم حفظ {importProgress.imported} منتج جديد)</span>
+            </div>
+            <div className="w-full bg-slate-800 rounded-full h-3 overflow-hidden border border-amber-500/30">
+              <div
+                className="bg-gradient-to-r from-amber-500 to-emerald-400 h-full transition-all duration-300 rounded-full"
+                style={{ width: `${importProgress.percent}%` }}
+              />
+            </div>
+            <p className="text-[11px] text-slate-400">
+              يتم استدعاء وحفظ المنتجات بسلاسة على دفعات مصغرة من سيرفرات AliExpress لتفادي أي انقطاع اتصال أو بطء.
+            </p>
+          </div>
+        )}
+
+        {browseProgress && (
+          <div className="bg-slate-950/80 border border-amber-500/40 rounded-2xl p-4 space-y-2 animate-in fade-in">
+            <div className="flex items-center justify-between text-xs font-bold text-amber-300">
+              <span className="flex items-center gap-2">
+                <Loader2 size={14} className="animate-spin text-amber-400" />
+                📥 جارٍ جلب المنتجات للمعاينة في صفحة التصفح...
+              </span>
+              <span>{browseProgress.percent}% ({browseProgress.current} / {browseProgress.total} منتج)</span>
+            </div>
+            <div className="w-full bg-slate-800 rounded-full h-3 overflow-hidden border border-amber-500/30">
+              <div
+                className="bg-gradient-to-r from-blue-500 to-amber-400 h-full transition-all duration-300 rounded-full"
+                style={{ width: `${browseProgress.percent}%` }}
+              />
+            </div>
+          </div>
+        )}
+
         {/* Actions */}
         <div className="flex items-center gap-3 pt-2 flex-wrap">
           <button
@@ -1157,7 +1289,7 @@ function BulkImportSection({ onBrowse, onGoProducts }: { onBrowse: (r: any[]) =>
             {importing ? (
               <>
                 <Loader2 size={20} className="animate-spin text-black" />
-                <span>جارٍ استيراد {count} منتج من سيرفرات علي إكسبرس وتصنيفها وحفظها...</span>
+                <span>جارٍ استيراد {count} منتج ({importProgress?.percent || 0}%)...</span>
               </>
             ) : (
               <>
@@ -1173,7 +1305,7 @@ function BulkImportSection({ onBrowse, onGoProducts }: { onBrowse: (r: any[]) =>
             disabled={importing || browsing}
             className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/40 px-6 py-4 rounded-2xl text-sm font-bold disabled:opacity-60 transition-all cursor-pointer"
           >
-            {browsing ? <><Loader2 size={16} className="animate-spin" /> جارٍ التحميل...</> : <><Download size={16} /> تصفح المنتجات فقط</>}
+            {browsing ? <><Loader2 size={16} className="animate-spin" /> جارٍ التحميل ({browseProgress?.percent || 0}%)...</> : <><Download size={16} /> تصفح المنتجات فقط</>}
           </button>
         </div>
 
