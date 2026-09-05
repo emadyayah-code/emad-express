@@ -31,6 +31,11 @@ export async function fulfillAliExpressOrder(
     const [order] = await db.select().from(orders).where(eq(orders.id, orderId));
     if (!order) return { success: false, message: "الطلب غير موجود" };
 
+    if (!trackingId) {
+      const [trackRow] = await db.select().from(platform_settings).where(eq(platform_settings.key, "aliexpress_tracking_id"));
+      if (trackRow?.value) trackingId = trackRow.value;
+    }
+
     const orderItems = (order.items as any[]) || [];
     const aliItems: any[] = [];
 
@@ -49,9 +54,8 @@ export async function fulfillAliExpressOrder(
 
     const primaryItem = aliItems[0];
 
-    // Generate REAL Affiliate Deep Link
-    // AliExpress Affiliate Portal: https://portals.aliexpress.com/
-    const affiliateUrl = generateAliExpressAffiliateUrl(primaryItem.source_id, trackingId);
+    // Generate REAL Affiliate Deep Link with tracking
+    const affiliateUrl = generateAliExpressAffiliateUrl(primaryItem.source_id, trackingId, primaryItem.source_url);
 
     return {
       success: true,
@@ -67,18 +71,16 @@ export async function fulfillAliExpressOrder(
   }
 }
 
-function generateAliExpressAffiliateUrl(productId: string, trackingId?: string): string {
-  // AliExpress Affiliate Deep Link format
-  // Using AliExpress Portals API or standard affiliate link structure
-  const baseUrl = `https://www.aliexpress.com/item/${productId}.html`;
+function generateAliExpressAffiliateUrl(productId: string, trackingId?: string, sourceUrl?: string): string {
+  const itemUrl = sourceUrl && sourceUrl.includes("aliexpress.com")
+    ? sourceUrl
+    : `https://www.aliexpress.com/item/${productId}.html`;
 
-  // If tracking ID available, use it for commission tracking
-  if (trackingId) {
-    return `https://s.click.aliexpress.com/deep_link.htm?dl_target_url=${encodeURIComponent(baseUrl)}&aff_short_key=${trackingId}`;
+  if (trackingId && trackingId.trim()) {
+    return `https://s.click.aliexpress.com/deep_link.htm?dl_target_url=${encodeURIComponent(itemUrl)}&aff_short_key=${encodeURIComponent(trackingId.trim())}`;
   }
 
-  // Standard deep link without tracking (for direct checkout)
-  return `${baseUrl}?spm=a2g0o.home.15002.1.650c2145pP0QqC&gps-id=pcHomeJustForYou&scm=1007.13562.264978.0&scm_id=1007.13562.264978.0&scm-url=1007.13562.264978.0&pvid=8f8c9d1e-1f2a-4b3c-8d4e-5f6a7b8c9d0e&_t=gps-id:pcHomeJustForYou,scm-url:1007.13562.264978.0,pvid:8f8c9d1e-1f2a-4b3c-8d4e-5f6a7b8c9d0e,tpp_buckets:668%232846%238113%231998&pdp_npi=4%40dis%21USD%21100.0%2150.0%21%21%21714.0%21357.0%21%402101e9f11700000000000000`;
+  return itemUrl;
 }
 
 // ========== AMAZON ASSOCIATES DEEP LINK ==========
@@ -91,6 +93,11 @@ export async function fulfillAmazonOrder(
   try {
     const [order] = await db.select().from(orders).where(eq(orders.id, orderId));
     if (!order) return { success: false, message: "الطلب غير موجود" };
+
+    if (!partnerTag) {
+      const [tagRow] = await db.select().from(platform_settings).where(eq(platform_settings.key, "amazon_partner_tag"));
+      if (tagRow?.value) partnerTag = tagRow.value;
+    }
 
     const orderItems = (order.items as any[]) || [];
     const amazonItems: any[] = [];

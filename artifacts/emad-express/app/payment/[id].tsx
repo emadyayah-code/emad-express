@@ -187,6 +187,8 @@ export default function PaymentScreen() {
           onNavigationStateChange={handleWebViewNavigation}
           javaScriptEnabled={true}
           domStorageEnabled={true}
+          thirdPartyCookiesEnabled={true}
+          sharedCookiesEnabled={true}
           startInLoadingState={true}
           renderLoading={() => (
             <View className="absolute inset-0 justify-center items-center bg-white">
