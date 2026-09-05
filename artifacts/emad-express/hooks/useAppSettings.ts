@@ -35,7 +35,8 @@ export function useAppSettings(): AppSettings {
       .then(r => (r.ok ? r.json() : null))
       .then(data => {
         if (data) {
-          const s: AppSettings = { ...DEFAULTS, ...data };
+          const payload = data.data || data;
+          const s: AppSettings = { ...DEFAULTS, ...payload };
           cached = s;
           setSettings(s);
         }

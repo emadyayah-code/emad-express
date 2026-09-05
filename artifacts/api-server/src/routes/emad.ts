@@ -1324,20 +1324,31 @@ router.get("/app-settings", async (_req, res, next) => {
     const cfg: Record<string, string> = {};
     settings.forEach((s) => (cfg[s.key] = s.value));
 
+    const responseData = {
+      store_name: cfg["store_name"] || "عماد إكسبرس",
+      about_ar: cfg["about_ar"] || "عماد إكسبرس - بوابتك للتسوق الإلكتروني الأسرع والأكثر أماناً، نوفر لك تشكيلة واسعة من المنتجات العالمية والمحلية بأفضل الأسعار.",
+      about_en: cfg["about_en"] || "Emad Express - Your premier e-commerce platform for fast, safe shopping with top-tier local and global products.",
+      whatsapp_number: cfg["whatsapp_number"] || cfg["support_whatsapp"] || "772223645",
+      facebook_url: cfg["facebook_url"] || "https://www.facebook.com",
+      twitter_url: cfg["twitter_url"] || "https://twitter.com",
+      address_ar: cfg["address_ar"] || "اليمن، تعز، شارع جمال",
+      address_en: cfg["address_en"] || "Yemen, Taiz, Jamal Street",
+      default_currency: cfg["default_currency"] || "SAR",
+      google_ads_enabled: cfg["google_ads_enabled"] !== "false",
+      google_ads_test_mode: cfg["google_ads_test_mode"] === "true",
+      admob_app_id_android: cfg["admob_app_id_android"] || "",
+      admob_banner_unit_id: cfg["admob_banner_unit_id"] || "",
+      admob_interstitial_unit_id: cfg["admob_interstitial_unit_id"] || "",
+      support_whatsapp: cfg["whatsapp_number"] || cfg["support_whatsapp"] || "772223645",
+      support_phone: cfg["support_phone"] || "772223645",
+      support_email: cfg["support_email"] || "support@emadexpress.com",
+      app_version: "2.0.0",
+    };
+
     return res.json({
       success: true,
-      data: {
-        store_name: cfg["store_name"] || "عماد إكسبرس",
-        default_currency: cfg["default_currency"] || "SAR",
-        google_ads_enabled: cfg["google_ads_enabled"] !== "false",
-        google_ads_test_mode: cfg["google_ads_test_mode"] === "true",
-        admob_app_id_android: cfg["admob_app_id_android"] || "",
-        admob_banner_unit_id: cfg["admob_banner_unit_id"] || "",
-        admob_interstitial_unit_id: cfg["admob_interstitial_unit_id"] || "",
-        support_whatsapp: cfg["support_whatsapp"] || "",
-        support_phone: cfg["support_phone"] || "",
-        support_email: cfg["support_email"] || "",
-      },
+      data: responseData,
+      ...responseData,
     });
   } catch (err) { next(err); }
 });
