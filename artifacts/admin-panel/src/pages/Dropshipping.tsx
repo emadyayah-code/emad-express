@@ -31,6 +31,28 @@ export default function Dropshipping() {
   const [urlFetching, setUrlFetching] = useState(false);
   const [urlResult, setUrlResult] = useState<any>(null);
   const [urlError, setUrlError] = useState("");
+  const [importingAllBrowse, setImportingAllBrowse] = useState(false);
+  const [importAllSuccess, setImportAllSuccess] = useState("");
+
+  const handleImportAllBrowse = async () => {
+    if (browseList.length === 0) return;
+    setImportingAllBrowse(true);
+    setImportAllSuccess("");
+    try {
+      const res = await api.post("/admin/dropship/import-batch", {
+        items: browseList,
+        margin_percent: 35,
+      });
+      qc.invalidateQueries({ queryKey: ["dropship-products"] });
+      qc.invalidateQueries({ queryKey: ["products"] });
+      setImportAllSuccess(res.message || `تم استيراد ${res.imported || browseList.length} منتج بنجاح إلى متجرك!`);
+      setTimeout(() => setImportAllSuccess(""), 8000);
+    } catch (e: any) {
+      alert(e?.message || "فشل استيراد المنتجات");
+    } finally {
+      setImportingAllBrowse(false);
+    }
+  };
 
   const { data: dropProducts, isLoading: dpLoading } = useQuery({
     queryKey: ["dropship-products"],
@@ -339,16 +361,37 @@ export default function Dropshipping() {
             return (
               <div className="space-y-3">
                 {browseList.length > 0 && (
-                  <div className="flex items-center justify-between bg-amber-500/10 border border-amber-500/30 rounded-xl p-3">
-                    <span className="text-xs font-bold text-amber-300">
-                      📦 معروض {browseList.length} منتج مسحوب مباشرة من علي إكسبرس للتصفح والاستيراد
-                    </span>
-                    <button
-                      onClick={() => setBrowseList([])}
-                      className="text-xs text-red-400 hover:text-red-300 underline font-bold"
-                    >
-                      إلغاء التصفح
-                    </button>
+                  <div className="flex items-center justify-between bg-amber-500/10 border border-amber-500/30 rounded-2xl p-4 flex-wrap gap-3">
+                    <div>
+                      <span className="text-sm font-black text-amber-300 block">
+                        📦 معروض {browseList.length} منتج مسحوب مباشرة من علي إكسبرس
+                      </span>
+                      <span className="text-xs text-amber-200/70">
+                        يمكنك استيراد منتج فردي، أو استيراد كامل الـ {browseList.length} منتج فوراً لقاعدة البيانات بنقرة واحدة
+                      </span>
+                      {importAllSuccess && (
+                        <p className="text-xs text-emerald-400 font-bold mt-1 animate-pulse">✓ {importAllSuccess}</p>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={handleImportAllBrowse}
+                        disabled={importingAllBrowse}
+                        className="flex items-center gap-2 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-black px-5 py-2.5 rounded-xl text-xs font-black shadow-lg disabled:opacity-60 transition-all cursor-pointer"
+                      >
+                        {importingAllBrowse ? (
+                          <><Loader2 size={14} className="animate-spin text-black" /> جارٍ استيراد وحفظ {browseList.length} منتج بالمتجر...</>
+                        ) : (
+                          <><Database size={14} /> ⚡ استيراد جميع الـ ({browseList.length}) منتج للمتجر دفعة واحدة 🚀</>
+                        )}
+                      </button>
+                      <button
+                        onClick={() => setBrowseList([])}
+                        className="text-xs text-red-400 hover:text-red-300 px-3 py-2 rounded-xl border border-red-500/30 bg-red-500/10 font-bold transition-all"
+                      >
+                        إلغاء التصفح
+                      </button>
+                    </div>
                   </div>
                 )}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
@@ -915,9 +958,9 @@ function AutoFetchButton({ platform, onResults }: { platform: string; onResults:
           className="flex items-center gap-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black px-4 py-2 rounded-xl text-xs font-extrabold shadow-md hover:shadow-amber-500/20 disabled:opacity-60 transition-all cursor-pointer"
         >
           {importingDirect ? (
-            <><Loader2 size={14} className="animate-spin text-black" /> جارٍ استيراد {targetCount} منتج لقاعدة البيانات...</>
+            <><Loader2 size={14} className="animate-spin text-black" /> جارٍ استيراد {targetCount} منتج وحفظها بالمتجر...</>
           ) : (
-            <><Database size={14} /> استيراد {targetCount} منتج لقاعدة البيانات فوراً 🚀</>
+            <><Database size={14} /> ⚡ استيراد {targetCount} منتج لقاعدة البيانات فوراً 🚀</>
           )}
         </button>
 
@@ -926,7 +969,7 @@ function AutoFetchButton({ platform, onResults }: { platform: string; onResults:
           disabled={loading || importingDirect}
           className="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/30 px-3.5 py-2 rounded-xl text-xs font-semibold disabled:opacity-60 transition-all cursor-pointer"
         >
-          {loading ? <><Loader2 size={13} className="animate-spin" /> جارٍ الجلب...</> : <><Download size={13} /> تصفح المنتجات</>}
+          {loading ? <><Loader2 size={13} className="animate-spin" /> جارٍ جلب {targetCount} منتج...</> : <><Download size={13} /> 📥 جلب {targetCount} منتج للمعاينة والتصفح</>}
         </button>
       </div>
 

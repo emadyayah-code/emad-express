@@ -1471,7 +1471,13 @@ const GLOBAL_DISCOVERY_TERMS = [
   "perfume bottle refillable", "diamond ring 925", "leather jacket men", "party balloon arch",
   "drawing tablet digital", "espresso coffee maker", "rc monster truck", "car dashcam 4k",
   "laser level 3d", "pet water fountain", "hair extension clip", "sports water bottle",
-  "wireless game controller", "gaming microphone usb", "vintage sunglasses", "men casual pants"
+  "wireless game controller", "gaming microphone usb", "vintage sunglasses", "men casual pants",
+  "smart watch", "wireless earbuds", "power bank 20000mah", "portable blender", "bluetooth speaker",
+  "led ceiling light", "women handbag luxury", "running shoes", "gaming headset", "car phone holder",
+  "digital alarm clock", "waterproof backpack", "gold plated necklace", "electric shaver men",
+  "ring light tripod", "mini projector 4k", "thermal flask", "shoe storage box", "stainless steel watch",
+  "kitchen knife chef", "resistance bands set", "smart home socket", "baby clothes set", "mens wallet leather",
+  "cat tree tower", "car tire inflator", "robot vacuum cleaner", "hair straightener brush", "makeup brush set"
 ];
 
 router.get("/admin/dropship/auto-fetch", requireAuth, requireRole("admin", "manager"), async (req, res, next) => {
@@ -1479,67 +1485,101 @@ router.get("/admin/dropship/auto-fetch", requireAuth, requireRole("admin", "mana
     const platform = String(req.query.platform || "aliexpress");
     const category_id = req.query.category_id ? String(req.query.category_id) : undefined;
     const queryKw = req.query.keyword ? String(req.query.keyword).trim() : "";
+    const targetCount = Math.min(Math.max(10, parseInt(String(req.query.count || 1000))), 1500);
     const creds = await getAliExpressCreds();
     
     let realProducts: any[] = [];
     if (platform === "aliexpress" && creds) {
       try {
-        const pageOffset = Math.floor(Math.random() * 8) + 1;
-        
         let queries: { kw: string; catId?: string; page: number }[] = [];
         if (category_id && String(category_id).trim()) {
-          for (let p = 1; p <= 4; p++) {
-            queries.push({ kw: queryKw || "", catId: String(category_id).trim(), page: p });
+          const catStr = String(category_id).trim();
+          for (let p = 1; p <= 25; p++) {
+            queries.push({ kw: queryKw || "", catId: catStr, page: p });
           }
         } else if (queryKw) {
-          for (let p = 1; p <= 4; p++) {
+          for (let p = 1; p <= 25; p++) {
             queries.push({ kw: queryKw, page: p });
           }
         } else {
-          const highYield = ["smart watch", "wireless earbuds", "hoodie", "drone", "shoes", "car accessories", "kitchen tools", "jewelry"].sort(() => 0.5 - Math.random());
-          for (let i = 0; i < 4; i++) {
-            queries.push({ kw: highYield[i % highYield.length], page: 1 });
+          const shuffledTerms = [...GLOBAL_DISCOVERY_TERMS].sort(() => 0.5 - Math.random());
+          for (let i = 0; i < Math.min(30, shuffledTerms.length); i++) {
+            queries.push({ kw: shuffledTerms[i], page: 1 });
+            queries.push({ kw: shuffledTerms[i], page: 2 });
           }
         }
 
-        const debugLogs: any[] = [];
-        const results = await Promise.all(
-          queries.map(async q => {
-            try {
-              const prods = await searchAliExpressProducts(q.kw, creds, q.page, 50, q.catId);
-              debugLogs.push({ query: q, count: prods.length });
-              return prods;
-            } catch (err: any) {
-              debugLogs.push({ query: q, error: err.message });
-              return [];
-            }
-          })
-        );
+        const batchSize = 5;
+        for (let i = 0; i < queries.length && realProducts.length < targetCount; i += batchSize) {
+          const batch = queries.slice(i, i + batchSize);
+          const results = await Promise.all(
+            batch.map(q => searchAliExpressProducts(q.kw, creds, q.page, 50, q.catId).catch(() => []))
+          );
 
-        for (const prods of results) {
-          if (Array.isArray(prods)) {
-            for (const p of prods) {
-              if (p.product_id && !realProducts.some(r => r.source_id === String(p.product_id))) {
-                let img = p.product_main_image_url || "";
-                if (img.startsWith("//")) img = `https:${img}`;
-                realProducts.push({
-                  source_id: String(p.product_id),
-                  name: p.product_title,
-                  price: parseFloat(p.target_sale_price) || parseFloat(p.target_original_price) || 25,
-                  original_price: parseFloat(p.target_original_price) || 0,
-                  image: img,
-                  category_name: p.first_level_category_name || "منتجات عامة",
-                  rating: parseFloat(p.evaluate_rate) || 4.8,
-                  orders_count: parseInt(p.sales_volume) || 120,
-                  platform: "aliexpress",
-                  source_url: p.product_detail_url || `https://www.aliexpress.com/item/${p.product_id}.html`,
-                  supplier_name: p.shop_name || "AliExpress Verified Seller",
-                });
+          for (const prods of results) {
+            if (Array.isArray(prods)) {
+              for (const p of prods) {
+                if (realProducts.length >= targetCount) break;
+                if (p.product_id && !realProducts.some(r => r.source_id === String(p.product_id))) {
+                  let img = p.product_main_image_url || "";
+                  if (img.startsWith("//")) img = `https:${img}`;
+                  realProducts.push({
+                    source_id: String(p.product_id),
+                    name: p.product_title || `AliExpress Product ${p.product_id}`,
+                    price: parseFloat(p.target_sale_price) || parseFloat(p.target_original_price) || 25,
+                    original_price: parseFloat(p.target_original_price) || 0,
+                    image: img,
+                    category_name: p.first_level_category_name || "منتجات عامة",
+                    rating: parseFloat(p.evaluate_rate) || 4.8,
+                    orders_count: parseInt(p.sales_volume) || 120,
+                    platform: "aliexpress",
+                    source_url: p.product_detail_url || `https://www.aliexpress.com/item/${p.product_id}.html`,
+                    supplier_name: p.shop_name || "AliExpress Verified Seller",
+                  });
+                }
+              }
+            }
+          }
+
+          if (realProducts.length < targetCount && i + batchSize < queries.length) {
+            await new Promise(r => setTimeout(r, 60));
+          }
+        }
+
+        // If target count not reached, top up from diverse popular terms
+        if (realProducts.length < targetCount) {
+          const backupTerms = [...GLOBAL_DISCOVERY_TERMS].sort(() => 0.5 - Math.random());
+          for (let i = 0; i < backupTerms.length && realProducts.length < targetCount; i += batchSize) {
+            const bBatch = backupTerms.slice(i, i + batchSize);
+            const bResults = await Promise.all(
+              bBatch.map(kw => searchAliExpressProducts(kw, creds, 1, 50).catch(() => []))
+            );
+            for (const prods of bResults) {
+              if (Array.isArray(prods)) {
+                for (const p of prods) {
+                  if (realProducts.length >= targetCount) break;
+                  if (p.product_id && !realProducts.some(r => r.source_id === String(p.product_id))) {
+                    let img = p.product_main_image_url || "";
+                    if (img.startsWith("//")) img = `https:${img}`;
+                    realProducts.push({
+                      source_id: String(p.product_id),
+                      name: p.product_title || `AliExpress Product ${p.product_id}`,
+                      price: parseFloat(p.target_sale_price) || parseFloat(p.target_original_price) || 25,
+                      original_price: parseFloat(p.target_original_price) || 0,
+                      image: img,
+                      category_name: p.first_level_category_name || "منتجات عامة",
+                      rating: parseFloat(p.evaluate_rate) || 4.8,
+                      orders_count: parseInt(p.sales_volume) || 120,
+                      platform: "aliexpress",
+                      source_url: p.product_detail_url || `https://www.aliexpress.com/item/${p.product_id}.html`,
+                      supplier_name: p.shop_name || "AliExpress Verified Seller",
+                    });
+                  }
+                }
               }
             }
           }
         }
-        return res.json({ success: true, count: realProducts.length, platform, results: realProducts, debug: debugLogs });
       } catch (err) {
         logger.warn({ err }, "Live AliExpress search error");
       }
@@ -1555,9 +1595,13 @@ router.post("/admin/dropship/bulk-import-1000", requireAuth, requireRole("admin"
     const margin = (100 + (margin_percent || 30)) / 100;
     const creds = await getAliExpressCreds();
 
-    // Fetch existing source_ids to prevent duplicate insertion
+    // Fetch existing source_ids and SKUs to prevent duplicate insertion
     const existingDropships = await db.select({ source_id: dropship_products.source_id }).from(dropship_products);
-    const existingSet = new Set(existingDropships.map(d => d.source_id));
+    const existingProducts = await db.select({ sku: products.sku }).from(products);
+    const existingSet = new Set([
+      ...existingDropships.map(d => String(d.source_id)),
+      ...existingProducts.map(p => (p.sku || "").replace(/^ALI-/, "").split("-")[0]).filter(Boolean),
+    ]);
 
     function parsePrice(val: any, fallback = 25): number {
       if (typeof val === "number" && !isNaN(val) && val > 0) return Number(val.toFixed(2));
@@ -1574,26 +1618,28 @@ router.post("/admin/dropship/bulk-import-1000", requireAuth, requireRole("admin"
     let liveFetched: any[] = [];
     if (platform === "aliexpress" && creds) {
       try {
+        const pageStart = existingSet.size > 80 ? Math.floor(Math.random() * 6) + 1 : 1;
         let queries: { kw: string; catId?: string; page: number }[] = [];
         if (category_id && String(category_id).trim()) {
           const catStr = String(category_id).trim();
-          for (let p = 1; p <= 25; p++) {
+          for (let p = pageStart; p < pageStart + 35; p++) {
             queries.push({ kw: keyword ? String(keyword).trim() : "", catId: catStr, page: p });
           }
         } else if (keyword && String(keyword).trim()) {
-          for (let p = 1; p <= 25; p++) {
+          for (let p = pageStart; p < pageStart + 35; p++) {
             queries.push({ kw: String(keyword).trim(), page: p });
           }
         } else {
           const shuffledTerms = [...GLOBAL_DISCOVERY_TERMS].sort(() => 0.5 - Math.random());
-          for (let i = 0; i < Math.min(25, shuffledTerms.length); i++) {
-            queries.push({ kw: shuffledTerms[i], page: 1 });
-            queries.push({ kw: shuffledTerms[i], page: 2 });
+          for (let i = 0; i < Math.min(35, shuffledTerms.length); i++) {
+            queries.push({ kw: shuffledTerms[i], page: pageStart });
+            queries.push({ kw: shuffledTerms[i], page: pageStart + 1 });
+            queries.push({ kw: shuffledTerms[i], page: pageStart + 2 });
           }
         }
 
-        // Fetch in concurrent batches of 4 to avoid AliExpress rate limits
-        const batchSize = 4;
+        // Fetch in concurrent batches of 5 to maximize throughput
+        const batchSize = 5;
         for (let i = 0; i < queries.length && liveFetched.length < targetCount; i += batchSize) {
           const batch = queries.slice(i, i + batchSize);
           const results = await Promise.all(
@@ -1625,43 +1671,45 @@ router.post("/admin/dropship/bulk-import-1000", requireAuth, requireRole("admin"
           }
 
           if (liveFetched.length < targetCount && i + batchSize < queries.length) {
-            await new Promise(r => setTimeout(r, 120));
+            await new Promise(r => setTimeout(r, 60));
           }
         }
 
-        // If target count not yet reached (e.g. niche category ran out), top up from popular discovery terms
+        // If target count not yet reached, iterate through multiple pages of discovery terms
         if (liveFetched.length < targetCount) {
           const backupTerms = [...GLOBAL_DISCOVERY_TERMS].sort(() => 0.5 - Math.random());
-          for (let i = 0; i < backupTerms.length && liveFetched.length < targetCount; i += batchSize) {
-            const bBatch = backupTerms.slice(i, i + batchSize);
-            const bResults = await Promise.all(
-              bBatch.map(kw => searchAliExpressProducts(kw, creds, 1, 50).catch(() => []))
-            );
-            for (const prods of bResults) {
-              if (Array.isArray(prods)) {
-                for (const p of prods) {
-                  if (liveFetched.length >= targetCount) break;
-                  const srcId = String(p.product_id);
-                  if (srcId && !existingSet.has(srcId) && !liveFetched.some(l => l.source_id === srcId)) {
-                    let img = p.product_main_image_url || "";
-                    if (img.startsWith("//")) img = `https:${img}`;
-                    const cPrice = parsePrice(p.target_sale_price || p.target_original_price, 25);
-                    liveFetched.push({
-                      source_id: srcId,
-                      name: p.product_title || `AliExpress Product ${srcId}`,
-                      cost: cPrice,
-                      image: img,
-                      category_name: p.first_level_category_name || "",
-                      quantity: 500 + ((parseInt(srcId.slice(-4)) || 100) % 1500),
-                      source_url: p.product_detail_url || `https://www.aliexpress.com/item/${srcId}.html`,
-                      supplier_name: p.shop_name || "AliExpress Verified Seller",
-                    });
+          for (let p = 1; p <= 4 && liveFetched.length < targetCount; p++) {
+            for (let i = 0; i < backupTerms.length && liveFetched.length < targetCount; i += batchSize) {
+              const bBatch = backupTerms.slice(i, i + batchSize);
+              const bResults = await Promise.all(
+                bBatch.map(kw => searchAliExpressProducts(kw, creds, p, 50).catch(() => []))
+              );
+              for (const prods of bResults) {
+                if (Array.isArray(prods)) {
+                  for (const p of prods) {
+                    if (liveFetched.length >= targetCount) break;
+                    const srcId = String(p.product_id);
+                    if (srcId && !existingSet.has(srcId) && !liveFetched.some(l => l.source_id === srcId)) {
+                      let img = p.product_main_image_url || "";
+                      if (img.startsWith("//")) img = `https:${img}`;
+                      const cPrice = parsePrice(p.target_sale_price || p.target_original_price, 25);
+                      liveFetched.push({
+                        source_id: srcId,
+                        name: p.product_title || `AliExpress Product ${srcId}`,
+                        cost: cPrice,
+                        image: img,
+                        category_name: p.first_level_category_name || "",
+                        quantity: 500 + ((parseInt(srcId.slice(-4)) || 100) % 1500),
+                        source_url: p.product_detail_url || `https://www.aliexpress.com/item/${srcId}.html`,
+                        supplier_name: p.shop_name || "AliExpress Verified Seller",
+                      });
+                    }
                   }
                 }
               }
-            }
-            if (liveFetched.length < targetCount) {
-              await new Promise(r => setTimeout(r, 100));
+              if (liveFetched.length < targetCount) {
+                await new Promise(r => setTimeout(r, 60));
+              }
             }
           }
         }
@@ -1672,7 +1720,7 @@ router.post("/admin/dropship/bulk-import-1000", requireAuth, requireRole("admin"
 
     let importedCount = 0;
     let skippedCount = 0;
-    const chunkSize = 40;
+    const chunkSize = 50;
 
     for (let i = 0; i < liveFetched.length; i += chunkSize) {
       const chunk = liveFetched.slice(i, i + chunkSize);
@@ -1688,7 +1736,7 @@ router.post("/admin/dropship/bulk-import-1000", requireAuth, requireRole("admin"
 
         const sourcePrice = parsePrice(item.cost, 25);
         const salePrice = Number((sourcePrice * margin).toFixed(2));
-        const skuUnique = `ALI-${item.source_id}`;
+        const skuUnique = `ALI-${item.source_id}-${Date.now().toString(36).slice(-4)}`;
         const autoCatId = await matchCategoryId(`${item.name} ${item.category_name || ""}`, category_id ? Number(category_id) : null);
 
         productRecords.push({
@@ -1719,9 +1767,10 @@ router.post("/admin/dropship/bulk-import-1000", requireAuth, requireRole("admin"
         try {
           const inserted = await db.insert(products).values(productRecords).onConflictDoNothing({ target: products.sku }).returning({ id: products.id, sku: products.sku });
           if (inserted && inserted.length > 0) {
-            const metaMap = new Map(metaRecords.map(m => [`ALI-${m.source_id}`, m]));
+            const metaMap = new Map(metaRecords.map(m => [m.source_id, m]));
             const dropshipRows = inserted.map(p => {
-              const meta = metaMap.get(p.sku) || metaRecords[0];
+              const srcId = p.sku.split("-")[1] || "";
+              const meta = metaMap.get(srcId) || metaRecords[0];
               return {
                 product_id: p.id,
                 platform,
@@ -1764,6 +1813,137 @@ router.post("/admin/dropship/bulk-import-1000", requireAuth, requireRole("admin"
         creds_found: Boolean(creds),
       }
     });
+  } catch (err) { next(err); }
+});
+
+// Batch import selected or all browsed products in one click
+router.post("/admin/dropship/import-batch", requireAuth, requireRole("admin", "manager"), async (req, res, next) => {
+  try {
+    const { items = [], margin_percent = 35 } = req.body || {};
+    if (!Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({ success: false, message: "لا توجد منتجات للاستيراد" });
+    }
+    const margin = (100 + (margin_percent || 35)) / 100;
+    const existingDropships = await db.select({ source_id: dropship_products.source_id }).from(dropship_products);
+    const existingProducts = await db.select({ sku: products.sku }).from(products);
+    const existingSet = new Set([
+      ...existingDropships.map(d => String(d.source_id)),
+      ...existingProducts.map(p => (p.sku || "").replace(/^ALI-/, "").split("-")[0]).filter(Boolean),
+    ]);
+
+    let importedCount = 0;
+    const chunkSize = 50;
+    for (let i = 0; i < items.length; i += chunkSize) {
+      const chunk = items.slice(i, i + chunkSize);
+      const productRecords = [];
+      const metaRecords: any[] = [];
+      for (const item of chunk) {
+        const srcId = String(item.source_id || item.product_id);
+        if (!srcId || existingSet.has(srcId)) continue;
+        existingSet.add(srcId);
+        const sourcePrice = parseFloat(item.price || item.source_price || 25) || 25;
+        const salePrice = Number((sourcePrice * margin).toFixed(2));
+        const skuUnique = `ALI-${srcId}-${Date.now().toString(36).slice(-4)}`;
+        const autoCatId = await matchCategoryId(`${item.name || ""} ${item.category_name || ""}`);
+        productRecords.push({
+          name_ar: String(item.name || `AliExpress Product ${srcId}`).slice(0, 450),
+          name_en: String(item.name_en || item.name || `AliExpress Product ${srcId}`).slice(0, 450),
+          sku: skuUnique,
+          price: salePrice,
+          cost: sourcePrice,
+          quantity: 999,
+          min_quantity: 5,
+          category_id: autoCatId,
+          description_ar: `${item.name} - منتج أصلي عالي الجودة للشحن المباشر والتسليم السريع.`,
+          description_en: `${item.name} - High quality product with fast direct shipping.`,
+          image: String(item.image || ""),
+          is_active: true,
+        });
+        metaRecords.push({
+          source_id: srcId,
+          source_url: item.source_url || `https://www.aliexpress.com/item/${srcId}.html`,
+          source_price: sourcePrice,
+          our_price: salePrice,
+          supplier_name: item.supplier_name || "AliExpress Verified Seller",
+        });
+      }
+      if (productRecords.length > 0) {
+        const inserted = await db.insert(products).values(productRecords).onConflictDoNothing({ target: products.sku }).returning({ id: products.id, sku: products.sku });
+        if (inserted && inserted.length > 0) {
+          const metaMap = new Map(metaRecords.map(m => [m.source_id, m]));
+          const dropshipRows = inserted.map(p => {
+            const srcId = p.sku.split("-")[1] || "";
+            const meta = metaMap.get(srcId) || metaRecords[0];
+            return {
+              product_id: p.id,
+              platform: "aliexpress",
+              source_id: meta.source_id,
+              source_url: meta.source_url,
+              source_price: meta.source_price,
+              source_currency: "USD",
+              our_price: meta.our_price,
+              supplier_name: meta.supplier_name,
+              platform_commission_rate: 8,
+            };
+          });
+          await db.insert(dropship_products).values(dropshipRows);
+          importedCount += inserted.length;
+        }
+      }
+    }
+    const [{ totalInDb = 0 } = {}] = await db.select({ totalInDb: sql<number>`COUNT(*)` }).from(products).where(isNull(products.deleted_at));
+    return res.json({
+      success: true,
+      imported: importedCount,
+      total_in_db: Number(totalInDb),
+      message: `تم استيراد ${importedCount} منتج وحفظها في متجرك بنجاح! (إجمالي المنتجات في متجرك: ${Number(totalInDb).toLocaleString()} منتج)`,
+    });
+  } catch (err) { next(err); }
+});
+
+// Dropdown/Search endpoint for dropship platforms
+router.get("/admin/dropship/search", requireAuth, requireRole("admin", "manager"), async (req, res, next) => {
+  try {
+    const platform = String(req.query.platform || "aliexpress");
+    const q = String(req.query.q || "").trim();
+    if (!q) return res.json({ success: true, results: [], count: 0 });
+
+    if (platform === "aliexpress") {
+      const creds = await getAliExpressCreds();
+      if (!creds) return res.status(400).json({ success: false, message: "بيانات علي إكسبرس غير متوفرة" });
+      const [p1, p2, p3, p4] = await Promise.all([
+        searchAliExpressProducts(q, creds, 1, 50),
+        searchAliExpressProducts(q, creds, 2, 50),
+        searchAliExpressProducts(q, creds, 3, 50),
+        searchAliExpressProducts(q, creds, 4, 50),
+      ]);
+      const all = [...p1, ...p2, ...p3, ...p4];
+      const seen = new Set();
+      const results = [];
+      for (const p of all) {
+        const id = String(p.product_id);
+        if (id && !seen.has(id)) {
+          seen.add(id);
+          let img = p.product_main_image_url || "";
+          if (img.startsWith("//")) img = `https:${img}`;
+          results.push({
+            source_id: id,
+            name: p.product_title,
+            price: parseFloat(p.target_sale_price) || parseFloat(p.target_original_price) || 25,
+            original_price: parseFloat(p.target_original_price) || 0,
+            image: img,
+            category_name: p.first_level_category_name || "",
+            rating: parseFloat(p.evaluate_rate) || 4.8,
+            orders_count: parseInt(p.sales_volume) || 120,
+            platform: "aliexpress",
+            source_url: p.product_detail_url || `https://www.aliexpress.com/item/${id}.html`,
+            supplier_name: p.shop_name || "AliExpress Verified Seller",
+          });
+        }
+      }
+      return res.json({ success: true, results, count: results.length });
+    }
+    return res.json({ success: true, results: [], count: 0 });
   } catch (err) { next(err); }
 });
 
