@@ -390,7 +390,12 @@ router.post("/auth/resend-verification", async (req, res, next) => {
       verification_expires_at: verificationExpiry,
     }).where(eq(users.id, user.id));
 
-    const emailSent = await sendVerificationEmail(normalizedEmail, user.name, verificationCode);
+    let emailSent = false;
+    try {
+      emailSent = await sendVerificationEmail(normalizedEmail, user.name, verificationCode);
+    } catch {
+      emailSent = false;
+    }
 
     return res.json({
       success: true,
@@ -424,7 +429,12 @@ router.post("/auth/forgot-password", async (req, res, next) => {
       verification_expires_at: resetExpiry,
     }).where(eq(users.id, user.id));
 
-    const emailSent = await sendPasswordResetEmail(normalizedEmail, user.name, resetCode);
+    let emailSent = false;
+    try {
+      emailSent = await sendPasswordResetEmail(normalizedEmail, user.name, resetCode);
+    } catch {
+      emailSent = false;
+    }
 
     return res.json({
       success: true,

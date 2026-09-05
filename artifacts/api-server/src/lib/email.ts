@@ -29,6 +29,9 @@ export function createTransporter(config: EmailConfig): nodemailer.Transporter {
     tls: {
       rejectUnauthorized: false,
     },
+    connectionTimeout: 4000,
+    greetingTimeout: 4000,
+    socketTimeout: 5000,
   });
 }
 
@@ -47,7 +50,7 @@ export async function getSmtpConfigFromDb(): Promise<EmailConfig | null> {
     const pass = cfg["smtp_pass"] || process.env.SMTP_PASS;
     const from = cfg["smtp_from"] || process.env.SMTP_FROM || process.env.SMTP_USER;
 
-    if (!host || !user || !pass) return null;
+    if (!host || !user || !pass || pass === "your-app-password") return null;
 
     return { host, port, secure: port === 465, user, pass, from: from || user };
   } catch {
@@ -65,8 +68,8 @@ export function getDefaultTransporter(): nodemailer.Transporter | null {
   const pass = process.env.SMTP_PASS;
   const from = process.env.SMTP_FROM || process.env.SMTP_USER;
 
-  if (!host || !user || !pass) {
-    logger.warn("SMTP not configured. Set SMTP_HOST, SMTP_USER, SMTP_PASS in .env or Admin Panel > Email Settings");
+  if (!host || !user || !pass || pass === "your-app-password") {
+    logger.warn("SMTP not configured or placeholder password present.");
     return null;
   }
 
@@ -131,11 +134,12 @@ export async function sendVerificationEmail(
   const fromAddress = active?.from || "emadyayah@gmail.com";
 
   try {
-    await mailer.sendMail({
-      from: `"emadexpress" <${fromAddress}>`,
-      to,
-      subject: `رمز التحقق الخاص بك: ${code} 🔐 - emadexpress`,
-      html: `
+    await Promise.race([
+      mailer.sendMail({
+        from: `"emadexpress" <${fromAddress}>`,
+        to,
+        subject: `رمز التحقق الخاص بك: ${code} 🔐 - emadexpress`,
+        html: `
         <!DOCTYPE html>
         <html lang="ar" dir="rtl">
         <head>
@@ -193,8 +197,10 @@ export async function sendVerificationEmail(
         </body>
         </html>
       `,
-      text: `مرحباً ${name}،\n\nرمز التحقق الخاص بك في عماد إكسبرس هو: ${code}\nصالح لمدة 15 دقيقة.\n\nعماد إكسبرس`,
-    });
+        text: `مرحباً ${name}،\n\nرمز التحقق الخاص بك في عماد إكسبرس هو: ${code}\nصالح لمدة 15 دقيقة.\n\nعماد إكسبرس`,
+      }),
+      new Promise<never>((_, reject) => setTimeout(() => reject(new Error("SMTP timeout after 4s")), 4000)),
+    ]);
 
     logger.info({ to, from: fromAddress }, "Verification email sent successfully");
     return true;
@@ -219,11 +225,12 @@ export async function sendPasswordResetEmail(
   const from = active?.from || process.env.SMTP_FROM || process.env.SMTP_USER || "support@emadexpress.com";
 
   try {
-    await mailer.sendMail({
-      from: `"emadexpress" <${from}>`,
-      to,
-      subject: `رمز إعادة تعيين كلمة المرور: ${code} 🔐 - emadexpress`,
-      html: `
+    await Promise.race([
+      mailer.sendMail({
+        from: `"emadexpress" <${from}>`,
+        to,
+        subject: `رمز إعادة تعيين كلمة المرور: ${code} 🔐 - emadexpress`,
+        html: `
         <!DOCTYPE html>
         <html lang="ar" dir="rtl">
         <head>
@@ -287,8 +294,10 @@ export async function sendPasswordResetEmail(
         </body>
         </html>
       `,
-      text: `مرحباً ${name}،\n\nرمز إعادة تعيين كلمة المرور الخاص بك في عماد إكسبرس هو: ${code}\nصالح لمدة 15 دقيقة.\n\nعماد إكسبرس`,
-    });
+        text: `مرحباً ${name}،\n\nرمز إعادة تعيين كلمة المرور الخاص بك في عماد إكسبرس هو: ${code}\nصالح لمدة 15 دقيقة.\n\nعماد إكسبرس`,
+      }),
+      new Promise<never>((_, reject) => setTimeout(() => reject(new Error("SMTP timeout after 4s")), 4000)),
+    ]);
     return true;
   } catch (err: any) {
     logger.error({ err: err.message, to }, "Failed to send password reset email");
