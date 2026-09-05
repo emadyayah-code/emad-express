@@ -92,20 +92,6 @@ export default function PaymentScreen() {
     }
   };
 
-  const switchToCod = async () => {
-    setLoading(true);
-    try {
-      await api.put(`/orders/${id}`, { payment_method: "cod" }, token);
-      clearCart();
-      setStep("success");
-    } catch (e: any) {
-      clearCart();
-      setStep("success");
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleWebViewNavigation = (navState: any) => {
     setCanGoBack(navState.canGoBack);
     const { url } = navState;
@@ -136,9 +122,7 @@ export default function PaymentScreen() {
   };
 
   const getPlatformTitle = () => {
-    if (platform === "amazon") return "بوابة الدفع الرسمية (Amazon)";
-    if (platform === "alibaba") return "بوابة الدفع الرسمية (Alibaba)";
-    return "بوابة الدفع الرسمية (AliExpress)";
+    return "بوابة الدفع الإلكتروني الآمنة";
   };
 
   // SUCCESS STATE
@@ -151,7 +135,7 @@ export default function PaymentScreen() {
 
         <Text style={[styles.successTitle, { color: colors.foreground }]}>تم تأكيد طلبك بنجاح!</Text>
         <Text style={[styles.successSubtitle, { color: colors.mutedForeground }]}>
-          تم تسجيل عملية الشراء واحتساب طلبك في النظام مع ضمان حماية المشتري والشحن المباشر.
+          تم تسجيل عملية الشراء وإتمام الطلب في النظام مع ضمان حماية المشتري والتوصيل المباشر.
         </Text>
 
         {order && (
@@ -165,8 +149,8 @@ export default function PaymentScreen() {
               <Text style={{ color: colors.primary, fontWeight: "800", fontSize: 15 }}>{format(order.total)}</Text>
             </View>
             <View style={styles.summaryRow}>
-              <Text style={{ color: colors.mutedForeground, fontSize: 13 }}>طريقة الاستلام</Text>
-              <Text style={{ color: "#10b981", fontWeight: "700", fontSize: 13 }}>{shippingBy}</Text>
+              <Text style={{ color: colors.mutedForeground, fontSize: 13 }}>حالة العملية</Text>
+              <Text style={{ color: "#10b981", fontWeight: "700", fontSize: 13 }}>مؤكد ومدفوع إلكترونياً ✓</Text>
             </View>
           </View>
         )}
@@ -196,9 +180,9 @@ export default function PaymentScreen() {
           <Feather name="alert-circle" size={54} color="#ef4444" />
         </View>
 
-        <Text style={[styles.successTitle, { color: colors.foreground }]}>تعذر فتح صفحة الدفع المباشر</Text>
+        <Text style={[styles.successTitle, { color: colors.foreground }]}>تعذر فتح صفحة الدفع</Text>
         <Text style={[styles.successSubtitle, { color: colors.mutedForeground }]}>
-          حدث بطء في شبكة الاتصال أو لم يتم تحميل بوابة المورد. بإمكانك إعادة المحاولة أو إتمام الطلب فوراً بالدفع عند الاستلام.
+          حدث بطء في شبكة الاتصال أثناء تحميل بوابة الدفع. بإمكانك إعادة المحاولة الآن.
         </Text>
 
         <TouchableOpacity
@@ -207,14 +191,6 @@ export default function PaymentScreen() {
         >
           <Feather name="refresh-cw" size={18} color="#000" />
           <Text style={styles.primaryBtnText}>إعادة المحاولة</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.primaryBtn, { backgroundColor: "#10b981", marginTop: 12 }]}
-          onPress={switchToCod}
-        >
-          <Feather name="truck" size={18} color="#fff" />
-          <Text style={[styles.primaryBtnText, { color: "#fff" }]}>إتمام الطلب بالدفع عند الاستلام (COD)</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -233,10 +209,10 @@ export default function PaymentScreen() {
       <View style={[styles.container, { backgroundColor: colors.background, alignItems: "center", justifyContent: "center", padding: 24 }]}>
         <ActivityIndicator size="large" color={colors.primary} />
         <Text style={{ color: colors.foreground, fontSize: 17, fontWeight: "700", marginTop: 20 }}>
-          جاري فتح بوابة الدفع الرسمية للمورد...
+          جاري تجهيز بوابة الدفع الإلكتروني الآمنة...
         </Text>
         <Text style={{ color: colors.mutedForeground, fontSize: 13, marginTop: 8, textAlign: "center" }}>
-          يتم تحويلك لنافذة الدفع الآمنة في AliExpress مع احتساب كود التتبع
+          يتم تحويلك لنافذة الدفع المشفرة لإتمام العملية بأمان
         </Text>
       </View>
     );

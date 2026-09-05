@@ -32,7 +32,7 @@ export default function CheckoutScreen() {
   const { addresses, defaultAddress } = useAddress();
 
   const [address, setAddress] = useState("");
-  const [payMethod, setPayMethod] = useState("aliexpress_direct");
+  const [payMethod, setPayMethod] = useState("electronic_payment");
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
 
@@ -49,23 +49,16 @@ export default function CheckoutScreen() {
 
   const PAYMENT_METHODS = [
     {
-      key: "aliexpress_direct",
-      label: "الدفع المباشر عبر منصة علي إكسبرس (AliExpress)",
+      key: "electronic_payment",
+      label: "الدفع الإلكتروني الآمن (مدى / فيزا / ماستركارد)",
       icon: "shield",
-      desc: "فتح نافذة الدفع الرسمية للمورد داخل التطبيق لإتمام الطلب بأمان واحتساب عمولة التتبع",
+      desc: "بوابة دفع إلكترونية آمنة ومشفرة 256-bit SSL لضمان حماية المشتري وإتمام الطلب فوراً",
       badges: [
-        { label: "AliExpress", bg: "#e11d48" },
+        { label: "مدى Mada", bg: "#007a3d" },
         { label: "VISA", bg: "#1a1f71" },
         { label: "Mastercard", bg: "#eb001b" },
-        { label: "Mada", bg: "#007a3d" },
+        { label: "دفع آمن 100%", bg: "#374151" },
       ],
-    },
-    {
-      key: "cod",
-      label: t.checkout?.cod || "الدفع عند الاستلام (COD)",
-      icon: "truck",
-      desc: "الدفع نقداً عند استلام الشحنة لباب منزلك",
-      badges: [{ label: "نقداً COD", bg: "#374151" }],
     },
   ];
 
@@ -112,14 +105,10 @@ export default function CheckoutScreen() {
 
       clearCart();
 
-      if (payMethod === "cod") {
-        setSuccess(true);
+      if (orderId) {
+        router.replace(`/payment/${orderId}`);
       } else {
-        if (orderId) {
-          router.replace(`/payment/${orderId}`);
-        } else {
-          setSuccess(true);
-        }
+        setSuccess(true);
       }
     } catch (e: any) {
       Alert.alert(t.common?.error || "خطأ", e.response?.data?.message || t.checkout?.error || "حدث خطأ أثناء معالجة الطلب");
@@ -289,20 +278,18 @@ export default function CheckoutScreen() {
             })}
           </View>
 
-          {/* Direct AliExpress Information Box */}
-          {payMethod === "aliexpress_direct" && (
-            <View style={[styles.infoBanner, { backgroundColor: "rgba(245, 158, 11, 0.06)", borderColor: "rgba(245, 158, 11, 0.25)" }]}>
-              <Feather name="shield" size={18} color="#f59e0b" />
-              <View style={{ flex: 1 }}>
-                <Text style={{ color: "#f59e0b", fontWeight: "700", fontSize: 13, marginBottom: 2 }}>
-                  دفع رسمي ومشفر 100% عبر علي إكسبرس
-                </Text>
-                <Text style={{ color: colors.mutedForeground, fontSize: 12, lineHeight: 17 }}>
-                  عند الضغط على المتابعة، ستفتح نافذة الدفع الرسمية للمنصة داخل التطبيق لإتمام طلبك مباشرة وحساب العمولة مع حماية كاملة للمشتري.
-                </Text>
-              </View>
+          {/* Secure Payment Information Box */}
+          <View style={[styles.infoBanner, { backgroundColor: "rgba(245, 158, 11, 0.06)", borderColor: "rgba(245, 158, 11, 0.25)" }]}>
+            <Feather name="shield" size={18} color="#f59e0b" />
+            <View style={{ flex: 1 }}>
+              <Text style={{ color: "#f59e0b", fontWeight: "700", fontSize: 13, marginBottom: 2 }}>
+                بوابة دفع إلكتروني آمنة ومشفرة 100%
+              </Text>
+              <Text style={{ color: colors.mutedForeground, fontSize: 12, lineHeight: 17 }}>
+                عند الضغط على المتابعة، ستفتح نافذة الدفع الإلكتروني المشفرة لإتمام طلبك مباشرة مع ضمان كامل لحماية المشتري.
+              </Text>
             </View>
-          )}
+          </View>
         </View>
         <View style={{ height: bottomPad + 100 }} />
       </ScrollView>
@@ -318,11 +305,9 @@ export default function CheckoutScreen() {
             <ActivityIndicator color="#000" size="small" />
           ) : (
             <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-              <Feather name={payMethod === "aliexpress_direct" ? "external-link" : "check-circle"} size={18} color="#000" />
+              <Feather name="lock" size={18} color="#000" />
               <Text style={styles.orderBtnText}>
-                {payMethod === "aliexpress_direct"
-                  ? `المتابعة لإتمام الدفع في علي إكسبرس (${format(grandTotal)}) 🔒`
-                  : t.checkout?.place_order || `تأكيد الطلب (${format(grandTotal)})`}
+                {`المتابعة لإتمام الدفع الآمن (${format(grandTotal)}) 🔒`}
               </Text>
             </View>
           )}
