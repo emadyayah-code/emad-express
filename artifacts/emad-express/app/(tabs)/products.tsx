@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, FlatList, Platform, TextInput } from "react-native";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter, useLocalSearchParams } from "expo-router";
@@ -23,6 +23,15 @@ export default function ProductsScreen() {
 
   const [search, setSearch] = useState("");
   const [selectedCat, setSelectedCat] = useState<number | null>(params.category_id ? parseInt(params.category_id) : null);
+  const catScrollRef = useRef<ScrollView>(null);
+
+  // Sync selected category whenever params change from navigation (e.g. from Home Screen)
+  useEffect(() => {
+    if (params.category_id !== undefined && params.category_id !== null) {
+      const cid = parseInt(String(params.category_id));
+      setSelectedCat(isNaN(cid) ? null : cid);
+    }
+  }, [params.category_id]);
 
   const { data: productsData, isLoading } = useQuery({
     queryKey: ["products", selectedCat, language],
@@ -32,12 +41,18 @@ export default function ProductsScreen() {
 
   const categoriesList = Array.isArray(categoriesData) ? categoriesData : (categoriesData?.data || []);
   const allProducts = Array.isArray(productsData) ? productsData : (productsData?.data || productsData?.products || []);
+
+  // Filter by category (safeguard) and search query
+  const categoryMatched = selectedCat
+    ? allProducts.filter((p: any) => Number(p.category_id) === Number(selectedCat))
+    : allProducts;
+
   const filtered = search
-    ? allProducts.filter((p: any) => {
+    ? categoryMatched.filter((p: any) => {
         const name = (language === "ar" ? (p.name_ar || p.name) : (p.name_en || p.name)).toLowerCase();
         return name.includes(search.toLowerCase());
       })
-    : allProducts;
+    : categoryMatched;
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
 

@@ -44,6 +44,15 @@ export default function HomeScreen() {
   const featured = products.slice(0, 6);
   const topSelling = products.slice(6, 12);
 
+  // Group products by category dynamically for rich Home showcase
+  const categoriesWithProducts = categories.map((cat: any) => {
+    const catProds = products.filter((p: any) => Number(p.category_id) === Number(cat.id));
+    return {
+      ...cat,
+      products: catProds,
+    };
+  }).filter((c: any) => c.products.length > 0);
+
   const [activeSlide, setActiveSlide] = useState(0);
   const sliderRef = useRef<FlatList>(null);
 
@@ -314,6 +323,80 @@ export default function HomeScreen() {
           })}
         </View>
       </View>
+
+      {/* Dynamic Category Showcase Sections */}
+      {categoriesWithProducts.map((cat: any) => {
+        const catName = language === "ar" ? (cat.name_ar || cat.name) : (cat.name_en || cat.name);
+        return (
+          <View key={`cat-sec-${cat.id}`} style={styles.section}>
+            <View style={[styles.sectionHeader, { flexDirection: isRTL ? "row" : "row-reverse" }]}>
+              <View style={{ flexDirection: isRTL ? "row" : "row-reverse", alignItems: "center", gap: 8 }}>
+                <Text style={{ fontSize: 18 }}>{cat.icon || CATEGORIES_ICONS[cat.name] || "📦"}</Text>
+                <Text style={[styles.sectionTitle, { color: colors.foreground }]}>{catName}</Text>
+              </View>
+              <TouchableOpacity onPress={() => router.push({ pathname: "/(tabs)/products", params: { category_id: String(cat.id) } })}>
+                <Text style={[styles.seeAll, { color: colors.primary }]}>{t.home.see_all}</Text>
+              </TouchableOpacity>
+            </View>
+            <FlatList
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              data={cat.products.slice(0, 10)}
+              keyExtractor={(item: any) => `cat-prod-${cat.id}-${item.id}`}
+              renderItem={({ item }: { item: any }) => {
+                const displayName = language === "ar" ? (item.name_ar || item.name) : (item.name_en || item.name);
+                const isFav = isFavorite(item.id);
+                return (
+                  <TouchableOpacity
+                    style={[styles.productCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+                    onPress={() => router.push({ pathname: "/product/[id]", params: { id: item.id } })}
+                  >
+                    <View style={{ position: "relative" }}>
+                      {item.image ? (
+                        <Image source={{ uri: item.image }} style={styles.productImage} resizeMode="cover" />
+                      ) : (
+                        <View style={[styles.productImage, { backgroundColor: colors.muted, alignItems: "center", justifyContent: "center" }]}>
+                          <Feather name="package" size={32} color={colors.mutedForeground} />
+                        </View>
+                      )}
+                      <TouchableOpacity
+                        style={[styles.favCardBtn, { backgroundColor: "rgba(0,0,0,0.6)" }]}
+                        onPress={(e) => {
+                          e.stopPropagation?.();
+                          toggleFavorite({
+                            id: item.id,
+                            name: item.name,
+                            name_ar: item.name_ar,
+                            name_en: item.name_en,
+                            price: item.price,
+                            image: item.image,
+                            category_id: item.category_id,
+                          });
+                        }}
+                      >
+                        <Feather name="heart" size={14} color={isFav ? "#ef4444" : "#fff"} />
+                      </TouchableOpacity>
+                    </View>
+                    <View style={styles.productInfo}>
+                      <Text style={[styles.productName, { color: colors.foreground, textAlign: isRTL ? "right" : "left" }]} numberOfLines={2}>
+                        {displayName}
+                      </Text>
+                      <Text style={[styles.productPrice, { color: colors.primary }]}>{format(item.price, language)}</Text>
+                      <TouchableOpacity
+                        style={[styles.addBtn, { backgroundColor: colors.primary }]}
+                        onPress={() => addItem({ id: item.id, name: displayName, price: item.price, image: item.image })}
+                      >
+                        <Feather name="plus" size={16} color="#000" />
+                      </TouchableOpacity>
+                    </View>
+                  </TouchableOpacity>
+                );
+              }}
+              contentContainerStyle={{ paddingHorizontal: 16, gap: 12 }}
+            />
+          </View>
+        );
+      })}
 
       <View style={{ height: Platform.OS === "web" ? 34 + 84 : insets.bottom + 80 }} />
     </ScrollView>
