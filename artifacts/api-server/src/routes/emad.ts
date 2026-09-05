@@ -1304,6 +1304,45 @@ router.post("/admin/partner-products", requireAuth, requireRole("admin", "manage
   } catch (err) { next(err); }
 });
 
+// ========== PUBLIC BANNERS & APP CONFIG FOR MOBILE CLIENTS ==========
+router.get("/banners", async (_req, res, next) => {
+  try {
+    const [row] = await db.select().from(platform_settings).where(eq(platform_settings.key, "partner_products_banners"));
+    let items: any[] = [];
+    if (row && row.value) {
+      try { items = JSON.parse(row.value); } catch { items = []; }
+    }
+    // Return only active banners for mobile app
+    const active = items.filter((b: any) => b.is_active !== false);
+    return res.json({ success: true, data: active });
+  } catch (err) { next(err); }
+});
+
+router.get("/app-settings", async (_req, res, next) => {
+  try {
+    const settings = await db.select().from(platform_settings);
+    const cfg: Record<string, string> = {};
+    settings.forEach((s) => (cfg[s.key] = s.value));
+
+    return res.json({
+      success: true,
+      data: {
+        store_name: cfg["store_name"] || "عماد إكسبرس",
+        default_currency: cfg["default_currency"] || "SAR",
+        google_ads_enabled: cfg["google_ads_enabled"] !== "false",
+        google_ads_test_mode: cfg["google_ads_test_mode"] === "true",
+        admob_app_id_android: cfg["admob_app_id_android"] || "",
+        admob_banner_unit_id: cfg["admob_banner_unit_id"] || "",
+        admob_interstitial_unit_id: cfg["admob_interstitial_unit_id"] || "",
+        support_whatsapp: cfg["support_whatsapp"] || "",
+        support_phone: cfg["support_phone"] || "",
+        support_email: cfg["support_email"] || "",
+      },
+    });
+  } catch (err) { next(err); }
+});
+
+
 // ========== UNIQUE DIVERSE PRODUCT CATALOG & IMAGE GENERATOR ==========
 const UNIQUE_PRODUCT_IMAGES = [
   "https://images.unsplash.com/photo-1523275335684-37898b6baf30", // Watch

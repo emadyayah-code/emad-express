@@ -181,9 +181,9 @@ export default function HomeScreen() {
         )}
       </LinearGradient>
 
-      {/* Google AdMob Banner — Top */}
+      {/* Google AdMob & Partner Banner — Top */}
       <View style={{ marginTop: 12 }}>
-        <AdBanner size="banner" />
+        <AdBanner size="banner" bannerIndex={0} />
       </View>
 
       {/* Categories */}
@@ -277,9 +277,9 @@ export default function HomeScreen() {
         />
       </View>
 
-      {/* AdMob Banner — Middle */}
+      {/* Google AdMob & Partner Banner — Middle */}
       <View style={{ marginVertical: 8 }}>
-        <AdBanner size="banner" />
+        <AdBanner size="banner" bannerIndex={1} />
       </View>
 
       {/* Best Sellers */}
