@@ -32,15 +32,9 @@ export default function CheckoutScreen() {
   const { addresses, defaultAddress } = useAddress();
 
   const [address, setAddress] = useState("");
-  const [payMethod, setPayMethod] = useState("card");
+  const [payMethod, setPayMethod] = useState("aliexpress_direct");
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
-
-  // In-App Card Details State
-  const [cardNumber, setCardNumber] = useState("");
-  const [cardHolder, setCardHolder] = useState("");
-  const [expiryDate, setExpiryDate] = useState("");
-  const [cvv, setCvv] = useState("");
 
   useEffect(() => {
     if (!address && defaultAddress) {
@@ -53,76 +47,25 @@ export default function CheckoutScreen() {
     }
   }, [defaultAddress]);
 
-  const isDropshipping = items.some((i: any) => i.source_platform);
-
-  // Auto detect card type (Visa / Mastercard / Mada)
-  const getCardBrand = () => {
-    const clean = cardNumber.replace(/\s+/g, "");
-    if (clean.startsWith("4")) return "visa";
-    if (clean.startsWith("51") || clean.startsWith("52") || clean.startsWith("53") || clean.startsWith("54") || clean.startsWith("55") || (parseInt(clean.slice(0, 4)) >= 2221 && parseInt(clean.slice(0, 4)) <= 2720)) {
-      return "mastercard";
-    }
-    if (clean.startsWith("5888") || clean.startsWith("4847") || clean.startsWith("9682")) {
-      return "mada";
-    }
-    return "card";
-  };
-
-  const handleCardNumberChange = (text: string) => {
-    const cleaned = text.replace(/\D/g, "").slice(0, 16);
-    const formatted = cleaned.match(/.{1,4}/g)?.join(" ") || cleaned;
-    setCardNumber(formatted);
-  };
-
-  const handleExpiryChange = (text: string) => {
-    const cleaned = text.replace(/\D/g, "").slice(0, 4);
-    if (cleaned.length >= 3) {
-      setExpiryDate(`${cleaned.slice(0, 2)}/${cleaned.slice(2)}`);
-    } else {
-      setExpiryDate(cleaned);
-    }
-  };
-
   const PAYMENT_METHODS = [
     {
-      key: "card",
-      label: "بطاقة بنكية / فيزا / ماستركارد / مدى",
-      icon: "credit-card",
-      type: "gateway",
-      desc: "Visa / Mastercard / Mada - الدفع المباشر للمورد",
-      badges: ["VISA", "Mastercard", "Mada"],
-    },
-    {
-      key: "google_pay",
-      label: "Google Pay",
-      icon: "google-pay",
-      type: "wallet",
-      desc: "محفظة Google Pay العالمية",
-      badges: ["GPay"],
-    },
-    {
-      key: "apple_pay",
-      label: "Apple Pay",
-      icon: "apple",
-      type: "wallet",
-      desc: "محفظة Apple Pay السريعة",
-      badges: ["ApplePay"],
-    },
-    {
-      key: "paypal",
-      label: "PayPal",
-      icon: "paypal",
-      type: "gateway",
-      desc: "بوابة PayPal العالمية المعتمدة",
-      badges: ["PayPal"],
+      key: "aliexpress_direct",
+      label: "الدفع المباشر عبر منصة علي إكسبرس (AliExpress)",
+      icon: "shield",
+      desc: "فتح نافذة الدفع الرسمية للمورد داخل التطبيق لإتمام الطلب بأمان واحتساب عمولة التتبع",
+      badges: [
+        { label: "AliExpress", bg: "#e11d48" },
+        { label: "VISA", bg: "#1a1f71" },
+        { label: "Mastercard", bg: "#eb001b" },
+        { label: "Mada", bg: "#007a3d" },
+      ],
     },
     {
       key: "cod",
-      label: t.checkout.cod,
+      label: t.checkout?.cod || "الدفع عند الاستلام (COD)",
       icon: "truck",
-      type: "cod",
-      desc: "الدفع نقداً عند استلام الشحنة",
-      badges: ["COD"],
+      desc: "الدفع نقداً عند استلام الشحنة لباب منزلك",
+      badges: [{ label: "نقداً COD", bg: "#374151" }],
     },
   ];
 
@@ -135,29 +78,17 @@ export default function CheckoutScreen() {
 
   async function placeOrder() {
     if (!address.trim()) {
-      Alert.alert("تنبيه", t.checkout.address_required);
+      Alert.alert("تنبيه", t.checkout?.address_required || "يرجى تحديد عنوان التوصيل أولاً");
       return;
     }
 
-    if (payMethod === "card" || payMethod === "stripe" || payMethod === "paypal") {
-      const cleanNum = cardNumber.replace(/\s+/g, "");
-      if (cleanNum.length < 14) {
-        Alert.alert("بيانات غير مكتملة", "يرجى إدخال رقم بطاقة الفيزا / ماستركارد بشكل صحيح (16 رقم)");
-        return;
-      }
-      if (!expiryDate.includes("/") || expiryDate.length < 5) {
-        Alert.alert("بيانات غير مكتملة", "يرجى إدخال تاريخ انتهاء البطاقة (الشهر/السنة)");
-        return;
-      }
-      if (cvv.length < 3) {
-        Alert.alert("بيانات غير مكتملة", "يرجى إدخال رمز الأمان (CVV) الموجود خلف البطاقة (3 أرقام)");
-        return;
-      }
+    if (items.length === 0) {
+      Alert.alert("تنبيه", "سلة المشتريات فارغة");
+      return;
     }
 
     setLoading(true);
     try {
-      const methodKey = payMethod === "stripe" ? "card" : payMethod;
       const orderRes = await api.post(
         "/orders",
         {
@@ -169,25 +100,27 @@ export default function CheckoutScreen() {
             total: i.price * i.quantity,
           })),
           shipping_address: address,
-          payment_method: methodKey,
-          payment_details:
-            payMethod === "card" || payMethod === "stripe" || payMethod === "paypal"
-              ? {
-                  card_brand: getCardBrand(),
-                  last4: cardNumber.replace(/\s+/g, "").slice(-4),
-                  card_holder: cardHolder || "Customer",
-                  status: "processed_direct_supplier",
-                  supplier_gateway: "AliExpress / Alibaba Direct Gateway",
-                }
-              : undefined,
+          payment_method: payMethod,
         },
         token
       );
 
+      const newOrder = orderRes.data?.data || orderRes.data;
+      const orderId = newOrder?.id;
+
       clearCart();
-      setSuccess(true);
+
+      if (payMethod === "cod") {
+        setSuccess(true);
+      } else {
+        if (orderId) {
+          router.replace(`/payment/${orderId}`);
+        } else {
+          setSuccess(true);
+        }
+      }
     } catch (e: any) {
-      Alert.alert(t.common.error, e.response?.data?.message || t.checkout.error);
+      Alert.alert(t.common?.error || "خطأ", e.response?.data?.message || t.checkout?.error || "حدث خطأ أثناء معالجة الطلب");
     } finally {
       setLoading(false);
     }
@@ -199,28 +132,17 @@ export default function CheckoutScreen() {
         <View style={[styles.successIcon, { backgroundColor: "#d1fae5" }]}>
           <Feather name="check" size={48} color="#059669" />
         </View>
-        <Text style={[styles.successTitle, { color: colors.foreground }]}>{t.checkout.success_title}</Text>
+        <Text style={[styles.successTitle, { color: colors.foreground }]}>{t.checkout?.success_title || "تم تأكيد طلبك بنجاح!"}</Text>
         <Text style={{ color: colors.mutedForeground, fontSize: 14, textAlign: "center", paddingHorizontal: 40, marginBottom: 12 }}>
-          {t.checkout.success_msg}
+          {t.checkout?.success_msg || "شكراً لتسوقك معنا. سيتم البدء بتجهيز طلبك وشحنه فوراً."}
         </Text>
 
-        {payMethod === "card" && (
-          <View style={[styles.paidBadgeBox, { backgroundColor: "rgba(16,185,129,0.1)", borderColor: "#10b98144" }]}>
-            <Feather name="shield" size={16} color="#10b981" />
-            <Text style={{ color: "#10b981", fontSize: 13, fontWeight: "700" }}>
-              تم تحويل الدفع بنجاح للمورد الرئيسي (Visa / Mastercard)
-            </Text>
-          </View>
-        )}
-
         <TouchableOpacity style={[styles.homeBtn, { backgroundColor: colors.primary, marginTop: 24 }]} onPress={() => router.replace("/(tabs)")}>
-          <Text style={{ color: "#fff", fontWeight: "700", fontSize: 16 }}>{t.checkout.back_home}</Text>
+          <Text style={{ color: "#000", fontWeight: "800", fontSize: 16 }}>{t.checkout?.back_home || "العودة للرئيسية"}</Text>
         </TouchableOpacity>
       </View>
     );
   }
-
-  const brand = getCardBrand();
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -319,7 +241,7 @@ export default function CheckoutScreen() {
 
           {/* Payment Methods Selection */}
           <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <Text style={[styles.cardTitle, { color: colors.foreground }]}>{t.checkout.payment_method}</Text>
+            <Text style={[styles.cardTitle, { color: colors.foreground }]}>{t.checkout?.payment_method || "طريقة الدفع"}</Text>
             {PAYMENT_METHODS.map((m) => {
               const isSelected = payMethod === m.key;
               return (
@@ -329,7 +251,7 @@ export default function CheckoutScreen() {
                     styles.payOption,
                     {
                       borderColor: isSelected ? colors.primary : colors.border,
-                      backgroundColor: isSelected ? colors.accent : "transparent",
+                      backgroundColor: isSelected ? "rgba(245, 158, 11, 0.08)" : "transparent",
                     },
                   ]}
                   onPress={() => setPayMethod(m.key)}
@@ -338,177 +260,44 @@ export default function CheckoutScreen() {
                     {isSelected && <View style={[styles.radioDot, { backgroundColor: colors.primary }]} />}
                   </View>
 
-                  {m.key === "google_pay" ? (
-                    <FontAwesome5 name="google-pay" size={20} color={isSelected ? colors.primary : colors.mutedForeground} />
-                  ) : m.key === "apple_pay" ? (
-                    <FontAwesome5 name="apple" size={20} color={isSelected ? colors.primary : colors.mutedForeground} />
-                  ) : m.key === "paypal" ? (
-                    <FontAwesome5 name="paypal" size={18} color={isSelected ? colors.primary : colors.mutedForeground} />
-                  ) : (
-                    <Feather name={m.icon as any} size={19} color={isSelected ? colors.primary : colors.mutedForeground} />
-                  )}
-
                   <View style={{ flex: 1 }}>
-                    <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-                      <Text style={{ color: isSelected ? colors.primary : colors.foreground, fontWeight: "700", fontSize: 14 }}>
+                    <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 6 }}>
+                      <Text style={{ color: colors.foreground, fontWeight: "700", fontSize: 14, flex: 1 }}>
                         {m.label}
                       </Text>
                       {/* Brand logos/badges */}
-                      <View style={{ flexDirection: "row", gap: 4 }}>
+                      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 4, justifyContent: "flex-end" }}>
                         {m.badges?.map((b) => (
                           <View
-                            key={b}
+                            key={b.label}
                             style={[
                               styles.miniBadge,
-                              {
-                                backgroundColor:
-                                  b === "VISA"
-                                    ? "#1a1f71"
-                                    : b === "Mastercard"
-                                    ? "#eb001b"
-                                    : b === "Mada"
-                                    ? "#007a3d"
-                                    : colors.muted,
-                              },
+                              { backgroundColor: b.bg },
                             ]}
                           >
-                            <Text style={styles.miniBadgeText}>{b}</Text>
+                            <Text style={styles.miniBadgeText}>{b.label}</Text>
                           </View>
                         ))}
                       </View>
                     </View>
-                    {m.desc && <Text style={{ color: colors.mutedForeground, fontSize: 11, marginTop: 2 }}>{m.desc}</Text>}
+                    {m.desc && <Text style={{ color: colors.mutedForeground, fontSize: 12, marginTop: 4, lineHeight: 16 }}>{m.desc}</Text>}
                   </View>
                 </TouchableOpacity>
               );
             })}
           </View>
 
-          {/* In-App Direct Supplier Visa / Mastercard Form */}
-          {(payMethod === "card" || payMethod === "paypal" || payMethod === "stripe") && (
-            <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.primary, borderWidth: 1.5 }]}>
-              {/* Trust Badge Banner */}
-              <View style={styles.supplierBanner}>
-                <Feather name="shield" size={16} color="#059669" />
-                <View style={{ flex: 1 }}>
-                  <Text style={{ color: "#059669", fontWeight: "700", fontSize: 13 }}>
-                    دفع مباشر للمورد الرئيسي (AliExpress / Alibaba) دون مغادرة التطبيق
-                  </Text>
-                  <Text style={{ color: colors.mutedForeground, fontSize: 11 }}>
-                    بوابة دفع عالمية مشفرة ومعتمدة 256-bit SSL
-                  </Text>
-                </View>
-              </View>
-
-              {/* Realistic Visual Credit Card Display */}
-              <View style={styles.visualCard}>
-                <View style={styles.visualCardTop}>
-                  <View style={styles.emvChip} />
-                  <Feather name="wifi" size={20} color="#f59e0b" style={{ transform: [{ rotate: "90deg" }] }} />
-                  <View style={{ flex: 1 }} />
-                  <View style={{ flexDirection: "row", gap: 6, alignItems: "center" }}>
-                    <View style={[styles.cardLogoBox, { backgroundColor: "#1a1f71" }]}>
-                      <Text style={styles.cardLogoText}>VISA</Text>
-                    </View>
-                    <View style={styles.mcCircles}>
-                      <View style={[styles.mcCircle, { backgroundColor: "#eb001b" }]} />
-                      <View style={[styles.mcCircle, { backgroundColor: "#f79e1b", marginLeft: -10 }]} />
-                    </View>
-                  </View>
-                </View>
-
-                <Text style={styles.visualCardNumber}>
-                  {cardNumber || "•••• •••• •••• ••••"}
+          {/* Direct AliExpress Information Box */}
+          {payMethod === "aliexpress_direct" && (
+            <View style={[styles.infoBanner, { backgroundColor: "rgba(245, 158, 11, 0.06)", borderColor: "rgba(245, 158, 11, 0.25)" }]}>
+              <Feather name="shield" size={18} color="#f59e0b" />
+              <View style={{ flex: 1 }}>
+                <Text style={{ color: "#f59e0b", fontWeight: "700", fontSize: 13, marginBottom: 2 }}>
+                  دفع رسمي ومشفر 100% عبر علي إكسبرس
                 </Text>
-
-                <View style={styles.visualCardBottom}>
-                  <View>
-                    <Text style={styles.visualCardLabel}>حامل البطاقة</Text>
-                    <Text style={styles.visualCardValue}>{cardHolder.toUpperCase() || "CARDHOLDER NAME"}</Text>
-                  </View>
-                  <View>
-                    <Text style={styles.visualCardLabel}>الانتهاء</Text>
-                    <Text style={styles.visualCardValue}>{expiryDate || "MM/YY"}</Text>
-                  </View>
-                  <View>
-                    <Text style={styles.visualCardLabel}>CVV</Text>
-                    <Text style={styles.visualCardValue}>{cvv ? "•••" : "•••"}</Text>
-                  </View>
-                </View>
-              </View>
-
-              {/* In-App Direct Card Input Fields */}
-              <View style={{ gap: 12, marginTop: 12 }}>
-                <View>
-                  <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>رقم بطاقة الفيزا / ماستركارد *</Text>
-                  <View style={[styles.cardInputRow, { backgroundColor: colors.muted, borderColor: colors.border }]}>
-                    <Feather name="credit-card" size={18} color={colors.primary} />
-                    <TextInput
-                      value={cardNumber}
-                      onChangeText={handleCardNumberChange}
-                      placeholder="4000 1234 5678 9010"
-                      placeholderTextColor={colors.mutedForeground}
-                      keyboardType="numeric"
-                      maxLength={19}
-                      style={[styles.cardInput, { color: colors.foreground }]}
-                    />
-                    {brand === "visa" && (
-                      <View style={[styles.brandPill, { backgroundColor: "#1a1f71" }]}>
-                        <Text style={styles.brandPillText}>VISA</Text>
-                      </View>
-                    )}
-                    {brand === "mastercard" && (
-                      <View style={[styles.brandPill, { backgroundColor: "#eb001b" }]}>
-                        <Text style={styles.brandPillText}>Mastercard</Text>
-                      </View>
-                    )}
-                    {brand === "mada" && (
-                      <View style={[styles.brandPill, { backgroundColor: "#007a3d" }]}>
-                        <Text style={styles.brandPillText}>Mada</Text>
-                      </View>
-                    )}
-                  </View>
-                </View>
-
-                <View>
-                  <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>الاسم المكتوب على البطاقة *</Text>
-                  <TextInput
-                    value={cardHolder}
-                    onChangeText={setCardHolder}
-                    placeholder="EMAD AL-YAHYA"
-                    placeholderTextColor={colors.mutedForeground}
-                    autoCapitalize="characters"
-                    style={[styles.inputField, { backgroundColor: colors.muted, borderColor: colors.border, color: colors.foreground }]}
-                  />
-                </View>
-
-                <View style={{ flexDirection: "row", gap: 10 }}>
-                  <View style={{ flex: 1 }}>
-                    <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>تاريخ الانتهاء *</Text>
-                    <TextInput
-                      value={expiryDate}
-                      onChangeText={handleExpiryChange}
-                      placeholder="MM/YY"
-                      placeholderTextColor={colors.mutedForeground}
-                      keyboardType="numeric"
-                      maxLength={5}
-                      style={[styles.inputField, { backgroundColor: colors.muted, borderColor: colors.border, color: colors.foreground, textAlign: "center" }]}
-                    />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>رمز الأمان (CVV) *</Text>
-                    <TextInput
-                      value={cvv}
-                      onChangeText={(v) => setCvv(v.replace(/\D/g, "").slice(0, 4))}
-                      placeholder="123"
-                      placeholderTextColor={colors.mutedForeground}
-                      keyboardType="numeric"
-                      secureTextEntry
-                      maxLength={4}
-                      style={[styles.inputField, { backgroundColor: colors.muted, borderColor: colors.border, color: colors.foreground, textAlign: "center" }]}
-                    />
-                  </View>
-                </View>
+                <Text style={{ color: colors.mutedForeground, fontSize: 12, lineHeight: 17 }}>
+                  عند الضغط على المتابعة، ستفتح نافذة الدفع الرسمية للمنصة داخل التطبيق لإتمام طلبك مباشرة وحساب العمولة مع حماية كاملة للمشتري.
+                </Text>
               </View>
             </View>
           )}
@@ -527,11 +316,11 @@ export default function CheckoutScreen() {
             <ActivityIndicator color="#000" size="small" />
           ) : (
             <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-              <Feather name="lock" size={18} color="#000" />
+              <Feather name={payMethod === "aliexpress_direct" ? "external-link" : "check-circle"} size={18} color="#000" />
               <Text style={styles.orderBtnText}>
-                {payMethod === "card"
-                  ? `دفع ${format(grandTotal)} للمورد الرئيسي`
-                  : t.checkout.place_order}
+                {payMethod === "aliexpress_direct"
+                  ? `المتابعة لإتمام الدفع في علي إكسبرس (${format(grandTotal)}) 🔒`
+                  : t.checkout?.place_order || `تأكيد الطلب (${format(grandTotal)})`}
               </Text>
             </View>
           )}
@@ -551,44 +340,16 @@ const styles = StyleSheet.create({
   divider: { height: 1, marginVertical: 10 },
   addrPill: { flexDirection: "row", alignItems: "center", gap: 6, paddingVertical: 8, paddingHorizontal: 12, borderRadius: 10, borderWidth: 1 },
   addressInput: { borderRadius: 12, borderWidth: 1, padding: 12, fontSize: 14, minHeight: 80, textAlignVertical: "top", textAlign: "right" },
-  payOption: { flexDirection: "row", alignItems: "center", gap: 12, padding: 12, borderRadius: 12, borderWidth: 1.5, marginBottom: 8 },
-  radio: { width: 20, height: 20, borderRadius: 10, borderWidth: 2, alignItems: "center", justifyContent: "center" },
+  payOption: { flexDirection: "row", alignItems: "flex-start", gap: 12, padding: 14, borderRadius: 14, borderWidth: 1.5, marginBottom: 10 },
+  radio: { width: 20, height: 20, borderRadius: 10, borderWidth: 2, alignItems: "center", justifyContent: "center", marginTop: 2 },
   radioDot: { width: 10, height: 10, borderRadius: 5 },
-  miniBadge: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
+  miniBadge: { paddingHorizontal: 6, paddingVertical: 2.5, borderRadius: 5 },
   miniBadgeText: { color: "#fff", fontSize: 10, fontWeight: "800" },
-  supplierBanner: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "rgba(5,150,105,0.08)", padding: 10, borderRadius: 10, marginBottom: 12 },
-  visualCard: {
-    backgroundColor: "#1e1e24",
-    borderRadius: 16,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: "rgba(245,158,11,0.4)",
-    shadowColor: "#000",
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    elevation: 5,
-  },
-  visualCardTop: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 16 },
-  emvChip: { width: 34, height: 26, borderRadius: 5, backgroundColor: "#eab308", borderWidth: 1, borderColor: "#ca8a04" },
-  cardLogoBox: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 4 },
-  cardLogoText: { color: "#fff", fontWeight: "900", fontSize: 12, letterSpacing: 1 },
-  mcCircles: { flexDirection: "row" },
-  mcCircle: { width: 20, height: 20, borderRadius: 10 },
-  visualCardNumber: { color: "#fff", fontSize: 18, fontWeight: "700", letterSpacing: 2, textAlign: "center", marginVertical: 10, fontFamily: Platform.OS === "ios" ? "Courier" : "monospace" },
-  visualCardBottom: { flexDirection: "row", justifyContent: "space-between", marginTop: 10 },
-  visualCardLabel: { color: "#9ca3af", fontSize: 10, textTransform: "uppercase" },
-  visualCardValue: { color: "#fff", fontSize: 12, fontWeight: "700", marginTop: 2 },
-  fieldLabel: { fontSize: 12, fontWeight: "600", marginBottom: 6 },
-  cardInputRow: { flexDirection: "row", alignItems: "center", gap: 8, borderRadius: 12, borderWidth: 1, paddingHorizontal: 12, paddingVertical: 10 },
-  cardInput: { flex: 1, fontSize: 15, fontWeight: "600", letterSpacing: 1 },
-  brandPill: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
-  brandPillText: { color: "#fff", fontSize: 11, fontWeight: "800" },
-  inputField: { borderRadius: 12, borderWidth: 1, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14 },
+  infoBanner: { flexDirection: "row", alignItems: "flex-start", gap: 10, padding: 14, borderRadius: 14, borderWidth: 1 },
   footer: { paddingHorizontal: 16, paddingTop: 14, borderTopWidth: 1 },
   orderBtn: { paddingVertical: 15, borderRadius: 14, alignItems: "center", justifyContent: "center" },
-  orderBtnText: { color: "#000", fontWeight: "800", fontSize: 16 },
-  paidBadgeBox: { flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 12, borderWidth: 1, marginTop: 8 },
-  successIcon: { width: 100, height: 100, borderRadius: 50, alignItems: "center", justifyContent: "center", marginBottom: 24 },
-  successTitle: { fontSize: 26, fontWeight: "800", marginBottom: 12 },
+  orderBtnText: { color: "#000", fontWeight: "800", fontSize: 15 },
+  successIcon: { width: 90, height: 90, borderRadius: 45, alignItems: "center", justifyContent: "center", marginBottom: 20 },
+  successTitle: { fontSize: 22, fontWeight: "800", marginBottom: 10, textAlign: "center" },
   homeBtn: { paddingVertical: 14, paddingHorizontal: 32, borderRadius: 14 },
 });

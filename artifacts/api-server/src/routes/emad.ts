@@ -3297,76 +3297,81 @@ router.post("/orders/:id/pay/internal", requireAuth, validateParams(idParamSchem
         platform = item.source_platform;
         break;
       }
-      // Check if product belongs to a local vendor
       if (item.product_id) {
+        const [dp] = await db.select().from(dropship_products).where(eq(dropship_products.product_id, item.product_id));
+        if (dp?.platform) {
+          platform = dp.platform;
+          break;
+        }
         const [product] = await db.select().from(products).where(eq(products.id, item.product_id));
-        if (product) {
+        if (product && (product as any).vendor_id) {
           isLocalVendor = true;
-          // Try to find vendor
-          const [vendor] = await db.select().from(vendors).where(eq(vendors.id, product.id));
-          if (vendor) vendorId = vendor.id;
+          vendorId = (product as any).vendor_id;
         }
       }
     }
 
-    // ========== LOCAL VENDOR: Stripe Connect ==========
-    if (isLocalVendor && platform === "unknown") {
-      if (!vendorId) {
-        return res.status(400).json({ success: false, message: "لا يمكن تحديد البائع المحلي لهذا الطلب" });
-      }
-
+    // ========== LOCAL VENDOR: Stripe Connect (Only if vendor Stripe account is active) ==========
+    if (isLocalVendor && platform === "unknown" && vendorId) {
       const [stripeAccount] = await db.select().from(vendor_stripe_accounts).where(eq(vendor_stripe_accounts.vendor_id, vendorId));
-      if (!stripeAccount || !stripeAccount.charges_enabled) {
-        return res.status(400).json({ success: false, message: "البائع المحلي غير مفعل لاستلام الدفع المباشر" });
-      }
+      if (stripeAccount && stripeAccount.charges_enabled) {
+        const [gateway] = await db.select().from(payment_gateways).where(eq(payment_gateways.provider, "stripe"));
+        const config = gateway?.config as Record<string, string> | undefined;
+        if (gateway?.is_active && config?.secret_key) {
+          const { createSplitPaymentIntent } = await import("../lib/payment");
+          const [vendor] = await db.select().from(vendors).where(eq(vendors.id, vendorId));
+          const platformFee = vendor?.commission_rate || 15;
 
-      const [gateway] = await db.select().from(payment_gateways).where(eq(payment_gateways.provider, "stripe"));
-      if (!gateway || !gateway.is_active) return res.status(400).json({ success: false, message: "Stripe غير مفعل" });
-      const config = gateway.config as Record<string, string>;
-      if (!config.secret_key) return res.status(400).json({ success: false, message: "مفاتيح Stripe غير مكونة" });
+          const result = await createSplitPaymentIntent(
+            order.total,
+            order.currency,
+            String(order.id),
+            stripeAccount.stripe_account_id,
+            platformFee,
+            config.secret_key,
+          );
 
-      const { createSplitPaymentIntent } = await import("../lib/payment");
-      const [vendor] = await db.select().from(vendors).where(eq(vendors.id, vendorId));
-      const platformFee = vendor?.commission_rate || 15;
+          await db.update(orders).set({
+            payment_gateway: "stripe_connect",
+            payment_status: "pending",
+            fulfillment_platform: "local_vendor",
+          }).where(eq(orders.id, order.id));
 
-      const result = await createSplitPaymentIntent(
-        order.total,
-        order.currency,
-        String(order.id),
-        stripeAccount.stripe_account_id,
-        platformFee,
-        config.secret_key,
-      );
-
-      await db.update(orders).set({
-        payment_gateway: "stripe_connect",
-        payment_status: "pending",
-        fulfillment_platform: "local_vendor",
-      }).where(eq(orders.id, order.id));
-
-      return res.json({
-        success: true,
-        data: {
-          payment_type: "stripe_connect",
-          client_secret: result.client_secret,
-          payment_intent_id: result.payment_intent_id,
-          platform_fee: result.platform_fee,
-          vendor_amount: result.vendor_amount,
-          message: "سيتم الدفع مباشرةً للبائع المحلي عبر Stripe. الشحن على البائع.",
-          shipping_by: "البائع المحلي",
+          return res.json({
+            success: true,
+            data: {
+              payment_type: "stripe_connect",
+              client_secret: result.client_secret,
+              payment_intent_id: result.payment_intent_id,
+              platform_fee: result.platform_fee,
+              vendor_amount: result.vendor_amount,
+              message: "سيتم الدفع مباشرةً للبائع المحلي عبر Stripe. الشحن على البائع.",
+              shipping_by: "البائع المحلي",
+            }
+          });
         }
-      });
+      }
+    }
+
+    // Default to AliExpress if platform is unknown or general
+    if (platform === "unknown" || !platform) {
+      const pm = (order.payment_method || "").toLowerCase();
+      if (pm.includes("amazon")) platform = "amazon";
+      else if (pm.includes("alibaba")) platform = "alibaba";
+      else platform = "aliexpress";
     }
 
     // ========== GLOBAL PLATFORM: Affiliate WebView ==========
     let fulfillmentResult = null;
 
-    if (platform === "aliexpress") {
-      fulfillmentResult = await fulfillAliExpressOrder(order.id);
-    } else if (platform === "amazon") {
+    if (platform === "amazon") {
       fulfillmentResult = await fulfillAmazonOrder(order.id);
     } else if (platform === "alibaba") {
       fulfillmentResult = await fulfillAlibabaOrder(order.id);
+    } else {
+      // Default to AliExpress
+      platform = "aliexpress";
+      fulfillmentResult = await fulfillAliExpressOrder(order.id);
     }
 
     if (!fulfillmentResult || !fulfillmentResult.payment_url) {

@@ -379,7 +379,7 @@ export default function ForgotPasswordScreen() {
             )}
 
             {step === 3 && (
-              <View style={[styles.cardBox, { alignItems: "center", textAlign: "center", paddingTop: 30 }]}>
+              <View style={[styles.cardBox, { alignItems: "center", paddingTop: 30 }]}>
                 <View style={[styles.iconCircle, { backgroundColor: "rgba(16, 185, 129, 0.15)", borderColor: "rgba(16, 185, 129, 0.4)", width: 90, height: 90 }]}>
                   <Feather name="check-circle" size={48} color="#10b981" />
                 </View>

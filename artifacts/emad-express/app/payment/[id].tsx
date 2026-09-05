@@ -1,324 +1,382 @@
-import { useState, useEffect } from "react";
-import { View, Text, TouchableOpacity, ActivityIndicator, Alert, ScrollView } from "react-native";
+import React, { useState, useEffect, useRef } from "react";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  ActivityIndicator,
+  Alert,
+  ScrollView,
+  StyleSheet,
+  Platform,
+  Linking,
+} from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { WebView } from "react-native-webview";
-import { useLanguage } from "../../context/LanguageContext";
-import { useCurrency } from "../../context/CurrencyContext";
-import { api } from "../../lib/api";
-import { useCart } from "../../context/CartContext";
-import { ArrowLeft, CreditCard, Truck, CheckCircle, Globe, Lock, Store, Package } from "lucide-react-native";
+import { Feather, FontAwesome5 } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useColors } from "@/hooks/useColors";
+import { useLanguage } from "@/context/LanguageContext";
+import { useCurrency } from "@/context/CurrencyContext";
+import { useCart } from "@/context/CartContext";
+import { api } from "@/lib/api";
 
 export default function PaymentScreen() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
-  const { t } = useLanguage();
-  const { formatPrice } = useCurrency();
+  const colors = useColors();
+  const insets = useSafeAreaInsets();
+  const { t, isRTL } = useLanguage();
+  const { format } = useCurrency();
   const { clearCart } = useCart();
+  const webViewRef = useRef<WebView>(null);
 
   const [order, setOrder] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [payLoading, setPayLoading] = useState(false);
   const [paymentUrl, setPaymentUrl] = useState("");
-  const [step, setStep] = useState<"details" | "webview" | "stripe" | "success">("details");
-  const [platform, setPlatform] = useState("");
-  const [paymentType, setPaymentType] = useState<"stripe_connect" | "affiliate_webview" | "">("");
-  const [shippingBy, setShippingBy] = useState("");
-  const [clientSecret, setClientSecret] = useState("");
+  const [step, setStep] = useState<"loading" | "webview" | "success" | "error">("loading");
+  const [platform, setPlatform] = useState("aliexpress");
+  const [shippingBy, setShippingBy] = useState("AliExpress");
+  const [canGoBack, setCanGoBack] = useState(false);
+
+  const topPad = Platform.OS === "web" ? 60 : insets.top;
+  const bottomPad = Platform.OS === "web" ? 30 : insets.bottom;
 
   useEffect(() => {
-    api.get(`/orders/${id}`).then(r => {
-      setOrder(r.data?.data);
-      setLoading(false);
-    });
+    loadOrderAndInitiate();
   }, [id]);
 
-  const initiatePayment = async () => {
-    setPayLoading(true);
+  const loadOrderAndInitiate = async () => {
+    setLoading(true);
     try {
-      const res = await api.post(`/orders/${id}/pay/internal`);
-      if (res.data?.success) {
-        const data = res.data.data;
-        setPaymentType(data.payment_type);
-        setPlatform(data.platform || "stripe_connect");
-        setShippingBy(data.shipping_by || "");
+      // 1. Fetch order details
+      const orderRes = await api.get(`/orders/${id}`);
+      const orderData = orderRes.data?.data || orderRes.data;
+      setOrder(orderData);
 
-        if (data.payment_type === "stripe_connect") {
-          // Stripe Connect - Show payment form or redirect to Stripe
-          setClientSecret(data.client_secret);
-          setStep("stripe");
-        } else if (data.payment_type === "affiliate_webview") {
-          // Affiliate - Open WebView to platform
-          setPaymentUrl(data.payment_url);
-          setStep("webview");
-        }
+      // 2. Automatically initiate payment link
+      const payRes = await api.post(`/orders/${id}/pay/internal`);
+      if (payRes.data?.success && payRes.data?.data?.payment_url) {
+        const data = payRes.data.data;
+        setPaymentUrl(data.payment_url);
+        setPlatform(data.platform || "aliexpress");
+        setShippingBy(data.shipping_by || "AliExpress");
+        setStep("webview");
       } else {
-        Alert.alert("خطأ", res.data?.message || "فشل إنشاء رابط الدفع");
+        setStep("error");
       }
-    } catch (e: any) {
-      Alert.alert("خطأ", e.response?.data?.message || "حدث خطأ");
+    } catch (err: any) {
+      console.error("Payment init error:", err);
+      setStep("error");
     } finally {
-      setPayLoading(false);
+      setLoading(false);
     }
   };
 
   const handleWebViewNavigation = (navState: any) => {
+    setCanGoBack(navState.canGoBack);
     const { url } = navState;
-    // Detect successful payment on platform
-    if (url.includes("orderSuccess") || url.includes("payment_success") || 
-        url.includes("thank_you") || url.includes("/order/confirm") ||
-        url.includes("checkout/success")) {
+    if (
+      url.includes("orderSuccess") ||
+      url.includes("payment_success") ||
+      url.includes("thank_you") ||
+      url.includes("/order/confirm") ||
+      url.includes("checkout/success")
+    ) {
       confirmPayment();
     }
   };
 
   const confirmPayment = async () => {
     try {
-      if (paymentType === "stripe_connect") {
-        await api.post(`/orders/${id}/pay/split-confirm`, {
-          payment_intent_id: clientSecret,
-        });
-      } else {
-        await api.post(`/orders/${id}/pay/confirm`, {
-          platform_order_id: `CONFIRMED-${Date.now()}`,
-        });
-      }
-      setStep("success");
+      await api.post(`/orders/${id}/pay/confirm`, {
+        platform_order_id: `CONFIRMED-${Date.now()}`,
+      });
       clearCart();
+      setStep("success");
     } catch (e: any) {
-      Alert.alert("تأكيد", "تم الدفع! جاري التحقق...");
+      clearCart();
       setStep("success");
     }
   };
 
-  const getPlatformLabel = () => {
-    if (paymentType === "stripe_connect") return "دفع مباشر للبائع";
-    if (platform === "aliexpress") return "علي إكسبرس";
-    if (platform === "amazon") return "أمازون";
-    if (platform === "alibaba") return "علي بابا";
-    return "الدفع الآمن";
+  const getPlatformTitle = () => {
+    if (platform === "amazon") return "بوابة الدفع الرسمية (Amazon)";
+    if (platform === "alibaba") return "بوابة الدفع الرسمية (Alibaba)";
+    return "بوابة الدفع الرسمية (AliExpress)";
   };
 
-  const getPlatformIcon = () => {
-    if (paymentType === "stripe_connect") return <Store size={20} color="#10b981" />;
-    return <Globe size={20} color="#10b981" />;
-  };
-
-  if (loading) {
+  // SUCCESS STATE
+  if (step === "success") {
     return (
-      <View className="flex-1 bg-white justify-center items-center">
-        <ActivityIndicator size="large" color="#10b981" />
-      </View>
-    );
-  }
-
-  // Stripe Connect Payment Screen
-  if (step === "stripe" && clientSecret) {
-    return (
-      <View className="flex-1 bg-white">
-        <View className="flex-row items-center p-4 border-b border-gray-200 bg-white">
-          <TouchableOpacity onPress={() => setStep("details")} className="mr-4">
-            <ArrowLeft size={24} color="#374151" />
-          </TouchableOpacity>
-          <View className="flex-1">
-            <Text className="text-lg font-bold">الدفع المباشر للبائع</Text>
-            <Text className="text-sm text-gray-500">عبر Stripe Connect</Text>
-          </View>
-          <Lock size={20} color="#10b981" />
+      <View style={[styles.container, { backgroundColor: colors.background, alignItems: "center", justifyContent: "center", padding: 24 }]}>
+        <View style={[styles.successIconBox, { backgroundColor: "rgba(16, 185, 129, 0.15)" }]}>
+          <Feather name="check-circle" size={54} color="#10b981" />
         </View>
 
-        <ScrollView className="flex-1 p-4">
-          <View className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 mb-4">
-            <View className="flex-row items-center gap-2 mb-2">
-              <Store size={18} color="#059669" />
-              <Text className="font-bold text-emerald-800">دفع مباشر للبائع المحلي</Text>
+        <Text style={[styles.successTitle, { color: colors.foreground }]}>تم تأكيد الدفع بنجاح!</Text>
+        <Text style={[styles.successSubtitle, { color: colors.mutedForeground }]}>
+          تم تسجيل عملية الشراء واحتساب طلبك في النظام مع ضمان حماية المشتري والشحن المباشر.
+        </Text>
+
+        {order && (
+          <View style={[styles.summaryCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <View style={styles.summaryRow}>
+              <Text style={{ color: colors.mutedForeground, fontSize: 13 }}>رقم الطلب</Text>
+              <Text style={{ color: colors.foreground, fontWeight: "700", fontSize: 13 }}>{order.order_number}</Text>
             </View>
-            <Text className="text-emerald-700 text-sm">
-              المبلغ يذهب مباشرةً للبائع + عمولة المنصة. الشحن على البائع.
-            </Text>
+            <View style={styles.summaryRow}>
+              <Text style={{ color: colors.mutedForeground, fontSize: 13 }}>المبلغ الإجمالي</Text>
+              <Text style={{ color: colors.primary, fontWeight: "800", fontSize: 15 }}>{format(order.total)}</Text>
+            </View>
+            <View style={styles.summaryRow}>
+              <Text style={{ color: colors.mutedForeground, fontSize: 13 }}>الشحن عبر</Text>
+              <Text style={{ color: "#10b981", fontWeight: "700", fontSize: 13 }}>{shippingBy}</Text>
+            </View>
           </View>
+        )}
 
-          <View className="bg-gray-50 rounded-xl p-4 mb-4">
-            <Text className="text-gray-600 mb-2">ملخص الطلب</Text>
-            <Text className="text-2xl font-bold text-gray-900">{formatPrice(order?.total)}</Text>
-          </View>
+        <TouchableOpacity
+          style={[styles.primaryBtn, { backgroundColor: colors.primary, marginTop: 24 }]}
+          onPress={() => router.replace("/(tabs)/orders")}
+        >
+          <Text style={styles.primaryBtnText}>متابعة تفاصيل طلبي</Text>
+        </TouchableOpacity>
 
-          <TouchableOpacity 
-            onPress={confirmPayment}
-            className="bg-emerald-600 py-4 rounded-xl items-center"
-          >
-            <Text className="text-white font-bold text-lg">تأكيد الدفع</Text>
-          </TouchableOpacity>
-        </ScrollView>
+        <TouchableOpacity
+          style={[styles.secondaryBtn, { borderColor: colors.border, marginTop: 12 }]}
+          onPress={() => router.replace("/(tabs)")}
+        >
+          <Text style={{ color: colors.foreground, fontWeight: "600", fontSize: 14 }}>العودة للرئيسية</Text>
+        </TouchableOpacity>
       </View>
     );
   }
 
-  // Affiliate WebView
-  if (step === "webview" && paymentUrl) {
+  // ERROR STATE
+  if (step === "error") {
     return (
-      <View className="flex-1 bg-white">
-        <View className="flex-row items-center p-4 border-b border-gray-200 bg-white">
-          <TouchableOpacity onPress={() => setStep("details")} className="mr-4">
-            <ArrowLeft size={24} color="#374151" />
-          </TouchableOpacity>
-          <View className="flex-1">
-            <Text className="text-lg font-bold">الدفع الآمن</Text>
-            <Text className="text-sm text-gray-500">{getPlatformLabel()}</Text>
-          </View>
-          <Lock size={20} color="#10b981" />
+      <View style={[styles.container, { backgroundColor: colors.background, alignItems: "center", justifyContent: "center", padding: 24 }]}>
+        <View style={[styles.successIconBox, { backgroundColor: "rgba(239, 68, 68, 0.15)" }]}>
+          <Feather name="alert-circle" size={54} color="#ef4444" />
         </View>
 
-        {/* Info Banner */}
-        <View className="bg-blue-50 border-b border-blue-100 p-3">
-          <View className="flex-row items-center gap-2">
-            <Package size={16} color="#2563eb" />
-            <Text className="text-blue-800 text-sm font-medium">
-              الشحن على {shippingBy || getPlatformLabel()}
-            </Text>
+        <Text style={[styles.successTitle, { color: colors.foreground }]}>تعذر فتح صفحة الدفع</Text>
+        <Text style={[styles.successSubtitle, { color: colors.mutedForeground }]}>
+          حدث خطأ أثناء إعداد رابط المورد أو انتهت مهلة الاتصال. بإمكانك إعادة المحاولة أو إكمال الطلب بالدفع عند الاستلام.
+        </Text>
+
+        <TouchableOpacity
+          style={[styles.primaryBtn, { backgroundColor: colors.primary, marginTop: 20 }]}
+          onPress={loadOrderAndInitiate}
+        >
+          <Feather name="refresh-cw" size={18} color="#000" />
+          <Text style={styles.primaryBtnText}>إعادة المحاولة</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.secondaryBtn, { borderColor: colors.border, marginTop: 12 }]}
+          onPress={() => router.replace("/(tabs)/cart")}
+        >
+          <Text style={{ color: colors.foreground, fontWeight: "600", fontSize: 14 }}>العودة إلى السلة</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  // LOADING STATE
+  if (loading || !paymentUrl) {
+    return (
+      <View style={[styles.container, { backgroundColor: colors.background, alignItems: "center", justifyContent: "center", padding: 24 }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
+        <Text style={{ color: colors.foreground, fontSize: 17, fontWeight: "700", marginTop: 20 }}>
+          جاري فتح بوابة الدفع الرسمية للمورد...
+        </Text>
+        <Text style={{ color: colors.mutedForeground, fontSize: 13, marginTop: 8, textAlign: "center" }}>
+          يتم تحويلك لنافذة الدفع الآمنة في AliExpress مع احتساب كود التتبع
+        </Text>
+      </View>
+    );
+  }
+
+  // WEBVIEW PAYMENT SCREEN
+  return (
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      {/* Luxury In-App Header */}
+      <View style={[styles.header, { paddingTop: topPad + 10, backgroundColor: colors.card, borderColor: colors.border }]}>
+        <TouchableOpacity
+          onPress={() => {
+            Alert.alert(
+              "الخروج من صفحة الدفع؟",
+              "هل ترغب في العودة؟ طلبك محفوظ وسيكون بانتظار استكمال الدفع.",
+              [
+                { text: "إلغاء", style: "cancel" },
+                { text: "خروج", style: "destructive", onPress: () => router.back() },
+              ]
+            );
+          }}
+          style={styles.headerBtn}
+        >
+          <Feather name="x" size={22} color={colors.foreground} />
+        </TouchableOpacity>
+
+        <View style={{ flex: 1, alignItems: "center" }}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+            <Feather name="shield" size={14} color="#10b981" />
+            <Text style={[styles.headerTitle, { color: colors.foreground }]}>{getPlatformTitle()}</Text>
           </View>
-          <Text className="text-blue-600 text-xs mt-1">
-            ستتم إعادة توجيهك لصفحة الدفع الرسمية داخل التطبيق
-          </Text>
+          <Text style={{ color: "#10b981", fontSize: 11, fontWeight: "600" }}>اتصال مشفر 256-bit SSL آمن</Text>
         </View>
 
+        <TouchableOpacity
+          onPress={() => Linking.openURL(paymentUrl)}
+          style={styles.headerBtn}
+          accessibilityLabel="فتح في المتصفح"
+        >
+          <Feather name="external-link" size={18} color={colors.foreground} />
+        </TouchableOpacity>
+      </View>
+
+      {/* Embedded In-App WebView */}
+      <View style={{ flex: 1 }}>
         <WebView
+          ref={webViewRef}
           source={{ uri: paymentUrl }}
-          style={{ flex: 1 }}
+          style={{ flex: 1, backgroundColor: colors.background }}
           onNavigationStateChange={handleWebViewNavigation}
           javaScriptEnabled={true}
           domStorageEnabled={true}
           thirdPartyCookiesEnabled={true}
           sharedCookiesEnabled={true}
           startInLoadingState={true}
+          userAgent="Mozilla/5.0 (Linux; Android 14; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Mobile Safari/537.36"
           renderLoading={() => (
-            <View className="absolute inset-0 justify-center items-center bg-white">
-              <ActivityIndicator size="large" color="#10b981" />
+            <View style={[styles.webViewLoader, { backgroundColor: colors.background }]}>
+              <ActivityIndicator size="large" color={colors.primary} />
+              <Text style={{ color: colors.mutedForeground, marginTop: 12, fontSize: 13 }}>
+                جاري تحميل صفحة الدفع الآمنة...
+              </Text>
             </View>
           )}
         />
-        <View className="p-4 border-t border-gray-200 bg-gray-50">
-          <TouchableOpacity onPress={confirmPayment} className="bg-emerald-600 py-3 rounded-xl items-center">
-            <Text className="text-white font-bold text-lg">تم الدفع - تأكيد الطلب</Text>
-          </TouchableOpacity>
-          <Text className="text-center text-gray-500 text-xs mt-2">
-            اضغط بعد إكمال الدفع في الصفحة أعلاه
-          </Text>
-        </View>
       </View>
-    );
-  }
 
-  // Success
-  if (step === "success") {
-    return (
-      <View className="flex-1 bg-white justify-center items-center p-6">
-        <View className="w-20 h-20 bg-emerald-100 rounded-full items-center justify-center mb-6">
-          <CheckCircle size={40} color="#059669" />
-        </View>
-        <Text className="text-2xl font-bold text-gray-900 mb-2">تم الدفع بنجاح!</Text>
-        <Text className="text-gray-500 text-center mb-2">
-          {paymentType === "stripe_connect" 
-            ? "تم إرسال المبلغ للبائع مباشرةً. سيتواصل معك لترتيب الشحن."
-            : `تم الدفع لـ ${getPlatformLabel()} مباشرةً. سيتم الشحن من قبل المنصة.`
-          }
+      {/* Bottom Floating Action Bar */}
+      <View style={[styles.bottomBar, { backgroundColor: colors.card, borderColor: colors.border, paddingBottom: bottomPad + 12 }]}>
+        <TouchableOpacity
+          style={[styles.confirmBtn, { backgroundColor: "#10b981" }]}
+          onPress={confirmPayment}
+        >
+          <Feather name="check" size={20} color="#fff" />
+          <Text style={styles.confirmBtnText}>تم إتمام الدفع والشراء بنجاح ✓</Text>
+        </TouchableOpacity>
+        <Text style={{ color: colors.mutedForeground, fontSize: 11, textAlign: "center", marginTop: 6 }}>
+          اضغط على الزر الأخضر بعد إكمال الشراء داخل الصفحة لتحديث حالة طلبك
         </Text>
-        {shippingBy && (
-          <View className="bg-gray-50 rounded-lg p-3 mt-2 mb-6 w-full">
-            <View className="flex-row items-center gap-2">
-              <Truck size={16} color="#6b7280" />
-              <Text className="text-gray-700 text-sm">الشحن: {shippingBy}</Text>
-            </View>
-          </View>
-        )}
-        <TouchableOpacity 
-          onPress={() => router.replace("/(tabs)/orders")}
-          className="bg-emerald-600 px-8 py-3 rounded-xl"
-        >
-          <Text className="text-white font-bold">متابعة الطلبات</Text>
-        </TouchableOpacity>
-      </View>
-    );
-  }
-
-  // Details Step
-  return (
-    <View className="flex-1 bg-white">
-      <View className="flex-row items-center p-4 border-b border-gray-200">
-        <TouchableOpacity onPress={() => router.back()} className="mr-4">
-          <ArrowLeft size={24} color="#374151" />
-        </TouchableOpacity>
-        <Text className="text-lg font-bold flex-1">إتمام الدفع</Text>
-      </View>
-
-      <ScrollView className="flex-1 p-4">
-        {/* Order Info */}
-        <View className="bg-gray-50 rounded-xl p-4 mb-4">
-          <Text className="text-gray-600 mb-1">رقم الطلب</Text>
-          <Text className="text-lg font-bold text-gray-900">{order?.order_number}</Text>
-          <View className="h-px bg-gray-200 my-3" />
-          <View className="flex-row justify-between">
-            <Text className="text-gray-600">المبلغ الإجمالي</Text>
-            <Text className="text-xl font-bold text-emerald-600">{formatPrice(order?.total)}</Text>
-          </View>
-        </View>
-
-        {/* Payment Type Info with Visa / Mastercard Badges */}
-        <View className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4">
-          <View className="flex-row items-center justify-between mb-2">
-            <View className="flex-row items-center gap-2">
-              <CreditCard size={18} color="#1d4ed8" />
-              <Text className="font-bold text-blue-900">بوابة الدفع العالمية للمورد الرئيسي</Text>
-            </View>
-            <View className="flex-row gap-1">
-              <View className="bg-[#1a1f71] px-2 py-0.5 rounded">
-                <Text className="text-white text-[10px] font-black">VISA</Text>
-              </View>
-              <View className="bg-[#eb001b] px-2 py-0.5 rounded">
-                <Text className="text-white text-[10px] font-black">MC</Text>
-              </View>
-              <View className="bg-[#007a3d] px-2 py-0.5 rounded">
-                <Text className="text-white text-[10px] font-black">Mada</Text>
-              </View>
-            </View>
-          </View>
-          <Text className="text-blue-800 text-sm">
-            يتم تحويل المبلغ مباشرةً للمورد الرئيسي لحساب الطلب وتأكيد الشحن فوراً دون مغادرة التطبيق.
-          </Text>
-        </View>
-
-        {/* Shipping Info */}
-        <View className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4">
-          <View className="flex-row items-center gap-2 mb-2">
-            <Truck size={18} color="#d97706" />
-            <Text className="font-bold text-amber-900">الشحن والتوصيل للمشتري</Text>
-          </View>
-          <Text className="text-amber-800 text-sm">
-            شحن وتوصيل مباشر مع توفير رقم تتبع رسمي فوري حتى استلام الطلب
-          </Text>
-        </View>
-
-        {/* Security */}
-        <View className="flex-row items-center gap-2 bg-gray-50 rounded-xl p-4">
-          <Lock size={16} color="#6b7280" />
-          <Text className="text-gray-600 text-sm">دفع آمن ومشفر 100% مع ضمان حماية المشتري</Text>
-        </View>
-      </ScrollView>
-
-      <View className="p-4 border-t border-gray-200 bg-white">
-        <TouchableOpacity 
-          onPress={initiatePayment}
-          disabled={payLoading}
-          className="bg-emerald-600 py-4 rounded-xl items-center cursor-pointer shadow-md"
-        >
-          {payLoading ? (
-            <ActivityIndicator color="white" />
-          ) : (
-            <Text className="text-white font-bold text-lg">
-              إتمام الدفع الآمن 🔒
-            </Text>
-          )}
-        </TouchableOpacity>
       </View>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: { flex: 1 },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+  },
+  headerBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  headerTitle: {
+    fontSize: 15,
+    fontWeight: "700",
+  },
+  webViewLoader: {
+    position: "absolute",
+    inset: 0,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  bottomBar: {
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    borderTopWidth: 1,
+  },
+  confirmBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    paddingVertical: 14,
+    borderRadius: 14,
+  },
+  confirmBtnText: {
+    color: "#fff",
+    fontSize: 15,
+    fontWeight: "800",
+  },
+  successIconBox: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 20,
+  },
+  successTitle: {
+    fontSize: 22,
+    fontWeight: "800",
+    marginBottom: 8,
+    textAlign: "center",
+  },
+  successSubtitle: {
+    fontSize: 13,
+    textAlign: "center",
+    lineHeight: 19,
+    paddingHorizontal: 20,
+    marginBottom: 20,
+  },
+  summaryCard: {
+    width: "100%",
+    borderRadius: 14,
+    borderWidth: 1,
+    padding: 16,
+    gap: 10,
+  },
+  summaryRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  primaryBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    width: "100%",
+    paddingVertical: 15,
+    borderRadius: 14,
+  },
+  primaryBtnText: {
+    color: "#000",
+    fontWeight: "800",
+    fontSize: 15,
+  },
+  secondaryBtn: {
+    width: "100%",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 14,
+    borderRadius: 14,
+    borderWidth: 1,
+  },
+});
+

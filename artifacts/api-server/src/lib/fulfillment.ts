@@ -50,7 +50,21 @@ export async function fulfillAliExpressOrder(
       }
     }
 
-    if (!aliItems.length) return { success: false, message: "لا يوجد منتجات من علي إكسبرس في هذا الطلب" };
+    if (!aliItems.length) {
+      const firstItem = orderItems[0];
+      const searchKeyword = firstItem?.product_name || "store";
+      const targetUrl = `https://www.aliexpress.com/wholesale?SearchText=${encodeURIComponent(searchKeyword)}`;
+      const affiliateUrl = generateAliExpressAffiliateUrl("", trackingId, targetUrl);
+
+      return {
+        success: true,
+        platform_order_id: `ALI-AFFILIATE-${orderId}`,
+        payment_url: affiliateUrl,
+        payment_type: "affiliate_webview",
+        message: "تم إنشاء رابط أفيليت. العميل سيدفع لـ AliExpress مباشرةً داخل التطبيق.",
+        shipping_by: "AliExpress (الشحن على المنصة)",
+      };
+    }
 
     const primaryItem = aliItems[0];
 
@@ -74,9 +88,9 @@ export async function fulfillAliExpressOrder(
 function generateAliExpressAffiliateUrl(productId: string, trackingId?: string, sourceUrl?: string): string {
   const itemUrl = sourceUrl && sourceUrl.includes("aliexpress.com")
     ? sourceUrl
-    : `https://www.aliexpress.com/item/${productId}.html`;
+    : productId ? `https://www.aliexpress.com/item/${productId}.html` : `https://www.aliexpress.com/`;
 
-  if (trackingId && trackingId.trim()) {
+  if (trackingId && trackingId.trim() && trackingId.trim() !== "default") {
     return `https://s.click.aliexpress.com/deep_link.htm?dl_target_url=${encodeURIComponent(itemUrl)}&aff_short_key=${encodeURIComponent(trackingId.trim())}`;
   }
 
