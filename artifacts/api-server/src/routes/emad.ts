@@ -1490,6 +1490,13 @@ function parsePrice(val: any, fallback = 25): number {
   return fallback;
 }
 
+function normalizeImageUrl(url?: string | null): string {
+  if (!url) return "";
+  let u = String(url).trim().replace(/^https?:/, "");
+  u = u.replace(/_\d+x\d+[^.]*\./, ".").split("?")[0].trim();
+  return u;
+}
+
 // ========== HIGH SPEED CHUNKED FETCHING & IMPORTING (ZERO TIMEOUT / NO 502) ==========
 router.get("/admin/dropship/fetch-chunk", requireAuth, requireRole("admin", "manager"), async (req, res, next) => {
   try {
@@ -1516,10 +1523,19 @@ router.get("/admin/dropship/fetch-chunk", requireAuth, requireRole("admin", "man
 
     const prods = await searchAliExpressProducts(kw, creds, actualPage, pageSize, catId).catch(() => []);
 
-    const productsList = (prods || []).map(p => {
+    const seenImagesInChunk = new Set<string>();
+    const productsList: any[] = [];
+
+    for (const p of prods || []) {
       let img = p.product_main_image_url || "";
       if (img.startsWith("//")) img = `https:${img}`;
-      return {
+      const normImg = normalizeImageUrl(img);
+
+      // Skip duplicate images within the same chunk
+      if (normImg && seenImagesInChunk.has(normImg)) continue;
+      if (normImg) seenImagesInChunk.add(normImg);
+
+      productsList.push({
         source_id: String(p.product_id),
         name: p.product_title || `AliExpress Product ${p.product_id}`,
         price: parseFloat(p.target_sale_price) || parseFloat(p.target_original_price) || 25,
@@ -1531,8 +1547,8 @@ router.get("/admin/dropship/fetch-chunk", requireAuth, requireRole("admin", "man
         platform: "aliexpress",
         source_url: p.product_detail_url || `https://www.aliexpress.com/item/${p.product_id}.html`,
         supplier_name: p.shop_name || "AliExpress Verified Seller",
-      };
-    });
+      });
+    }
 
     return res.json({
       success: true,
@@ -1569,11 +1585,14 @@ router.post("/admin/dropship/import-chunk", requireAuth, requireRole("admin", "m
     }
 
     const existingDropships = await db.select({ source_id: dropship_products.source_id }).from(dropship_products);
-    const existingProducts = await db.select({ sku: products.sku }).from(products);
+    const existingProducts = await db.select({ sku: products.sku, image: products.image }).from(products).where(isNull(products.deleted_at));
     const existingSet = new Set([
-      ...existingDropships.map(d => String(d.source_id)),
-      ...existingProducts.map(p => (p.sku || "").replace(/^ALI-/, "").split("-")[0]).filter(Boolean),
+      ...existingDropships.map(d => String(d.source_id).trim()),
+      ...existingProducts.map(p => (p.sku || "").replace(/^ALI-/, "").split("-")[0].trim()).filter(Boolean),
     ]);
+    const existingImageSet = new Set(
+      existingProducts.map(p => normalizeImageUrl(p.image)).filter(Boolean)
+    );
 
     const margin = (100 + (margin_percent || 35)) / 100;
     const productRecords = [];
@@ -1581,15 +1600,19 @@ router.post("/admin/dropship/import-chunk", requireAuth, requireRole("admin", "m
     let skippedCount = 0;
 
     for (const p of prods) {
-      const srcId = String(p.product_id);
-      if (!srcId || existingSet.has(srcId)) {
+      const srcId = String(p.product_id).trim();
+      let img = p.product_main_image_url || "";
+      if (img.startsWith("//")) img = `https:${img}`;
+      const normImg = normalizeImageUrl(img);
+
+      // Strict Deduplication: Skip if duplicate product ID OR duplicate image URL
+      if (!srcId || existingSet.has(srcId) || (normImg && existingImageSet.has(normImg))) {
         skippedCount++;
         continue;
       }
       existingSet.add(srcId);
+      if (normImg) existingImageSet.add(normImg);
 
-      let img = p.product_main_image_url || "";
-      if (img.startsWith("//")) img = `https:${img}`;
       const sourcePrice = parsePrice(p.target_sale_price || p.target_original_price, 25);
       const salePrice = Number((sourcePrice * margin).toFixed(2));
       const skuUnique = `ALI-${srcId}-${Date.now().toString(36).slice(-4)}`;
@@ -1779,21 +1802,14 @@ router.post("/admin/dropship/bulk-import-1000", requireAuth, requireRole("admin"
 
     // Fetch existing source_ids and SKUs to prevent duplicate insertion
     const existingDropships = await db.select({ source_id: dropship_products.source_id }).from(dropship_products);
-    const existingProducts = await db.select({ sku: products.sku }).from(products);
+    const existingProducts = await db.select({ sku: products.sku, image: products.image }).from(products).where(isNull(products.deleted_at));
     const existingSet = new Set([
-      ...existingDropships.map(d => String(d.source_id)),
-      ...existingProducts.map(p => (p.sku || "").replace(/^ALI-/, "").split("-")[0]).filter(Boolean),
+      ...existingDropships.map(d => String(d.source_id).trim()),
+      ...existingProducts.map(p => (p.sku || "").replace(/^ALI-/, "").split("-")[0].trim()).filter(Boolean),
     ]);
-
-    function parsePrice(val: any, fallback = 25): number {
-      if (typeof val === "number" && !isNaN(val) && val > 0) return Number(val.toFixed(2));
-      if (typeof val === "string") {
-        const clean = val.replace(/[^0-9.]/g, "");
-        const num = parseFloat(clean);
-        if (!isNaN(num) && num > 0) return Number(num.toFixed(2));
-      }
-      return fallback;
-    }
+    const existingImageSet = new Set(
+      existingProducts.map(p => normalizeImageUrl(p.image)).filter(Boolean)
+    );
 
     const targetCount = Math.min(Math.max(10, parseInt(count) || 1000), 2500);
     const startTime = Date.now();
@@ -1834,10 +1850,15 @@ router.post("/admin/dropship/bulk-import-1000", requireAuth, requireRole("admin"
             if (Array.isArray(prods)) {
               for (const p of prods) {
                 if (liveFetched.length >= targetCount) break;
-                const srcId = String(p.product_id);
-                if (srcId && !existingSet.has(srcId) && !liveFetched.some(l => l.source_id === srcId)) {
-                  let img = p.product_main_image_url || "";
-                  if (img.startsWith("//")) img = `https:${img}`;
+                const srcId = String(p.product_id).trim();
+                let img = p.product_main_image_url || "";
+                if (img.startsWith("//")) img = `https:${img}`;
+                const normImg = normalizeImageUrl(img);
+
+                // Skip duplicate product ID or duplicate image URL
+                if (srcId && !existingSet.has(srcId) && (!normImg || !existingImageSet.has(normImg)) && !liveFetched.some(l => l.source_id === srcId || (normImg && normalizeImageUrl(l.image) === normImg))) {
+                  existingSet.add(srcId);
+                  if (normImg) existingImageSet.add(normImg);
                   const cPrice = parsePrice(p.target_sale_price || p.target_original_price, 25);
                   liveFetched.push({
                     source_id: srcId,
@@ -2009,11 +2030,14 @@ router.post("/admin/dropship/import-batch", requireAuth, requireRole("admin", "m
     }
     const margin = (100 + (margin_percent || 35)) / 100;
     const existingDropships = await db.select({ source_id: dropship_products.source_id }).from(dropship_products);
-    const existingProducts = await db.select({ sku: products.sku }).from(products);
+    const existingProducts = await db.select({ sku: products.sku, image: products.image }).from(products).where(isNull(products.deleted_at));
     const existingSet = new Set([
-      ...existingDropships.map(d => String(d.source_id)),
-      ...existingProducts.map(p => (p.sku || "").replace(/^ALI-/, "").split("-")[0]).filter(Boolean),
+      ...existingDropships.map(d => String(d.source_id).trim()),
+      ...existingProducts.map(p => (p.sku || "").replace(/^ALI-/, "").split("-")[0].trim()).filter(Boolean),
     ]);
+    const existingImageSet = new Set(
+      existingProducts.map(p => normalizeImageUrl(p.image)).filter(Boolean)
+    );
 
     let importedCount = 0;
     const chunkSize = 50;
@@ -2022,9 +2046,11 @@ router.post("/admin/dropship/import-batch", requireAuth, requireRole("admin", "m
       const productRecords = [];
       const metaRecords: any[] = [];
       for (const item of chunk) {
-        const srcId = String(item.source_id || item.product_id);
-        if (!srcId || existingSet.has(srcId)) continue;
+        const srcId = String(item.source_id || item.product_id).trim();
+        const normImg = normalizeImageUrl(item.image);
+        if (!srcId || existingSet.has(srcId) || (normImg && existingImageSet.has(normImg))) continue;
         existingSet.add(srcId);
+        if (normImg) existingImageSet.add(normImg);
         const sourcePrice = parseFloat(item.price || item.source_price || 25) || 25;
         const salePrice = Number((sourcePrice * margin).toFixed(2));
         const skuUnique = `ALI-${srcId}-${Date.now().toString(36).slice(-4)}`;
