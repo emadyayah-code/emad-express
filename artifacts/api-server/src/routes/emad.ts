@@ -908,6 +908,13 @@ router.get("/products/:id", validateParams(idParamSchema), async (req, res, next
   try {
     const { lang } = req.query as Record<string, string>;
     const requestLang = lang || (req.headers["accept-language"]?.includes("en") ? "en" : "ar");
+    const pId = parseInt(String(req.params.id));
+    if (!isNaN(pId)) {
+      const stockStatus = await verifyAndSyncDropshipProductStock(pId).catch(() => ({ available: true }));
+      if (!stockStatus.available) {
+        return res.status(404).json({ success: false, message: "عذراً، هذا المنتج نفد من المصدر ولم يعد متوفراً في المتجر" });
+      }
+    }
     const [product] = await db.select().from(products).where(and(eq(products.id, req.params.id), eq(products.is_active, true), isNull(products.deleted_at)));
     if (!product) return res.status(404).json({ success: false, message: "المنتج غير موجود" });
     const localized = {
@@ -966,12 +973,29 @@ router.post("/orders", requireAuth, validateBody(orderSchema), async (req, res, 
       cleanPayMethod = "cod";
     }
 
-    // Inventory check
+    // Inventory check & real-time dropship supplier check
     for (const item of items) {
       if (item.product_id) {
-        const [prod] = await db.select().from(products).where(and(eq(products.id, item.product_id), isNull(products.deleted_at)));
-        if (!prod) { await client.query("ROLLBACK"); return res.status(400).json({ success: false, message: `المنتج ${item.product_name} غير موجود` }); }
-        if (prod.quantity < item.quantity) { await client.query("ROLLBACK"); return res.status(400).json({ success: false, message: `الكمية غير متوفرة للمنتج ${item.product_name}. المتاح: ${prod.quantity}` }); }
+        const [prod] = await db.select().from(products).where(and(eq(products.id, item.product_id), isNull(products.deleted_at), eq(products.is_active, true)));
+        if (!prod) {
+          await client.query("ROLLBACK");
+          return res.status(400).json({ success: false, message: `المنتج "${item.product_name}" غير متوفر حالياً في المتجر` });
+        }
+
+        // Live check against dropship supplier (AliExpress, Amazon, or external URL)
+        const stockStatus = await verifyAndSyncDropshipProductStock(item.product_id, { forceLive: true }).catch(() => ({ available: true }));
+        if (!stockStatus.available) {
+          await client.query("ROLLBACK");
+          return res.status(400).json({
+            success: false,
+            message: `عذراً، لقد نفدت كمية المنتج "${item.product_name}" من المصدر (${stockStatus.reason || "غير متوفر"}). تم إخفاؤه من المتجر فوراً لتجنب أي تعارض.`
+          });
+        }
+
+        if (prod.quantity < item.quantity) {
+          await client.query("ROLLBACK");
+          return res.status(400).json({ success: false, message: `الكمية غير متوفرة للمنتج ${item.product_name}. المتاح: ${prod.quantity}` });
+        }
       }
     }
 
@@ -2359,83 +2383,194 @@ router.get("/admin/dropship/fetch-url", requireAuth, requireRole("admin", "manag
   }
 });
 
-// ========== SYNC LIVE STOCK & PRICES FROM ALIEXPRESS ==========
+// ========== CENTRAL DROPSHIP STOCK & AVAILABILITY VERIFIER ==========
+const dropshipStockCheckCache = new Map<number, { timestamp: number; result: { available: boolean; reason?: string; newPrice?: number } }>();
+
+/**
+ * Verifies live stock and supplier availability for a dropship product.
+ * If the product is out of stock or removed by the supplier (AliExpress, Amazon, or external link),
+ * it automatically:
+ *  1. Hides and disables the product (is_active = false, quantity = 0, deleted_at = now())
+ *  2. Deletes from dropship_products
+ *  3. Logs the action
+ *  4. Returns { available: false, reason: "..." }
+ */
+export async function verifyAndSyncDropshipProductStock(
+  productId: number,
+  options: { forceLive?: boolean } = {}
+): Promise<{ available: boolean; reason?: string; newPrice?: number }> {
+  try {
+    if (!options.forceLive) {
+      const cached = dropshipStockCheckCache.get(productId);
+      if (cached && Date.now() - cached.timestamp < 60_000) {
+        return cached.result;
+      }
+    }
+
+    const [dp] = await db.select().from(dropship_products).where(eq(dropship_products.product_id, productId));
+    if (!dp) {
+      // Local inventory check
+      const [p] = await db.select().from(products).where(eq(products.id, productId));
+      if (!p || p.deleted_at || !p.is_active || p.quantity <= 0) {
+        return { available: false, reason: "المنتج غير متوفر في المخزون" };
+      }
+      return { available: true };
+    }
+
+    const markOutOfStockAndRemove = async (reason: string) => {
+      logger.warn({ productId, platform: dp.platform, source_id: dp.source_id, reason }, "Dropship product out of stock / removed. Automatically deleting and hiding from store...");
+      await db.update(products).set({
+        is_active: false,
+        quantity: 0,
+        deleted_at: new Date(),
+      }).where(eq(products.id, productId));
+      await db.delete(dropship_products).where(eq(dropship_products.id, dp.id));
+      const res = { available: false, reason };
+      dropshipStockCheckCache.set(productId, { timestamp: Date.now(), result: res });
+      return res;
+    };
+
+    const settings = await db.select().from(platform_settings);
+    const cfg: Record<string, string> = {};
+    settings.forEach(s => { cfg[s.key] = s.value; });
+
+    // 1. ALIEXPRESS
+    if (dp.platform === "aliexpress") {
+      const creds = await getAliExpressCreds();
+      if (creds && dp.source_id) {
+        const aliProduct = await fetchAliExpressProduct(dp.source_id, creds);
+        if (!aliProduct) {
+          return await markOutOfStockAndRemove("المنتج لم يعد متوفراً أو تم حذفه من AliExpress");
+        }
+
+        const targetSalePrice = parseFloat(aliProduct.target_sale_price) || 0;
+        const targetOrigPrice = parseFloat(aliProduct.target_original_price) || 0;
+        const newSourcePrice = targetSalePrice || targetOrigPrice;
+
+        if (newSourcePrice <= 0) {
+          return await markOutOfStockAndRemove("نفدت كمية المنتج من AliExpress (السعر غير متوفر أو 0)");
+        }
+
+        const margin = dp.source_price > 0 ? dp.our_price / dp.source_price : 1.3;
+        const newOurPrice = parseFloat((newSourcePrice * margin).toFixed(2));
+        await db.update(dropship_products).set({
+          source_price: newSourcePrice,
+          our_price: newOurPrice,
+          supplier_name: aliProduct.shop_name || dp.supplier_name,
+        }).where(eq(dropship_products.id, dp.id));
+
+        await db.update(products).set({
+          price: newOurPrice,
+          cost: newSourcePrice,
+          is_active: true,
+        }).where(eq(products.id, productId));
+
+        const res = { available: true, newPrice: newOurPrice };
+        dropshipStockCheckCache.set(productId, { timestamp: Date.now(), result: res });
+        return res;
+      }
+    }
+
+    // 2. AMAZON
+    if (dp.platform === "amazon" && dp.source_id) {
+      const amazonCreds = await getAmazonCreds();
+      if (amazonCreds) {
+        const items = await fetchAmazonItems([dp.source_id], amazonCreds);
+        if (!items || items.length === 0) {
+          return await markOutOfStockAndRemove("المنتج لم يعد متوفراً على أمازون");
+        }
+        const item = items[0];
+        const price = item.Offers?.Listings?.[0]?.Price?.Amount || 0;
+        if (price <= 0) {
+          return await markOutOfStockAndRemove("نفد مخزون المنتج من أمازون");
+        }
+        const margin = dp.source_price > 0 ? dp.our_price / dp.source_price : 1.3;
+        const newOurPrice = parseFloat((price * margin).toFixed(2));
+        await db.update(dropship_products).set({
+          source_price: price,
+          our_price: newOurPrice,
+        }).where(eq(dropship_products.id, dp.id));
+        await db.update(products).set({
+          price: newOurPrice,
+          cost: price,
+          is_active: true,
+        }).where(eq(products.id, productId));
+        const res = { available: true, newPrice: newOurPrice };
+        dropshipStockCheckCache.set(productId, { timestamp: Date.now(), result: res });
+        return res;
+      }
+    }
+
+    // 3. EXTERNAL URL / OTHER PLATFORMS
+    if (dp.source_url && dp.source_url.startsWith("http")) {
+      try {
+        const res = await fetch(dp.source_url, {
+          headers: {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
+          },
+          signal: AbortSignal.timeout(7000),
+          redirect: "follow",
+        });
+
+        if (res.status === 404 || res.status === 410) {
+          return await markOutOfStockAndRemove("صفحة المنتج في الموقع المصدر محذوفة أو غير موجودة (404)");
+        }
+
+        if (res.ok) {
+          const html = await res.text();
+          const lower = html.toLowerCase();
+          const outOfStockKeywords = [
+            "out of stock",
+            "currently unavailable",
+            "sold out",
+            "item is no longer available",
+            "غير متوفر حالياً",
+            "نفدت الكمية",
+            "غير متاح",
+            "نفذت الكمية",
+            "this product is no longer available"
+          ];
+          const isOut = outOfStockKeywords.some(kw => lower.includes(kw));
+          if (isOut) {
+            return await markOutOfStockAndRemove("نفد مخزون المنتج من موقع المورد الخارجي");
+          }
+        }
+      } catch (scrapeErr: any) {
+        logger.warn({ err: scrapeErr.message, url: dp.source_url }, "External source URL check timed out or errored, preserving product");
+      }
+    }
+
+    const res = { available: true };
+    dropshipStockCheckCache.set(productId, { timestamp: Date.now(), result: res });
+    return res;
+  } catch (err: any) {
+    logger.error({ err: err.message, productId }, "verifyAndSyncDropshipProductStock failed");
+    return { available: true };
+  }
+}
+
+// ========== SYNC LIVE STOCK & PRICES FROM ALL PLATFORMS (ALIEXPRESS, AMAZON, EXTERNAL) ==========
 router.post("/admin/dropship/sync-stock", requireAuth, requireRole("admin", "manager"), async (_req, res, next) => {
   try {
     const dropships = await db.select().from(dropship_products);
-    const settings = await db.select().from(platform_settings);
-    const cfg: Record<string, string> = {}; settings.forEach(s => { cfg[s.key] = s.value; });
-    const hasAliKey = cfg["aliexpress_app_key"] && cfg["aliexpress_app_key_secret"];
-    const aliCreds: AliExpressCredentials | null = hasAliKey ? {
-      appKey: cfg["aliexpress_app_key"],
-      appSecret: cfg["aliexpress_app_key_secret"],
-      trackingId: cfg["aliexpress_tracking_id"],
-    } : null;
-
     let updatedCount = 0;
     let deletedCount = 0;
 
     for (const dp of dropships) {
-      if (dp.platform === "aliexpress" && aliCreds && dp.source_id) {
-        try {
-          const aliProduct = await fetchAliExpressProduct(dp.source_id, aliCreds);
-          if (!aliProduct) {
-            // Product removed / out of stock -> Delete from database
-            if (dp.product_id) {
-              await db.update(products).set({ deleted_at: new Date(), is_active: false, quantity: 0 }).where(eq(products.id, dp.product_id));
-            }
-            await db.delete(dropship_products).where(eq(dropship_products.id, dp.id));
-            deletedCount++;
-            continue;
-          }
-
-          const targetSalePrice = parseFloat(aliProduct.target_sale_price) || 0;
-          const targetOrigPrice = parseFloat(aliProduct.target_original_price) || 0;
-          const newSourcePrice = targetSalePrice || targetOrigPrice;
-
-          if (newSourcePrice <= 0) {
-            // Out of stock -> Delete from database
-            if (dp.product_id) {
-              await db.update(products).set({ deleted_at: new Date(), is_active: false, quantity: 0 }).where(eq(products.id, dp.product_id));
-            }
-            await db.delete(dropship_products).where(eq(dropship_products.id, dp.id));
-            deletedCount++;
-            continue;
-          }
-
-          const margin = dp.source_price > 0 ? dp.our_price / dp.source_price : 1.3;
-          const newOurPrice = parseFloat((newSourcePrice * margin).toFixed(2));
-          await db.update(dropship_products).set({
-            source_price: newSourcePrice,
-            our_price: newOurPrice,
-            supplier_name: aliProduct.shop_name || dp.supplier_name,
-          }).where(eq(dropship_products.id, dp.id));
-
-          if (dp.product_id) {
-            await db.update(products).set({
-              price: newOurPrice,
-              cost: newSourcePrice,
-              is_active: true,
-            }).where(eq(products.id, dp.product_id));
-          }
+      if (dp.product_id) {
+        const check = await verifyAndSyncDropshipProductStock(dp.product_id, { forceLive: true });
+        if (!check.available) {
+          deletedCount++;
+        } else {
           updatedCount++;
-        } catch {
-          // If error during API call, keep current state
         }
-      } else if (dp.product_id) {
-        // Fallback simulated stock sync
-        const randomStockVariation = 150 + ((dp.id * 37) % 850);
-        await db.update(products).set({
-          quantity: randomStockVariation,
-          is_active: true,
-        }).where(eq(products.id, dp.product_id));
-        updatedCount++;
       }
     }
 
     return res.json({
       success: true,
-      message: `تمت مزامنة المخزون بنجاح (تحديث ${updatedCount} منتج، وحذف ${deletedCount} منتج نفد مخزونه من علي إكسبرس)!`,
+      message: `تمت مزامنة وفحص المخزون بنجاح (فحص ${dropships.length} منتج، تحديث ${updatedCount}، وحذف/إخفاء ${deletedCount} منتج نفد من المصدر)!`,
+      total_checked: dropships.length,
       synced_count: updatedCount,
       deleted_count: deletedCount,
     });
@@ -2678,94 +2813,37 @@ router.get("/admin/dropship/api-search", requireAuth, requireRole("admin", "mana
   } catch (err) { next(err); }
 });
 
-// ========== AUTO PRICE & STOCK SYNC ==========
+// ========== AUTO PRICE & STOCK SYNC (ALL PLATFORMS) ==========
 export function startPriceSyncJob() {
-  const INTERVAL_MS = 30 * 60 * 1000;
+  const INTERVAL_MS = 15 * 60 * 1000; // Every 15 minutes
   async function syncPrices() {
     try {
       const dps = await db.select().from(dropship_products);
       if (!dps.length) return;
-      const settings = await db.select().from(platform_settings);
-      const cfg: Record<string, string> = {}; settings.forEach(s => { cfg[s.key] = s.value; });
       let synced = 0;
       let deletedOutOfStock = 0;
 
       for (const dp of dps) {
-        const hasAliKey = dp.platform === "aliexpress" && cfg["aliexpress_app_key"] && cfg["aliexpress_app_key_secret"];
-        const hasAmazonKey = dp.platform === "amazon" && cfg["amazon_access_key"];
-
-        if (hasAliKey && dp.source_id) {
-          // Real AliExpress API sync
+        if (dp.product_id) {
           try {
-            const aliCreds: AliExpressCredentials = {
-              appKey: cfg["aliexpress_app_key"],
-              appSecret: cfg["aliexpress_app_key_secret"],
-              trackingId: cfg["aliexpress_tracking_id"],
-            };
-            const aliProduct = await fetchAliExpressProduct(dp.source_id, aliCreds);
-            
-            // If product is no longer found or removed from AliExpress -> Auto delete
-            if (!aliProduct) {
-              logger.warn({ source_id: dp.source_id, product_id: dp.product_id }, "AliExpress product not found / removed. Deleting from database...");
-              if (dp.product_id) {
-                await db.update(products).set({ deleted_at: new Date(), is_active: false, quantity: 0 }).where(eq(products.id, dp.product_id));
-              }
-              await db.delete(dropship_products).where(eq(dropship_products.id, dp.id));
+            const res = await verifyAndSyncDropshipProductStock(dp.product_id, { forceLive: true });
+            if (!res.available) {
               deletedOutOfStock++;
-              continue;
+            } else {
+              synced++;
             }
-
-            const targetSalePrice = parseFloat(aliProduct.target_sale_price) || 0;
-            const targetOrigPrice = parseFloat(aliProduct.target_original_price) || 0;
-            const newSourcePrice = targetSalePrice || targetOrigPrice;
-
-            // If price is 0 or out of stock -> Auto delete from database
-            if (newSourcePrice <= 0) {
-              logger.warn({ source_id: dp.source_id, product_id: dp.product_id }, "AliExpress product is out of stock (price 0). Deleting from database...");
-              if (dp.product_id) {
-                await db.update(products).set({ deleted_at: new Date(), is_active: false, quantity: 0 }).where(eq(products.id, dp.product_id));
-              }
-              await db.delete(dropship_products).where(eq(dropship_products.id, dp.id));
-              deletedOutOfStock++;
-              continue;
-            }
-
-            const margin = dp.source_price > 0 ? dp.our_price / dp.source_price : 1.3;
-            const newOurPrice = parseFloat((newSourcePrice * margin).toFixed(2));
-            await db.update(dropship_products).set({
-              source_price: newSourcePrice,
-              our_price: newOurPrice,
-              supplier_name: aliProduct.shop_name || dp.supplier_name,
-            }).where(eq(dropship_products.id, dp.id));
-
-            if (dp.product_id) {
-              await db.update(products).set({
-                price: newOurPrice,
-                cost: newSourcePrice,
-                name: aliProduct.product_title || undefined,
-                image: aliProduct.product_main_image_url || undefined,
-                is_active: true,
-              }).where(eq(products.id, dp.product_id));
-            }
-            synced++;
-          } catch (e) {
-            logger.error({ err: e, source_id: dp.source_id }, "AliExpress sync failed for product");
+          } catch (itemErr: any) {
+            logger.error({ err: itemErr.message, product_id: dp.product_id, platform: dp.platform }, "Stock sync error for item");
           }
-        } else if (!hasAliKey && !hasAmazonKey) {
-          // Demo mode: slight price fluctuation to simulate live sync
-          const fluctuation = 1 + (Math.random() * 0.06 - 0.03);
-          const newSourcePrice = parseFloat((dp.source_price * fluctuation).toFixed(2));
-          const margin = dp.source_price > 0 ? dp.our_price / dp.source_price : 1.3;
-          const newOurPrice = parseFloat((newSourcePrice * margin).toFixed(2));
-          await db.update(dropship_products).set({ source_price: newSourcePrice, our_price: newOurPrice }).where(eq(dropship_products.id, dp.id));
-          if (dp.product_id) await db.update(products).set({ price: newOurPrice, cost: newSourcePrice }).where(eq(products.id, dp.product_id));
-          synced++;
         }
       }
-      logger.info({ synced, deletedOutOfStock }, "Price and stock sync completed");
-    } catch (e) { logger.error({ err: e }, "Price sync error"); }
+      logger.info({ total: dps.length, synced, deletedOutOfStock }, "Background price and stock sync finished. Out-of-stock items removed.");
+    } catch (e: any) {
+      logger.error({ err: e.message }, "Background price & stock sync job error");
+    }
   }
-  setTimeout(syncPrices, 2 * 60 * 1000);
+  // Initial run 30s after startup, then every 15 minutes
+  setTimeout(syncPrices, 30 * 1000);
   setInterval(syncPrices, INTERVAL_MS);
 }
 
