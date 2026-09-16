@@ -44,14 +44,23 @@ export default function HomeScreen() {
   const featured = products.slice(0, 6);
   const topSelling = products.slice(6, 12);
 
-  // Group products by category dynamically for rich Home showcase
-  const categoriesWithProducts = categories.map((cat: any) => {
-    const catProds = products.filter((p: any) => Number(p.category_id) === Number(cat.id));
-    return {
-      ...cat,
-      products: catProds,
-    };
-  }).filter((c: any) => c.products.length > 0);
+  // Group products by category dynamically for rich Home showcase (high performance memoized O(N) grouping)
+  const categoriesWithProducts = React.useMemo(() => {
+    if (!categories.length || !products.length) return [];
+    const prodMap = new Map<number, any[]>();
+    for (const p of products) {
+      const cid = Number(p.category_id);
+      if (!prodMap.has(cid)) prodMap.set(cid, []);
+      const list = prodMap.get(cid)!;
+      if (list.length < 8) list.push(p);
+    }
+    return categories
+      .map((cat: any) => ({
+        ...cat,
+        products: prodMap.get(Number(cat.id)) || [],
+      }))
+      .filter((c: any) => c.products.length > 0);
+  }, [categories, products]);
 
   const [activeSlide, setActiveSlide] = useState(0);
   const sliderRef = useRef<FlatList>(null);

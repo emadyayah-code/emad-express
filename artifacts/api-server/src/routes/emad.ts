@@ -1074,20 +1074,94 @@ router.get("/reports/customers", requireAuth, requireRole("admin", "manager", "s
   } catch (err) { next(err); }
 });
 
-// ========== PUBLIC PRODUCTS & CATEGORIES ==========
+// ========== PUBLIC PRODUCTS & CATEGORIES (HIGH PERFORMANCE CACHE) ==========
+interface ProductCacheItem {
+  data: any;
+  expires: number;
+}
+const productsApiCache = new Map<string, ProductCacheItem>();
+
+function getCachedProducts(key: string): any | null {
+  const item = productsApiCache.get(key);
+  if (!item) return null;
+  if (Date.now() > item.expires) {
+    productsApiCache.delete(key);
+    return null;
+  }
+  return item.data;
+}
+
+function setCachedProducts(key: string, data: any, ttlSec: number = 180) {
+  if (productsApiCache.size > 150) {
+    const first = productsApiCache.keys().next().value;
+    if (first) productsApiCache.delete(first);
+  }
+  productsApiCache.set(key, { data, expires: Date.now() + ttlSec * 1000 });
+}
+
+export function clearProductsCache() {
+  productsApiCache.clear();
+}
+
 router.get("/products", async (req, res, next) => {
   try {
-    const { category_id, lang } = req.query as Record<string, string>;
+    const { category_id, lang, page = "1", limit, search = "" } = req.query as Record<string, string>;
     const requestLang = lang || (req.headers["accept-language"]?.includes("en") ? "en" : "ar");
-    const conds = [eq(products.is_active, true), isNull(products.deleted_at)];
-    if (category_id) { const catId = parseInt(category_id); if (!isNaN(catId)) conds.push(eq(products.category_id, catId)); }
-    const rawData = await db.select().from(products).where(and(...conds)).orderBy(desc(products.id));
+    const p = Math.max(1, parseInt(page) || 1);
+    // Sensible default limit for blazing mobile performance
+    const defaultLimit = category_id ? 150 : (limit ? Math.min(300, Math.max(1, parseInt(limit))) : 100);
+
+    const cacheKey = `p_${category_id || "all"}_${requestLang}_${p}_${defaultLimit}_${search.trim().toLowerCase()}`;
+    const cached = getCachedProducts(cacheKey);
+    if (cached) {
+      res.setHeader("X-Cache", "HIT");
+      res.setHeader("Cache-Control", "public, max-age=60, stale-while-revalidate=180");
+      return res.json(cached);
+    }
+
+    const conds: any[] = [eq(products.is_active, true), isNull(products.deleted_at)];
+    if (category_id) {
+      const catId = parseInt(category_id);
+      if (!isNaN(catId)) conds.push(eq(products.category_id, catId));
+    }
+
+    if (search && search.trim()) {
+      const q = `%${escapeLike(search.trim())}%`;
+      conds.push(or(like(products.name_ar, q), like(products.name_en, q)));
+    }
+
+    // High performance projection: OMIT massive 10,000 char descriptions in list view
+    const rawData = await db
+      .select({
+        id: products.id,
+        name_ar: products.name_ar,
+        name_en: products.name_en,
+        sku: products.sku,
+        price: products.price,
+        cost: products.cost,
+        quantity: products.quantity,
+        category_id: products.category_id,
+        image: products.image,
+        is_active: products.is_active,
+      })
+      .from(products)
+      .where(and(...conds))
+      .orderBy(desc(products.id))
+      .limit(defaultLimit)
+      .offset((p - 1) * defaultLimit);
+
     const data = rawData.map(p => ({
       ...p,
       name: requestLang === "en" ? (p.name_en || (p as any).name || p.name_ar) : (p.name_ar || (p as any).name || p.name_en),
-      description: requestLang === "en" ? (p.description_en || (p as any).description || p.description_ar) : (p.description_ar || (p as any).description || p.description_en),
+      description: "", // Full description fetched only on product details page
     }));
-    return res.json({ success: true, data, total: data.length });
+
+    const result = { success: true, data, total: data.length, page: p, limit: defaultLimit };
+    setCachedProducts(cacheKey, result, 180);
+
+    res.setHeader("X-Cache", "MISS");
+    res.setHeader("Cache-Control", "public, max-age=60, stale-while-revalidate=180");
+    return res.json(result);
   } catch (err) { next(err); }
 });
 
@@ -1119,8 +1193,21 @@ router.get("/products/:id", validateParams(idParamSchema), async (req, res, next
 
 router.get("/categories", async (_req, res, next) => {
   try {
+    const cacheKey = "cached_categories_all";
+    const cached = getCachedProducts(cacheKey);
+    if (cached) {
+      res.setHeader("X-Cache", "HIT");
+      res.setHeader("Cache-Control", "public, max-age=300, stale-while-revalidate=600");
+      return res.json(cached);
+    }
+
     const data = await db.select().from(categories).where(and(eq(categories.is_active, true), isNull(categories.deleted_at))).orderBy(categories.id);
-    return res.json({ success: true, data });
+    const result = { success: true, data };
+    setCachedProducts(cacheKey, result, 600); // 10 min cache
+
+    res.setHeader("X-Cache", "MISS");
+    res.setHeader("Cache-Control", "public, max-age=300, stale-while-revalidate=600");
+    return res.json(result);
   } catch (err) { next(err); }
 });
 

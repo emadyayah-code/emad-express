@@ -118,6 +118,10 @@ export default function ProductsScreen() {
           contentContainerStyle={{ padding: 12, gap: 10 }}
           columnWrapperStyle={{ gap: 10 }}
           showsVerticalScrollIndicator={false}
+          initialNumToRender={8}
+          maxToRenderPerBatch={10}
+          windowSize={5}
+          removeClippedSubviews={Platform.OS === "android"}
           renderItem={({ item }: { item: any }) => {
             const displayName = language === "ar" ? (item.name_ar || item.name) : (item.name_en || item.name);
             const isFav = isFavorite(item.id);
