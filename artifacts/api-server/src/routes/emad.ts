@@ -1625,42 +1625,36 @@ const GLOBAL_DISCOVERY_TERMS = [
   "cat tree tower", "car tire inflator", "robot vacuum cleaner", "hair straightener brush", "makeup brush set"
 ];
 
-function getAliSearchParams(page: number, queryKw?: string, category_id?: string) {
+function getAliSearchParams(page: number, queryKw?: string, category_id?: string, seed = 0) {
   let kw = (queryKw || "").trim();
   let catId = (category_id || "").trim() || undefined;
+  const baseSeed = seed ? Math.abs(seed) : 0;
   let actualPage = 1;
 
   if (kw && !catId) {
-    if (page <= 3) {
-      actualPage = page;
-    } else {
-      const modifiers = [
-        "best", "top", "hot", "new", "pro", "high quality",
-        "portable", "smart", "universal", "wireless", "mini", "accessories", "sale"
-      ];
-      const modIdx = (page - 4) % modifiers.length;
-      kw = `${kw} ${modifiers[modIdx]}`;
-      actualPage = Math.floor((page - 4) / modifiers.length) + 1;
-    }
+    const modifiers = [
+      "", "best", "top", "hot", "new", "pro", "high quality",
+      "portable", "smart", "universal", "wireless", "mini", "accessories", "sale", "premium", "luxury"
+    ];
+    const modIdx = (page + baseSeed) % modifiers.length;
+    const modifier = modifiers[modIdx];
+    kw = modifier ? `${kw} ${modifier}` : kw;
+    actualPage = ((Math.floor((page + baseSeed) / modifiers.length)) % 20) + 1;
   } else if (catId) {
     const terms = CATEGORY_DISCOVERY_MAP[catId] || GLOBAL_DISCOVERY_TERMS;
     if (kw) {
-      if (page <= 2) {
-        actualPage = page;
-      } else {
-        const modIdx = (page - 3) % terms.length;
-        kw = `${kw} ${terms[modIdx]}`;
-        actualPage = Math.floor((page - 3) / terms.length) + 1;
-      }
+      const modIdx = (page + baseSeed) % terms.length;
+      kw = `${kw} ${terms[modIdx]}`;
+      actualPage = ((Math.floor((page + baseSeed) / terms.length)) % 20) + 1;
     } else {
-      const termIdx = (page - 1) % terms.length;
+      const termIdx = (page - 1 + baseSeed) % terms.length;
       kw = terms[termIdx];
-      actualPage = Math.floor((page - 1) / terms.length) + 1;
+      actualPage = ((Math.floor((page - 1 + baseSeed) / terms.length)) % 20) + 1;
     }
   } else {
-    const termIdx = (page - 1) % GLOBAL_DISCOVERY_TERMS.length;
+    const termIdx = (page - 1 + baseSeed) % GLOBAL_DISCOVERY_TERMS.length;
     kw = GLOBAL_DISCOVERY_TERMS[termIdx];
-    actualPage = Math.floor((page - 1) / GLOBAL_DISCOVERY_TERMS.length) + 1;
+    actualPage = ((Math.floor((page - 1 + baseSeed) / GLOBAL_DISCOVERY_TERMS.length)) % 20) + 1;
   }
 
   return { kw, catId, actualPage };
@@ -1691,13 +1685,14 @@ router.get("/admin/dropship/fetch-chunk", requireAuth, requireRole("admin", "man
     const pageSize = Math.min(50, Math.max(10, parseInt(String(req.query.page_size || "50"))));
     const category_id = req.query.category_id ? String(req.query.category_id).trim() : undefined;
     const queryKw = req.query.keyword ? String(req.query.keyword).trim() : "";
+    const seed = parseInt(String(req.query.seed || "0")) || 0;
     const creds = await getAliExpressCreds();
 
     if (platform !== "aliexpress" || !creds) {
       return res.json({ success: true, page, count: 0, products: [] });
     }
 
-    const { kw, catId, actualPage } = getAliSearchParams(page, queryKw, category_id);
+    const { kw, catId, actualPage } = getAliSearchParams(page, queryKw, category_id, seed);
 
     let prods = await searchAliExpressProducts(kw, creds, actualPage, pageSize, catId).catch(() => []);
     if ((!prods || prods.length === 0) && catId) {
@@ -1742,24 +1737,14 @@ router.get("/admin/dropship/fetch-chunk", requireAuth, requireRole("admin", "man
 
 router.post("/admin/dropship/import-chunk", requireAuth, requireRole("admin", "manager"), async (req, res, next) => {
   try {
-    const { platform = "aliexpress", page = 1, category_id, keyword, margin_percent = 35 } = req.body || {};
+    const { platform = "aliexpress", page = 1, category_id, keyword, margin_percent = 35, seed = 0 } = req.body || {};
     const creds = await getAliExpressCreds();
     if (platform !== "aliexpress" || !creds) {
       return res.status(400).json({ success: false, message: "بيانات اعتماد AliExpress غير متوفرة" });
     }
 
     const pageNum = Math.max(1, parseInt(String(page)));
-    const { kw, catId, actualPage } = getAliSearchParams(pageNum, keyword, category_id);
-
-    let prods = await searchAliExpressProducts(kw, creds, actualPage, 50, catId).catch(() => []);
-    if ((!prods || prods.length === 0) && catId) {
-      prods = await searchAliExpressProducts(kw, creds, actualPage, 50).catch(() => []);
-    }
-
-    if (!prods || prods.length === 0) {
-      const [{ totalInDb = 0 } = {}] = await db.select({ totalInDb: sql<number>`COUNT(*)` }).from(products).where(isNull(products.deleted_at));
-      return res.json({ success: true, page: pageNum, imported: 0, skipped: 0, total_in_db: Number(totalInDb) });
-    }
+    const seedNum = parseInt(String(seed)) || 0;
 
     const existingDropships = await db.select({ source_id: dropship_products.source_id }).from(dropship_products);
     const existingProducts = await db.select({ sku: products.sku, image: products.image }).from(products).where(isNull(products.deleted_at));
@@ -1772,51 +1757,62 @@ router.post("/admin/dropship/import-chunk", requireAuth, requireRole("admin", "m
     );
 
     const margin = (100 + (margin_percent || 35)) / 100;
-    const productRecords = [];
-    const metaRecords: any[] = [];
+    let productRecords: any[] = [];
+    let metaRecords: any[] = [];
     let skippedCount = 0;
 
-    for (const p of prods) {
-      const srcId = String(p.product_id).trim();
-      let img = p.product_main_image_url || "";
-      if (img.startsWith("//")) img = `https:${img}`;
-      const normImg = normalizeImageUrl(img);
+    // Try up to 3 discovery variations if initial search items are all duplicates
+    for (let attempt = 0; attempt < 3 && productRecords.length === 0; attempt++) {
+      const currentEffPage = pageNum + (attempt * 3);
+      const { kw, catId, actualPage } = getAliSearchParams(currentEffPage, keyword, category_id, seedNum);
 
-      // Strict Deduplication: Skip if duplicate product ID OR duplicate image URL
-      if (!srcId || existingSet.has(srcId) || (normImg && existingImageSet.has(normImg))) {
-        skippedCount++;
-        continue;
+      let prods = await searchAliExpressProducts(kw, creds, actualPage, 50, catId).catch(() => []);
+      if ((!prods || prods.length === 0) && catId) {
+        prods = await searchAliExpressProducts(kw, creds, actualPage, 50).catch(() => []);
       }
-      existingSet.add(srcId);
-      if (normImg) existingImageSet.add(normImg);
 
-      const sourcePrice = parsePrice(p.target_sale_price || p.target_original_price, 25);
-      const salePrice = Number((sourcePrice * margin).toFixed(2));
-      const skuUnique = `ALI-${srcId}-${Date.now().toString(36).slice(-4)}`;
-      const autoCatId = await matchCategoryId(`${p.product_title} ${p.first_level_category_name || ""}`, category_id ? Number(category_id) : null);
+      for (const p of prods || []) {
+        const srcId = String(p.product_id).trim();
+        let img = p.product_main_image_url || "";
+        if (img.startsWith("//")) img = `https:${img}`;
+        const normImg = normalizeImageUrl(img);
 
-      productRecords.push({
-        name_ar: String(p.product_title || `AliExpress Product ${srcId}`).slice(0, 450),
-        name_en: String(p.product_title || `AliExpress Product ${srcId}`).slice(0, 450),
-        sku: skuUnique,
-        price: salePrice,
-        cost: sourcePrice,
-        quantity: 500 + ((parseInt(srcId.slice(-4)) || 100) % 1500),
-        min_quantity: 5,
-        category_id: autoCatId,
-        description_ar: `${p.product_title} - منتج أصلي عالي الجودة متوفر للشحن السريع والتسليم الفوري.`,
-        description_en: `${p.product_title} - Premium quality genuine product with fast direct delivery.`,
-        image: img,
-        is_active: true,
-      });
+        // Strict Deduplication: Skip if duplicate product ID OR duplicate image URL
+        if (!srcId || existingSet.has(srcId) || (normImg && existingImageSet.has(normImg))) {
+          skippedCount++;
+          continue;
+        }
+        existingSet.add(srcId);
+        if (normImg) existingImageSet.add(normImg);
 
-      metaRecords.push({
-        source_id: srcId,
-        source_url: p.product_detail_url || `https://www.aliexpress.com/item/${srcId}.html`,
-        source_price: sourcePrice,
-        our_price: salePrice,
-        supplier_name: p.shop_name || "AliExpress Verified Seller",
-      });
+        const sourcePrice = parsePrice(p.target_sale_price || p.target_original_price, 25);
+        const salePrice = Number((sourcePrice * margin).toFixed(2));
+        const skuUnique = `ALI-${srcId}-${Date.now().toString(36).slice(-4)}`;
+        const autoCatId = await matchCategoryId(`${p.product_title} ${p.first_level_category_name || ""}`, category_id ? Number(category_id) : null);
+
+        productRecords.push({
+          name_ar: String(p.product_title || `AliExpress Product ${srcId}`).slice(0, 450),
+          name_en: String(p.product_title || `AliExpress Product ${srcId}`).slice(0, 450),
+          sku: skuUnique,
+          price: salePrice,
+          cost: sourcePrice,
+          quantity: 500 + ((parseInt(srcId.slice(-4)) || 100) % 1500),
+          min_quantity: 5,
+          category_id: autoCatId,
+          description_ar: `${p.product_title} - منتج أصلي عالي الجودة متوفر للشحن السريع والتسليم الفوري.`,
+          description_en: `${p.product_title} - Premium quality genuine product with fast direct delivery.`,
+          image: img,
+          is_active: true,
+        });
+
+        metaRecords.push({
+          source_id: srcId,
+          source_url: p.product_detail_url || `https://www.aliexpress.com/item/${srcId}.html`,
+          source_price: sourcePrice,
+          our_price: salePrice,
+          supplier_name: p.shop_name || "AliExpress Verified Seller",
+        });
+      }
     }
 
     let importedCount = 0;
@@ -1844,7 +1840,7 @@ router.post("/admin/dropship/import-chunk", requireAuth, requireRole("admin", "m
           importedCount = inserted.length;
         }
       } catch (err) {
-        logger.warn({ err }, "Import chunk insert error");
+        logger.warn({ err }, "Chunk insert error");
       }
     }
 

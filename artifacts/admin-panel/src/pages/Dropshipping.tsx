@@ -896,17 +896,18 @@ function AutoFetchButton({ platform, onResults }: { platform: string; onResults:
   const fetchBrowse = async () => {
     setLoading(true); setError(""); setSuccessMsg("");
     setFetchProgress({ current: 0, total: targetCount, percent: 0 });
+    const seed = Math.floor(Math.random() * 60) + 1;
     try {
       const catParam = selectedCat ? `&category_id=${selectedCat}` : "";
       const kwParam = keyword ? `&keyword=${encodeURIComponent(keyword)}` : "";
       const allFetched: any[] = [];
-      const maxPages = Math.max(100, Math.ceil(targetCount / 10));
+      const maxPages = Math.max(150, Math.ceil(targetCount / 10));
       let p = 1;
       let consecutiveZero = 0;
 
       while (allFetched.length < targetCount && p <= maxPages) {
         try {
-          const r = await api.get(`/admin/dropship/fetch-chunk?platform=${platform}&page=${p}&page_size=50${catParam}${kwParam}`);
+          const r = await api.get(`/admin/dropship/fetch-chunk?platform=${platform}&page=${p}&page_size=50&seed=${seed}${catParam}${kwParam}`);
           const newProds = r.products || [];
           let added = 0;
           for (const np of newProds) {
@@ -919,7 +920,7 @@ function AutoFetchButton({ platform, onResults }: { platform: string; onResults:
 
           if (added === 0) {
             consecutiveZero++;
-            if (consecutiveZero >= 5) break;
+            if (consecutiveZero >= 25) break;
           } else {
             consecutiveZero = 0;
           }
@@ -948,10 +949,11 @@ function AutoFetchButton({ platform, onResults }: { platform: string; onResults:
   const import1000Directly = async () => {
     setImportingDirect(true); setError(""); setSuccessMsg("");
     setImportProgress({ current: 0, total: targetCount, percent: 0 });
+    const seed = Math.floor(Math.random() * 60) + 1;
     try {
       let totalImported = 0;
       let lastTotalInDb = 0;
-      const maxPages = Math.max(100, Math.ceil(targetCount / 10));
+      const maxPages = Math.max(150, Math.ceil(targetCount / 10));
       let p = 1;
       let consecutiveZero = 0;
 
@@ -962,7 +964,8 @@ function AutoFetchButton({ platform, onResults }: { platform: string; onResults:
             page: p,
             margin_percent: 35, 
             category_id: selectedCat || undefined,
-            keyword: keyword || undefined 
+            keyword: keyword || undefined,
+            seed
           });
           const imported = res.imported || 0;
           totalImported += imported;
@@ -970,7 +973,7 @@ function AutoFetchButton({ platform, onResults }: { platform: string; onResults:
 
           if (imported === 0) {
             consecutiveZero++;
-            if (consecutiveZero >= 5) break;
+            if (consecutiveZero >= 25) break;
           } else {
             consecutiveZero = 0;
           }
@@ -987,7 +990,11 @@ function AutoFetchButton({ platform, onResults }: { platform: string; onResults:
 
       qc.invalidateQueries({ queryKey: ["dropship-products"] });
       qc.invalidateQueries({ queryKey: ["products"] });
-      setSuccessMsg(`تم بنجاح استيراد ${totalImported} منتج جديد وحفظها في قاعدة البيانات! (إجمالي المتجر: ${lastTotalInDb.toLocaleString()} منتج)`);
+      if (totalImported > 0) {
+        setSuccessMsg(`تم بنجاح استيراد ${totalImported} منتج جديد وحفظها في قاعدة البيانات! (إجمالي المتجر: ${lastTotalInDb.toLocaleString()} منتج)`);
+      } else {
+        setSuccessMsg(`جميع منتجات هذه الصفحات موجودة بالفعل في متجرك (${lastTotalInDb.toLocaleString()} منتج). تم تغيير مؤشر البحث، انقر مرة أخرى لجلب دفعة جديدة أو اختر قسماً محدداً!`);
+      }
       setTimeout(() => setSuccessMsg(""), 10000);
     } catch (e: any) {
       setError(e?.message || "فشل الاستيراد المباشر");
@@ -1066,11 +1073,12 @@ function BulkImportSection({ onBrowse, onGoProducts }: { onBrowse: (r: any[]) =>
   const handleImport = async () => {
     setImporting(true); setError(""); setResult(null);
     setImportProgress({ current: 0, total: count, percent: 0, imported: 0 });
+    const seed = Math.floor(Math.random() * 60) + 1;
     try {
       let totalImported = 0;
       let totalSkipped = 0;
       let lastTotalInDb = 0;
-      const maxPages = Math.max(100, Math.ceil(count / 10));
+      const maxPages = Math.max(150, Math.ceil(count / 10));
       let p = 1;
       let consecutiveZero = 0;
 
@@ -1082,6 +1090,7 @@ function BulkImportSection({ onBrowse, onGoProducts }: { onBrowse: (r: any[]) =>
             margin_percent: margin,
             category_id: selectedCat || undefined,
             keyword: keyword.trim() || undefined,
+            seed,
           });
           const imported = res.imported || 0;
           totalImported += imported;
@@ -1090,7 +1099,7 @@ function BulkImportSection({ onBrowse, onGoProducts }: { onBrowse: (r: any[]) =>
 
           if (imported === 0) {
             consecutiveZero++;
-            if (consecutiveZero >= 5) break;
+            if (consecutiveZero >= 25) break;
           } else {
             consecutiveZero = 0;
           }
@@ -1109,7 +1118,9 @@ function BulkImportSection({ onBrowse, onGoProducts }: { onBrowse: (r: any[]) =>
       qc.invalidateQueries({ queryKey: ["products"] });
       setResult({
         success: true,
-        message: `تمت عملية الاستيراد بنجاح! تم استيراد وحفظ ${totalImported} منتج جديد في متجرك.`,
+        message: totalImported > 0
+          ? `تمت عملية الاستيراد بنجاح! تم استيراد وحفظ ${totalImported} منتج جديد في متجرك.`
+          : `جميع منتجات هذه الصفحات موجودة بالفعل في متجرك (${lastTotalInDb.toLocaleString()} منتج). تم تدوير مؤشر البحث، انقر مرة أخرى لجلب دفعة جديدة أو اختر قسماً آخر!`,
         imported: totalImported,
         skipped: totalSkipped,
         total_in_db: lastTotalInDb,
@@ -1125,17 +1136,18 @@ function BulkImportSection({ onBrowse, onGoProducts }: { onBrowse: (r: any[]) =>
   const handleBrowse = async () => {
     setBrowsing(true); setError("");
     setBrowseProgress({ current: 0, total: count, percent: 0 });
+    const seed = Math.floor(Math.random() * 60) + 1;
     try {
       const catParam = selectedCat ? `&category_id=${selectedCat}` : "";
       const kwParam = keyword.trim() ? `&keyword=${encodeURIComponent(keyword.trim())}` : "";
       const allFetched: any[] = [];
-      const maxPages = Math.max(100, Math.ceil(count / 10));
+      const maxPages = Math.max(150, Math.ceil(count / 10));
       let p = 1;
       let consecutiveZero = 0;
 
       while (allFetched.length < count && p <= maxPages) {
         try {
-          const r = await api.get(`/admin/dropship/fetch-chunk?platform=${platform}&page=${p}&page_size=50${catParam}${kwParam}`);
+          const r = await api.get(`/admin/dropship/fetch-chunk?platform=${platform}&page=${p}&page_size=50&seed=${seed}${catParam}${kwParam}`);
           const newProds = r.products || [];
           let added = 0;
           for (const np of newProds) {
@@ -1148,7 +1160,7 @@ function BulkImportSection({ onBrowse, onGoProducts }: { onBrowse: (r: any[]) =>
 
           if (added === 0) {
             consecutiveZero++;
-            if (consecutiveZero >= 5) break;
+            if (consecutiveZero >= 25) break;
           } else {
             consecutiveZero = 0;
           }
