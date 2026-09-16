@@ -899,27 +899,40 @@ function AutoFetchButton({ platform, onResults }: { platform: string; onResults:
     try {
       const catParam = selectedCat ? `&category_id=${selectedCat}` : "";
       const kwParam = keyword ? `&keyword=${encodeURIComponent(keyword)}` : "";
-      const numPages = Math.ceil(targetCount / 50);
       const allFetched: any[] = [];
+      const maxPages = Math.max(100, Math.ceil(targetCount / 10));
+      let p = 1;
+      let consecutiveZero = 0;
 
-      for (let p = 1; p <= numPages; p++) {
+      while (allFetched.length < targetCount && p <= maxPages) {
         try {
           const r = await api.get(`/admin/dropship/fetch-chunk?platform=${platform}&page=${p}&page_size=50${catParam}${kwParam}`);
           const newProds = r.products || [];
+          let added = 0;
           for (const np of newProds) {
             if (!allFetched.some(item => item.source_id === np.source_id)) {
               allFetched.push(np);
+              added++;
+              if (allFetched.length >= targetCount) break;
             }
           }
+
+          if (added === 0) {
+            consecutiveZero++;
+            if (consecutiveZero >= 5) break;
+          } else {
+            consecutiveZero = 0;
+          }
+
           const pct = Math.min(100, Math.round((allFetched.length / targetCount) * 100));
           setFetchProgress({ current: allFetched.length, total: targetCount, percent: pct });
           onResults([...allFetched]);
 
           if (allFetched.length >= targetCount) break;
-          if (newProds.length === 0 && (selectedCat || keyword)) break;
         } catch (err) {
           console.warn("Fetch chunk error:", err);
         }
+        p++;
       }
 
       setSuccessMsg(`تم جلب ${allFetched.length} منتج بنجاح من علي إكسبرس للتصفح والمعاينة!`);
@@ -936,11 +949,13 @@ function AutoFetchButton({ platform, onResults }: { platform: string; onResults:
     setImportingDirect(true); setError(""); setSuccessMsg("");
     setImportProgress({ current: 0, total: targetCount, percent: 0 });
     try {
-      const numPages = Math.ceil(targetCount / 50);
       let totalImported = 0;
       let lastTotalInDb = 0;
+      const maxPages = Math.max(100, Math.ceil(targetCount / 10));
+      let p = 1;
+      let consecutiveZero = 0;
 
-      for (let p = 1; p <= numPages; p++) {
+      while (totalImported < targetCount && p <= maxPages) {
         try {
           const res = await api.post("/admin/dropship/import-chunk", { 
             platform, 
@@ -949,13 +964,25 @@ function AutoFetchButton({ platform, onResults }: { platform: string; onResults:
             category_id: selectedCat || undefined,
             keyword: keyword || undefined 
           });
-          totalImported += res.imported || 0;
+          const imported = res.imported || 0;
+          totalImported += imported;
           if (res.total_in_db) lastTotalInDb = res.total_in_db;
-          const pct = Math.min(100, Math.round((p / numPages) * 100));
+
+          if (imported === 0) {
+            consecutiveZero++;
+            if (consecutiveZero >= 5) break;
+          } else {
+            consecutiveZero = 0;
+          }
+
+          const pct = Math.min(100, Math.round((totalImported / targetCount) * 100));
           setImportProgress({ current: totalImported, total: targetCount, percent: pct });
+
+          if (totalImported >= targetCount) break;
         } catch (err) {
           console.warn("Import chunk error:", err);
         }
+        p++;
       }
 
       qc.invalidateQueries({ queryKey: ["dropship-products"] });
@@ -1040,12 +1067,14 @@ function BulkImportSection({ onBrowse, onGoProducts }: { onBrowse: (r: any[]) =>
     setImporting(true); setError(""); setResult(null);
     setImportProgress({ current: 0, total: count, percent: 0, imported: 0 });
     try {
-      const numPages = Math.ceil(count / 50);
       let totalImported = 0;
       let totalSkipped = 0;
       let lastTotalInDb = 0;
+      const maxPages = Math.max(100, Math.ceil(count / 10));
+      let p = 1;
+      let consecutiveZero = 0;
 
-      for (let p = 1; p <= numPages; p++) {
+      while (totalImported < count && p <= maxPages) {
         try {
           const res = await api.post("/admin/dropship/import-chunk", {
             platform,
@@ -1054,21 +1083,33 @@ function BulkImportSection({ onBrowse, onGoProducts }: { onBrowse: (r: any[]) =>
             category_id: selectedCat || undefined,
             keyword: keyword.trim() || undefined,
           });
-          totalImported += res.imported || 0;
+          const imported = res.imported || 0;
+          totalImported += imported;
           totalSkipped += res.skipped || 0;
           if (res.total_in_db) lastTotalInDb = res.total_in_db;
-          const pct = Math.min(100, Math.round((p / numPages) * 100));
-          setImportProgress({ current: Math.min(p * 50, count), total: count, percent: pct, imported: totalImported });
+
+          if (imported === 0) {
+            consecutiveZero++;
+            if (consecutiveZero >= 5) break;
+          } else {
+            consecutiveZero = 0;
+          }
+
+          const pct = Math.min(100, Math.round((totalImported / count) * 100));
+          setImportProgress({ current: totalImported, total: count, percent: pct, imported: totalImported });
+
+          if (totalImported >= count) break;
         } catch (chunkErr) {
           console.warn("Bulk chunk import err:", chunkErr);
         }
+        p++;
       }
 
       qc.invalidateQueries({ queryKey: ["dropship-products"] });
       qc.invalidateQueries({ queryKey: ["products"] });
       setResult({
         success: true,
-        message: `تمت عملية الاستيراد المتدفق بنجاح! تم استيراد وحفظ ${totalImported} منتج جديد في متجرك.`,
+        message: `تمت عملية الاستيراد بنجاح! تم استيراد وحفظ ${totalImported} منتج جديد في متجرك.`,
         imported: totalImported,
         skipped: totalSkipped,
         total_in_db: lastTotalInDb,
@@ -1087,27 +1128,40 @@ function BulkImportSection({ onBrowse, onGoProducts }: { onBrowse: (r: any[]) =>
     try {
       const catParam = selectedCat ? `&category_id=${selectedCat}` : "";
       const kwParam = keyword.trim() ? `&keyword=${encodeURIComponent(keyword.trim())}` : "";
-      const numPages = Math.ceil(count / 50);
       const allFetched: any[] = [];
+      const maxPages = Math.max(100, Math.ceil(count / 10));
+      let p = 1;
+      let consecutiveZero = 0;
 
-      for (let p = 1; p <= numPages; p++) {
+      while (allFetched.length < count && p <= maxPages) {
         try {
           const r = await api.get(`/admin/dropship/fetch-chunk?platform=${platform}&page=${p}&page_size=50${catParam}${kwParam}`);
           const newProds = r.products || [];
+          let added = 0;
           for (const np of newProds) {
             if (!allFetched.some(item => item.source_id === np.source_id)) {
               allFetched.push(np);
+              added++;
+              if (allFetched.length >= count) break;
             }
           }
+
+          if (added === 0) {
+            consecutiveZero++;
+            if (consecutiveZero >= 5) break;
+          } else {
+            consecutiveZero = 0;
+          }
+
           const pct = Math.min(100, Math.round((allFetched.length / count) * 100));
           setBrowseProgress({ current: allFetched.length, total: count, percent: pct });
           onBrowse([...allFetched]);
 
           if (allFetched.length >= count) break;
-          if (newProds.length === 0 && (selectedCat || keyword.trim())) break;
         } catch (chunkErr) {
           console.warn("Bulk browse chunk err:", chunkErr);
         }
+        p++;
       }
     } catch (e: any) {
       setError(e?.message || "فشل جلب المنتجات للتصفح");

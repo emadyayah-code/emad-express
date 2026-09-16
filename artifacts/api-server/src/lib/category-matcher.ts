@@ -42,10 +42,43 @@ async function getCategories() {
   return categoryCache;
 }
 
+export const ALI_CAT_TO_DB_NAME: Record<string, string> = {
+  "1511": "ساعات ومجوهرات وإكسسوارات",
+  "44": "إلكترونيات استهلاكية",
+  "509": "هواتف ذكية وملحقاتها",
+  "15": "أجهزة منزلية كهربائية",
+  "1524": "حقائب وأحذية",
+  "1420": "تحسين المنزل والعدد والأدوات",
+  "34": "سيارات ودراجات نارية وقطع غيار",
+  "66": "الجمال والصحة والعناية الشخصية",
+  "18": "رياضة ولياقة بدنية وخارجية",
+  "7": "أجهزة كمبيوتر ومكاتب",
+  "1509": "ساعات ومجوهرات وإكسسوارات",
+  "1501": "ألعاب وأطفال ورضع",
+  "39": "أضواء وإنارة ذكية",
+  "30": "أمن وحماية وكاميرات مراقبة",
+  "322": "حقائب وأحذية",
+  "200000343": "أزياء وملابس رجالية",
+  "200000345": "أزياء وملابس نسائية",
+  "1503": "المنزل والحديقة والمطبخ",
+  "200000787": "أدوات مكتبية ومدرسية",
+  "200000297": "ألعاب وأطفال ورضع",
+};
+
 export async function matchCategoryId(text: string, providedCatId?: number | null): Promise<number | null> {
-  if (providedCatId && providedCatId > 0) return providedCatId;
   const cats = await getCategories();
   if (!cats.length) return null;
+
+  if (providedCatId && providedCatId > 0) {
+    const directMatch = cats.find(c => c.id === providedCatId);
+    if (directMatch) return directMatch.id;
+
+    const mappedName = ALI_CAT_TO_DB_NAME[String(providedCatId)];
+    if (mappedName) {
+      const foundByMap = cats.find(c => c.name_ar === mappedName || c.name_en.toLowerCase() === mappedName.toLowerCase());
+      if (foundByMap) return foundByMap.id;
+    }
+  }
 
   const normalized = (text || "").toLowerCase();
 
@@ -60,3 +93,4 @@ export async function matchCategoryId(text: string, providedCatId?: number | nul
 
   return cats[0]?.id || null;
 }
+

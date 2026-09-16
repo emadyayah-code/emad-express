@@ -1484,6 +1484,127 @@ const ALIEXPRESS_DEPARTMENTS = [
   { id: "200000297", name_ar: "الأم والطفل", name_en: "Mother & Kids" },
 ];
 
+const CATEGORY_DISCOVERY_MAP: Record<string, string[]> = {
+  // 1511: ساعات وإكسسوارات
+  "1511": [
+    "watch", "smart watch", "men watch luxury", "women watch elegant", "waterproof sport watch",
+    "chronograph watch", "automatic mechanical watch", "quartz watch stainless steel", "leather strap watch",
+    "fitness tracker watch", "digital sports watch", "minimalist watch", "military tactical watch", "gold watch luxury"
+  ],
+  // 44: إلكترونيات استهلاكية
+  "44": [
+    "wireless earbuds bluetooth", "portable bluetooth speaker", "tws headphones noise cancelling",
+    "smart glasses audio", "action camera 4k", "mini projector portable", "power bank fast charge",
+    "wireless charging station", "headphone stand rgb", "audio amplifier hifi", "voice recorder digital", "vr headset"
+  ],
+  // 509: هواتف وملحقاتها
+  "509": [
+    "phone case shockproof", "fast charger 65w usb c", "magnetic car mount phone", "wireless car charger mount",
+    "screen protector tempered glass", "braided usb c cable", "phone tripod stand", "power bank 20000mah",
+    "ring light with tripod phone", "selfie stick bluetooth", "phone lens kit macro", "mobile gaming controller"
+  ],
+  // 15: أجهزة منزلية ومطبخ
+  "15": [
+    "portable blender usb", "electric kettle temperature control", "espresso coffee machine portable",
+    "food vacuum sealer machine", "digital kitchen scale precision", "electric milk frother",
+    "robot vacuum cleaner smart", "air humidifier ultrasonic", "garment steamer handheld", "electric knife sharpener"
+  ],
+  // 1524: حقائب ومحافظ وأمتعة
+  "1524": [
+    "travel backpack waterproof", "men genuine leather wallet", "luxury women handbag crossbody",
+    "laptop backpack usb charging", "rfid blocking card holder", "duffle gym bag with shoe compartment",
+    "tactical sling bag", "anti-theft travel bag", "canvas messenger bag", "cosmetic travel organizer pouch"
+  ],
+  // 1420: أدوات ومعدات صيانة
+  "1420": [
+    "cordless drill electric", "precision screwdriver set magnetic", "laser level 3d 12 lines",
+    "digital multimeter tester", "soldering iron kit temperature adjustable", "socket wrench set ratchet",
+    "wire stripper crimper tool", "rotary tool kit accessories", "heavy duty tool bag", "caliper digital measuring"
+  ],
+  // 34: إكسسوارات وقطع سيارات
+  "34": [
+    "car vacuum cleaner cordless", "dash cam 4k front rear", "car tire inflator portable air compressor",
+    "car phone holder magnetic", "car ambient interior lighting rgb", "obd2 diagnostic scanner bluetooth",
+    "car jump starter power bank", "car seat cushion orthopedic", "car scratch repair kit", "fm transmitter bluetooth"
+  ],
+  // 66: تجميل وعناية ومكياج
+  "66": [
+    "makeup brush set professional", "hair straightener brush ceramic", "uv led nail lamp fast drying",
+    "electric face cleansing brush", "hair clipper trimmer cordless", "facial jade roller guasha",
+    "blackhead vacuum remover pore cleaner", "perfume atomizer refillable portable", "eyelash curler heated", "hair dryer ionic professional"
+  ],
+  // 18: رياضة ولياقة وترفيه
+  "18": [
+    "resistance bands set exercise", "deep tissue massage gun percussion", "yoga mat non slip thick",
+    "smart jump rope digital counter", "adjustable dumbbell grip", "sports water bottle bpa free",
+    "cycling gloves padded", "knee compression sleeve brace", "gym fitness gloves wrist wrap", "running waist pack bag"
+  ],
+  // 7: كمبيوتر ومستلزمات مكتب
+  "7": [
+    "mechanical keyboard rgb backlight", "wireless ergonomic mouse silent", "laptop cooling pad dual fan",
+    "usb c hub multi port adapter hdmi", "webcam 1080p hd with microphone", "monitor light bar eye care",
+    "gaming mouse pad xxl extended", "aluminum laptop stand adjustable", "cable organizer management clip", "external ssd hard drive enclosure"
+  ],
+  // 1509: مجوهرات وإكسسوارات نسائية
+  "1509": [
+    "sterling silver 925 ring luxury", "18k gold plated necklace pendant", "crystal tennis bracelet women",
+    "cubic zirconia stud earrings", "natural freshwater pearl necklace", "moissanite engagement ring",
+    "stainless steel cuff bangle", "jewelry organizer storage box", "choker chain necklace trendy", "boho stacking rings set"
+  ],
+  // 1501: ألعاب وهدايا وأطفال
+  "1501": [
+    "rc high speed racing car", "drone 4k camera obstacle avoidance", "building blocks brick set creator",
+    "magnetic building tiles toy kids", "montessori wooden educational toy", "electric water gun high pressure",
+    "lcd writing drawing tablet kids", "diecast alloy car model collectible", "plush soft stuffed toy animal", "magic speed cube 3x3"
+  ],
+  // 39: إضاءة ومصابيح LED
+  "39": [
+    "rgb led strip lights bluetooth music", "solar outdoor garden lights waterproof", "smart wifi led bulb dimmer",
+    "touch control desk lamp dimmable", "motion sensor closet night light", "sunset lamp projector atmosphere",
+    "modern led ceiling chandelier", "fairy string lights usb decorative", "rechargeable led work flashlight", "neon led sign custom"
+  ],
+  // 30: كاميرات أمان وحماية
+  "30": [
+    "wifi security camera outdoor 360", "cctv ip camera night vision 4k", "solar battery powered security camera",
+    "video doorbell wireless camera wifi", "smart home baby monitor camera", "mini spy camera hidden audio",
+    "ptz camera outdoor dome wifi", "poe security camera nvr system", "dual lens security camera outdoor", "floodlight security camera wifi"
+  ],
+  // 322: أحذية رياضية ورجالية ونسائية
+  "322": [
+    "running shoes lightweight breathable", "men casual sneakers slip on", "women walking shoes athletic",
+    "cushioned sports running sneakers", "outdoor hiking boots waterproof", "breathable mesh gym shoes",
+    "orthopedic walking sneakers", "fashion chunky sneakers women", "leather casual dress loafers", "water shoes quick drying barefoot"
+  ],
+  // 200000343: ملابس رجالية
+  "200000343": [
+    "men hoodie oversized streetwear", "men casual jacket bomber", "men cargo pants tactical",
+    "men cotton t shirt slim fit", "men polo shirt breathable", "men denim jeans stretch",
+    "men winter jacket windbreaker", "men linen shirt casual summer", "men suit vest formal", "men track jacket sportswear"
+  ],
+  // 200000345: ملابس نسائية
+  "200000345": [
+    "women dress summer floral elegant", "women abaya modern kaftan", "women oversized sweater knit",
+    "women high waist wide leg pants", "women casual blouse shirt", "women blazer coat chic",
+    "women cardigan sweater long", "women yoga leggings high waist", "women evening dress party", "women denim jacket vintage"
+  ],
+  // 1503: المنزل والحديقة
+  "1503": [
+    "decorative throw pillow covers", "wall clock modern 3d design", "solar garden fountain pump",
+    "essential oil aroma diffuser", "storage organizer baskets fabric", "door mat non slip indoor outdoor",
+    "kitchen sink splash guard", "artificial succulent plants decor", "blackout window curtains", "flame air humidifier aroma diffuser"
+  ],
+  // 200000787: مستلزمات مكتبية
+  "200000787": [
+    "pen set luxury ballpoint", "notebook leather journal", "desk organizer mesh metal",
+    "stapler heavy duty set", "highlighter marker pens pastel", "pencil case large capacity"
+  ],
+  // 200000297: الأم والطفل
+  "200000297": [
+    "baby stroller lightweight foldable", "baby carrier ergonomic sling", "baby bottle warmer portable",
+    "baby romper cotton jumpsuit", "baby diaper bag backpack waterproof", "baby sleep swaddle blanket"
+  ]
+};
+
 const GLOBAL_DISCOVERY_TERMS = [
   "hoodie", "jacket", "smart ring", "tws earbuds", "camping stove", "knife set", "car vacuum",
   "led strip rgb", "mechanical keyboard", "gaming mouse pad", "women abaya", "men sneaker",
@@ -1503,6 +1624,47 @@ const GLOBAL_DISCOVERY_TERMS = [
   "kitchen knife chef", "resistance bands set", "smart home socket", "baby clothes set", "mens wallet leather",
   "cat tree tower", "car tire inflator", "robot vacuum cleaner", "hair straightener brush", "makeup brush set"
 ];
+
+function getAliSearchParams(page: number, queryKw?: string, category_id?: string) {
+  let kw = (queryKw || "").trim();
+  let catId = (category_id || "").trim() || undefined;
+  let actualPage = 1;
+
+  if (kw && !catId) {
+    if (page <= 3) {
+      actualPage = page;
+    } else {
+      const modifiers = [
+        "best", "top", "hot", "new", "pro", "high quality",
+        "portable", "smart", "universal", "wireless", "mini", "accessories", "sale"
+      ];
+      const modIdx = (page - 4) % modifiers.length;
+      kw = `${kw} ${modifiers[modIdx]}`;
+      actualPage = Math.floor((page - 4) / modifiers.length) + 1;
+    }
+  } else if (catId) {
+    const terms = CATEGORY_DISCOVERY_MAP[catId] || GLOBAL_DISCOVERY_TERMS;
+    if (kw) {
+      if (page <= 2) {
+        actualPage = page;
+      } else {
+        const modIdx = (page - 3) % terms.length;
+        kw = `${kw} ${terms[modIdx]}`;
+        actualPage = Math.floor((page - 3) / terms.length) + 1;
+      }
+    } else {
+      const termIdx = (page - 1) % terms.length;
+      kw = terms[termIdx];
+      actualPage = Math.floor((page - 1) / terms.length) + 1;
+    }
+  } else {
+    const termIdx = (page - 1) % GLOBAL_DISCOVERY_TERMS.length;
+    kw = GLOBAL_DISCOVERY_TERMS[termIdx];
+    actualPage = Math.floor((page - 1) / GLOBAL_DISCOVERY_TERMS.length) + 1;
+  }
+
+  return { kw, catId, actualPage };
+}
 
 function parsePrice(val: any, fallback = 25): number {
   if (typeof val === "number" && !isNaN(val) && val > 0) return Number(val.toFixed(2));
@@ -1535,17 +1697,12 @@ router.get("/admin/dropship/fetch-chunk", requireAuth, requireRole("admin", "man
       return res.json({ success: true, page, count: 0, products: [] });
     }
 
-    let kw = queryKw;
-    let catId = category_id;
-    let actualPage = page;
+    const { kw, catId, actualPage } = getAliSearchParams(page, queryKw, category_id);
 
-    if (!queryKw && !category_id) {
-      const termIdx = (page - 1) % GLOBAL_DISCOVERY_TERMS.length;
-      kw = GLOBAL_DISCOVERY_TERMS[termIdx];
-      actualPage = Math.floor((page - 1) / GLOBAL_DISCOVERY_TERMS.length) + 1;
+    let prods = await searchAliExpressProducts(kw, creds, actualPage, pageSize, catId).catch(() => []);
+    if ((!prods || prods.length === 0) && catId) {
+      prods = await searchAliExpressProducts(kw, creds, actualPage, pageSize).catch(() => []);
     }
-
-    const prods = await searchAliExpressProducts(kw, creds, actualPage, pageSize, catId).catch(() => []);
 
     const seenImagesInChunk = new Set<string>();
     const productsList: any[] = [];
@@ -1592,17 +1749,13 @@ router.post("/admin/dropship/import-chunk", requireAuth, requireRole("admin", "m
     }
 
     const pageNum = Math.max(1, parseInt(String(page)));
-    let kw = keyword ? String(keyword).trim() : "";
-    let catId = category_id ? String(category_id).trim() : undefined;
-    let actualPage = pageNum;
+    const { kw, catId, actualPage } = getAliSearchParams(pageNum, keyword, category_id);
 
-    if (!kw && !catId) {
-      const termIdx = (pageNum - 1) % GLOBAL_DISCOVERY_TERMS.length;
-      kw = GLOBAL_DISCOVERY_TERMS[termIdx];
-      actualPage = Math.floor((pageNum - 1) / GLOBAL_DISCOVERY_TERMS.length) + 1;
+    let prods = await searchAliExpressProducts(kw, creds, actualPage, 50, catId).catch(() => []);
+    if ((!prods || prods.length === 0) && catId) {
+      prods = await searchAliExpressProducts(kw, creds, actualPage, 50).catch(() => []);
     }
 
-    const prods = await searchAliExpressProducts(kw, creds, actualPage, 50, catId).catch(() => []);
     if (!prods || prods.length === 0) {
       const [{ totalInDb = 0 } = {}] = await db.select({ totalInDb: sql<number>`COUNT(*)` }).from(products).where(isNull(products.deleted_at));
       return res.json({ success: true, page: pageNum, imported: 0, skipped: 0, total_in_db: Number(totalInDb) });
