@@ -10,6 +10,7 @@ export interface Translations {
   orders: string;
   returns: string;
   customers: string;
+  users: string;
   vendors: string;
   dropshipping: string;
   affiliates: string;
@@ -57,6 +58,7 @@ const translations: Record<Language, Translations> = {
     orders: "الطلبات والمبيعات",
     returns: "المرتجعات والاسترداد",
     customers: "العملاء",
+    users: "بيانات المستخدمين",
     vendors: "البائعون والتجار",
     dropshipping: "الدروبشيبينغ",
     affiliates: "عمولات المسوقين",
@@ -100,6 +102,7 @@ const translations: Record<Language, Translations> = {
     orders: "Orders & Sales",
     returns: "Returns & Refunds",
     customers: "Customers",
+    users: "Users & Accounts",
     vendors: "Vendors & Sellers",
     dropshipping: "Dropshipping",
     affiliates: "Affiliate Commissions",

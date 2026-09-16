@@ -15,7 +15,7 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
     { path: "/categories", icon: Tag, label: t.categories },
     { path: "/orders", icon: ShoppingCart, label: t.orders },
     { path: "/returns", icon: RotateCcw, label: t.returns },
-    { path: "/customers", icon: Users, label: t.customers },
+    { path: "/users", icon: Users, label: t.users },
     { path: "/vendors", icon: Store, label: t.vendors },
     { path: "/dropshipping", icon: Globe, label: t.dropshipping },
     { path: "/affiliates", icon: Share2, label: t.affiliates },

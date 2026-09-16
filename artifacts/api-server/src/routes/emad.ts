@@ -760,6 +760,193 @@ router.put("/admin/orders/:id/status", requireAuth, requireRole("admin", "manage
   } catch (err) { next(err); }
 });
 
+// ========== USERS & CUSTOMERS (بيانات المستخدمين) ==========
+router.get("/admin/users", requireAuth, requireRole("admin", "manager"), async (req, res, next) => {
+  try {
+    const { page = "1", per_page = "20", search = "", role = "all" } = req.query as Record<string, string>;
+    const p = Math.max(1, parseInt(page) || 1);
+    const pp = Math.min(100, Math.max(1, parseInt(per_page) || 20));
+
+    const conds: any[] = [isNull(users.deleted_at)];
+
+    if (search && search.trim()) {
+      const q = `%${escapeLike(search.trim())}%`;
+      conds.push(or(
+        like(users.name, q),
+        like(users.email, q),
+        like(users.phone, q)
+      ));
+    }
+
+    if (role && role !== "all") {
+      conds.push(eq(users.role, role));
+    }
+
+    const where = and(...conds);
+
+    const [{ count = 0 } = {}] = await db
+      .select({ count: sql<number>`COUNT(*)` })
+      .from(users)
+      .where(where);
+
+    const rows = await db
+      .select({
+        id: users.id,
+        name: users.name,
+        email: users.email,
+        phone: users.phone,
+        role: users.role,
+        email_verified: users.email_verified,
+        preferred_language: users.preferred_language,
+        preferred_currency: users.preferred_currency,
+        created_at: users.created_at,
+        customer_id: customers.id,
+        address: customers.address,
+        city: customers.city,
+        country: customers.country,
+        total_orders: sql<number>`COALESCE(${customers.total_orders}, 0)`,
+        total_spent: sql<number>`COALESCE(${customers.total_spent}, 0)`,
+        loyalty_points: sql<number>`COALESCE(${customers.loyalty_points}, 0)`,
+      })
+      .from(users)
+      .leftJoin(customers, eq(customers.user_id, users.id))
+      .where(where)
+      .orderBy(desc(users.id))
+      .limit(pp)
+      .offset((p - 1) * pp);
+
+    const [stats] = await db.select({
+      total: sql<number>`COUNT(*)`,
+      customers: sql<number>`COUNT(*) FILTER (WHERE ${users.role} = 'customer' OR ${users.role} = 'user')`,
+      admins: sql<number>`COUNT(*) FILTER (WHERE ${users.role} = 'admin' OR ${users.role} = 'manager')`,
+      staff: sql<number>`COUNT(*) FILTER (WHERE ${users.role} IN ('sales', 'support', 'accountant'))`,
+      verified: sql<number>`COUNT(*) FILTER (WHERE ${users.email_verified} = true)`,
+    }).from(users).where(isNull(users.deleted_at));
+
+    return res.json({
+      success: true,
+      data: rows,
+      total: Number(count),
+      page: p,
+      per_page: pp,
+      stats: {
+        total: Number(stats?.total || 0),
+        customers: Number(stats?.customers || 0),
+        admins: Number(stats?.admins || 0),
+        staff: Number(stats?.staff || 0),
+        verified: Number(stats?.verified || 0),
+      }
+    });
+  } catch (err) { next(err); }
+});
+
+router.get("/admin/users/:id", requireAuth, requireRole("admin", "manager"), validateParams(idParamSchema), async (req, res, next) => {
+  try {
+    const id = req.params.id;
+    const [user] = await db.select().from(users).where(and(eq(users.id, id), isNull(users.deleted_at)));
+    if (!user) return res.status(404).json({ success: false, message: "المستخدم غير موجود" });
+
+    const [customer] = await db.select().from(customers).where(eq(customers.user_id, id));
+    const recentOrders = customer ? await db.select().from(orders).where(eq(orders.customer_id, customer.id)).orderBy(desc(orders.id)).limit(10) : [];
+
+    return res.json({
+      success: true,
+      data: {
+        ...user,
+        password: "",
+        customer,
+        recent_orders: recentOrders,
+      }
+    });
+  } catch (err) { next(err); }
+});
+
+router.post("/admin/users", requireAuth, requireRole("admin"), async (req, res, next) => {
+  try {
+    const { name, email, password, phone, role = "customer", address } = req.body;
+    if (!name || !email || !password) {
+      return res.status(400).json({ success: false, message: "الاسم والبريد وكلمة المرور مطلوبة" });
+    }
+    const normalizedEmail = email.trim().toLowerCase();
+    const [existing] = await db.select().from(users).where(eq(users.email, normalizedEmail));
+    if (existing) return res.status(409).json({ success: false, message: "البريد الإلكتروني مسجل مسبقاً" });
+
+    const hashedPassword = await hashPassword(password);
+    const [newUser] = await db.insert(users).values({
+      name,
+      email: normalizedEmail,
+      password: hashedPassword,
+      phone: phone || "",
+      role,
+      email_verified: true,
+    }).returning();
+
+    if (role === "customer" || role === "user") {
+      await db.insert(customers).values({
+        user_id: newUser.id,
+        name,
+        email: normalizedEmail,
+        phone: phone || "",
+        address: address || "",
+      });
+    }
+
+    return res.status(201).json({ success: true, data: { id: newUser.id, name: newUser.name, email: newUser.email, role: newUser.role } });
+  } catch (err) { next(err); }
+});
+
+router.put("/admin/users/:id", requireAuth, requireRole("admin", "manager"), validateParams(idParamSchema), async (req, res, next) => {
+  try {
+    const id = req.params.id;
+    const { name, phone, role, email_verified, address, city } = req.body;
+    const updates: any = {};
+    if (name) updates.name = name;
+    if (phone !== undefined) updates.phone = phone;
+    if (role) updates.role = role;
+    if (email_verified !== undefined) updates.email_verified = Boolean(email_verified);
+
+    const [updatedUser] = await db.update(users).set(updates).where(eq(users.id, id)).returning();
+    if (!updatedUser) return res.status(404).json({ success: false, message: "المستخدم غير موجود" });
+
+    if (name || phone !== undefined || address !== undefined || city !== undefined) {
+      const custUpdates: any = {};
+      if (name) custUpdates.name = name;
+      if (phone !== undefined) custUpdates.phone = phone;
+      if (address !== undefined) custUpdates.address = address;
+      if (city !== undefined) custUpdates.city = city;
+      await db.update(customers).set(custUpdates).where(eq(customers.user_id, id));
+    }
+
+    return res.json({ success: true, data: updatedUser });
+  } catch (err) { next(err); }
+});
+
+router.post("/admin/users/:id/reset-password", requireAuth, requireRole("admin"), validateParams(idParamSchema), async (req, res, next) => {
+  try {
+    const id = req.params.id;
+    const { password } = req.body;
+    if (!password || password.length < 6) {
+      return res.status(400).json({ success: false, message: "كلمة المرور يجب أن تكون 6 أحرف على الأقل" });
+    }
+    const hashedPassword = await hashPassword(password);
+    await db.update(users).set({ password: hashedPassword }).where(eq(users.id, id));
+    return res.json({ success: true, message: "تم تغيير كلمة المرور بنجاح" });
+  } catch (err) { next(err); }
+});
+
+router.delete("/admin/users/:id", requireAuth, requireRole("admin"), validateParams(idParamSchema), async (req, res, next) => {
+  try {
+    const id = req.params.id;
+    const session = (req as any).session;
+    if (session.userId === id) {
+      return res.status(400).json({ success: false, message: "لا يمكنك حذف حسابك الحالي" });
+    }
+    await db.update(users).set({ deleted_at: new Date() }).where(eq(users.id, id));
+    await db.update(customers).set({ deleted_at: new Date() }).where(eq(customers.user_id, id));
+    return res.json({ success: true, message: "تم حذف المستخدم بنجاح" });
+  } catch (err) { next(err); }
+});
+
 // ========== CUSTOMERS ==========
 router.get("/admin/customers", requireAuth, requireRole("admin", "manager", "sales", "support"), async (req, res, next) => {
   try {

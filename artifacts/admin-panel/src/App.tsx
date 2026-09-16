@@ -10,6 +10,7 @@ import Categories from "@/pages/Categories";
 import Orders from "@/pages/Orders";
 import Returns from "@/pages/Returns";
 import Customers from "@/pages/Customers";
+import Users from "@/pages/Users";
 import Vendors from "@/pages/Vendors";
 import Accounting from "@/pages/Accounting";
 import Reports from "@/pages/Reports";
@@ -81,7 +82,8 @@ function ProtectedRoutes() {
         <Route path="/categories" component={Categories} />
         <Route path="/orders" component={Orders} />
         <Route path="/returns" component={Returns} />
-        <Route path="/customers" component={Customers} />
+        <Route path="/users" component={Users} />
+        <Route path="/customers" component={Users} />
         <Route path="/vendors" component={Vendors} />
         <Route path="/dropshipping" component={Dropshipping} />
         <Route path="/affiliates" component={Affiliates} />
