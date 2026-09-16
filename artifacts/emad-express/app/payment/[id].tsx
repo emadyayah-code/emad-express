@@ -121,6 +121,81 @@ export default function PaymentScreen() {
     }
   };
 
+  const handleShouldStartLoadWithRequest = (request: any) => {
+    const { url } = request;
+    if (!url) return false;
+
+    // Normal web navigation
+    if (url.startsWith("http://") || url.startsWith("https://") || url.startsWith("about:")) {
+      return true;
+    }
+
+    // Android Intent schemes: intent://...
+    if (url.startsWith("intent://")) {
+      try {
+        const fallbackMatch = url.match(/browser_fallback_url=([^;]+)/i);
+        if (fallbackMatch && fallbackMatch[1]) {
+          const fallbackUrl = decodeURIComponent(fallbackMatch[1]);
+          if (webViewRef.current) {
+            webViewRef.current.injectJavaScript(`window.location.href = "${fallbackUrl}";`);
+          }
+          return false;
+        }
+
+        Linking.canOpenURL(url).then((can) => {
+          if (can) {
+            Linking.openURL(url).catch(() => {});
+          } else {
+            const packageMatch = url.match(/package=([^;]+)/i);
+            if (packageMatch && packageMatch[1]) {
+              Linking.openURL(`market://details?id=${packageMatch[1]}`).catch(() => {});
+            }
+          }
+        }).catch(() => {});
+      } catch (e) {
+        console.warn("Intent scheme error:", e);
+      }
+      return false; // Prevent ERR_UNKNOWN_URL_SCHEME in WebView
+    }
+
+    // Custom app schemes: aliexpress://, alipays://, market://, tel:, etc.
+    Linking.canOpenURL(url)
+      .then((can) => {
+        if (can) Linking.openURL(url).catch(() => {});
+      })
+      .catch(() => {});
+
+    return false; // Prevent ERR_UNKNOWN_URL_SCHEME in WebView
+  };
+
+  const renderWebViewError = () => (
+    <View style={[styles.webViewLoader, { backgroundColor: colors.background, padding: 24 }]}>
+      <Feather name="shield" size={48} color={colors.primary} />
+      <Text style={{ color: colors.foreground, fontSize: 17, fontWeight: "700", marginTop: 16, textAlign: "center" }}>
+        إتمام الشراء والدفع الآمن
+      </Text>
+      <Text style={{ color: colors.mutedForeground, fontSize: 13, marginTop: 8, textAlign: "center", lineHeight: 20 }}>
+        يمكنك إتمام عملية الشراء والدفع مباشرةً عبر المتصفح أو التطبيق الرسمي للمتجر:
+      </Text>
+
+      <TouchableOpacity
+        style={[styles.primaryBtn, { backgroundColor: colors.primary, marginTop: 20, width: "100%" }]}
+        onPress={() => Linking.openURL(paymentUrl)}
+      >
+        <Feather name="external-link" size={18} color="#000" />
+        <Text style={styles.primaryBtnText}>فتح في المتصفح / التطبيق الخارجي</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={[styles.secondaryBtn, { borderColor: colors.border, marginTop: 12, width: "100%" }]}
+        onPress={() => webViewRef.current?.reload()}
+      >
+        <Feather name="refresh-cw" size={16} color={colors.foreground} />
+        <Text style={{ color: colors.foreground, fontWeight: "600", fontSize: 13 }}>إعادة المحاولة</Text>
+      </TouchableOpacity>
+    </View>
+  );
+
   const getPlatformTitle = () => {
     return "بوابة الدفع الإلكتروني الآمنة";
   };
@@ -249,10 +324,11 @@ export default function PaymentScreen() {
 
         <TouchableOpacity
           onPress={() => Linking.openURL(paymentUrl)}
-          style={styles.headerBtn}
+          style={[styles.headerBtn, { flexDirection: "row", alignItems: "center", gap: 4, width: "auto", paddingHorizontal: 6 }]}
           accessibilityLabel="فتح في المتصفح"
         >
-          <Feather name="external-link" size={18} color={colors.foreground} />
+          <Text style={{ color: colors.primary, fontSize: 11, fontWeight: "700" }}>المتصفح</Text>
+          <Feather name="external-link" size={15} color={colors.primary} />
         </TouchableOpacity>
       </View>
 
@@ -263,10 +339,15 @@ export default function PaymentScreen() {
           source={{ uri: paymentUrl }}
           style={{ flex: 1, backgroundColor: colors.background }}
           onNavigationStateChange={handleWebViewNavigation}
+          onShouldStartLoadWithRequest={handleShouldStartLoadWithRequest}
+          renderError={renderWebViewError}
+          originWhitelist={["*"]}
           javaScriptEnabled={true}
           domStorageEnabled={true}
           thirdPartyCookiesEnabled={true}
           sharedCookiesEnabled={true}
+          setSupportMultipleWindows={false}
+          allowsBackForwardNavigationGestures={true}
           startInLoadingState={true}
           userAgent="Mozilla/5.0 (Linux; Android 14; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Mobile Safari/537.36"
           renderLoading={() => (

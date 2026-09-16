@@ -86,12 +86,23 @@ export async function fulfillAliExpressOrder(
 }
 
 function generateAliExpressAffiliateUrl(productId: string, trackingId?: string, sourceUrl?: string): string {
-  const itemUrl = sourceUrl && sourceUrl.includes("aliexpress.com")
+  let itemUrl = sourceUrl && sourceUrl.includes("aliexpress.com")
     ? sourceUrl
     : productId ? `https://www.aliexpress.com/item/${productId}.html` : `https://www.aliexpress.com/`;
 
+  if (!itemUrl.startsWith("http")) {
+    itemUrl = `https://${itemUrl}`;
+  }
+
   if (trackingId && trackingId.trim() && trackingId.trim() !== "default") {
-    return `https://s.click.aliexpress.com/deep_link.htm?dl_target_url=${encodeURIComponent(itemUrl)}&aff_short_key=${encodeURIComponent(trackingId.trim())}`;
+    const cleanTrack = trackingId.trim();
+    // Only use s.click.aliexpress.com deep link if it's an actual affiliate short key (e.g. starts with '_' or length <= 12)
+    if (cleanTrack.startsWith("_") || cleanTrack.length <= 12) {
+      return `https://s.click.aliexpress.com/deep_link.htm?dl_target_url=${encodeURIComponent(itemUrl)}&aff_short_key=${encodeURIComponent(cleanTrack)}`;
+    }
+    // For standard tracking IDs, API keys, or sub-accounts: append tracking params directly to the direct AliExpress web URL
+    const separator = itemUrl.includes("?") ? "&" : "?";
+    return `${itemUrl}${separator}aff_fcid=${encodeURIComponent(cleanTrack)}&aff_trace_key=${encodeURIComponent(cleanTrack)}&tracking_id=${encodeURIComponent(cleanTrack)}`;
   }
 
   return itemUrl;
