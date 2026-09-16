@@ -87,7 +87,7 @@ export default function CheckoutScreen() {
         {
           items: items.map((i) => ({
             product_id: i.id,
-            product_name: i.name,
+            product_name: String(i.name || "Product").trim().slice(0, 500),
             quantity: i.quantity,
             price: i.price,
             total: i.price * i.quantity,

@@ -22,36 +22,36 @@ export const registerSchema = z.object({
 });
 
 export const productSchema = z.object({
-  name: z.string().min(1, "اسم المنتج مطلوب").max(200),
-  sku: z.string().min(1).max(100),
+  name: z.string().min(1, "اسم المنتج مطلوب").max(2000),
+  sku: z.string().min(1).max(255),
   price: z.coerce.number().min(0, "السعر يجب أن يكون موجباً").max(99999999),
   cost: z.coerce.number().min(0).max(99999999).default(0),
   quantity: z.coerce.number().int().min(0).max(999999).default(0),
   min_quantity: z.coerce.number().int().min(0).max(999999).default(0),
   category_id: z.coerce.number().int().positive().nullable().optional(),
-  description: z.string().max(5000).default(""),
-  image: z.string().max(2000).default(""),
+  description: z.string().max(10000).default(""),
+  image: z.string().max(5000).default(""),
   is_active: z.coerce.boolean().default(true),
 });
 
 export const categorySchema = z.object({
-  name: z.string().min(1).max(100),
-  icon: z.string().max(50).default("📦"),
-  image: z.string().max(2000).default(""),
-  description: z.string().max(2000).default(""),
+  name: z.string().min(1).max(255),
+  icon: z.string().max(100).default("📦"),
+  image: z.string().max(5000).default(""),
+  description: z.string().max(5000).default(""),
   is_active: z.coerce.boolean().default(true),
 });
 
 export const orderSchema = z.object({
   items: z.array(z.object({
     product_id: z.number().int().positive().optional(),
-    product_name: z.string().min(1).max(200),
+    product_name: z.string().min(1).max(2000),
     quantity: z.number().int().positive().max(1000),
     price: z.number().min(0).max(99999999),
     total: z.number().min(0).max(99999999).optional(),
-  })).min(1, "السلة فارغة").max(50, "عدد العناصر كبير جداً"),
-  shipping_address: z.string().max(1000).optional(),
-  payment_method: z.string().max(100).default("cod"),
+  })).min(1, "السلة فارغة").max(100, "عدد العناصر كبير جداً"),
+  shipping_address: z.string().max(2000).optional(),
+  payment_method: z.string().max(255).default("cod"),
 });
 
 export const employeeSchema = z.object({
@@ -80,18 +80,18 @@ export const affiliateSchema = z.object({
 });
 
 export const vendorSchema = z.object({
-  store_name: z.string().min(1).max(200),
+  store_name: z.string().min(1).max(255),
   name: z.string().min(2).max(100),
   email: emailSchema,
   phone: phoneSchema.optional(),
-  address: z.string().max(1000).optional(),
+  address: z.string().max(2000).optional(),
   commission_rate: z.coerce.number().min(0).max(100).default(10),
 });
 
 export const profileUpdateSchema = z.object({
   name: z.string().min(2).max(100).optional(),
   phone: phoneSchema.optional(),
-  address: z.string().max(1000).optional(),
+  address: z.string().max(2000).optional(),
 });
 
 export const adminProfileSchema = z.object({
@@ -105,25 +105,25 @@ export const commissionSettingsSchema = z.object({
   commission_rate: z.coerce.number().min(0).max(100),
 });
 
-export const platformSettingsSchema = z.record(z.string().min(1).max(100), z.string().max(5000));
+export const platformSettingsSchema = z.record(z.string().min(1).max(255), z.string().max(10000));
 
 export const dropshipImportSchema = z.object({
-  name: z.string().min(1).max(200),
-  source_id: z.string().min(1).max(200),
+  name: z.string().min(1).max(2000),
+  source_id: z.string().min(1).max(1000),
   source_price: z.coerce.number().min(0).max(99999999),
   our_price: z.coerce.number().min(0).max(99999999),
-  image: z.string().max(2000).optional(),
-  description: z.string().max(5000).optional(),
+  image: z.string().max(5000).optional(),
+  description: z.string().max(10000).optional(),
   platform: z.enum(["aliexpress", "amazon", "alibaba", "ebay", "noon", "jumia", "temu", "other"]),
-  source_url: z.string().max(2000).optional(),
+  source_url: z.string().max(5000).optional(),
 });
 
 export const fulfillmentSchema = z.object({
-  fulfillment_platform: z.string().min(1).max(100),
-  notes: z.string().max(2000).optional(),
+  fulfillment_platform: z.string().min(1).max(255),
+  notes: z.string().max(5000).optional(),
 });
 
 export const trackingSchema = z.object({
-  supplier_tracking: z.string().min(1).max(200),
-  platform_order_id: z.string().max(200).optional(),
+  supplier_tracking: z.string().min(1).max(500),
+  platform_order_id: z.string().max(500).optional(),
 });
