@@ -92,9 +92,6 @@ app.use(
   }),
 );
 
-// Rate limiting
-app.use(globalRateLimiter);
-
 // Static uploads
 app.use("/uploads", express.static(UPLOADS_DIR, {
   maxAge: "1d",
@@ -104,8 +101,8 @@ app.use("/uploads", express.static(UPLOADS_DIR, {
 // Public Privacy Policy endpoint (Google Play / App Store / Web verified)
 app.use(privacyRouter);
 
-// API routes
-app.use("/api", router);
+// API routes (with generous API rate limiting)
+app.use("/api", globalRateLimiter, router);
 
 // Serve admin panel & frontend directly on root domain
 const adminPanelDir = resolve(process.cwd(), env.ADMIN_PANEL_DIR);
