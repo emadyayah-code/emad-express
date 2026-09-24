@@ -1125,8 +1125,24 @@ function getCachedProducts(key: string): any | null {
   return item.data;
 }
 
-function setCachedProducts(key: string, data: any, ttlSec: number = 180) {
-  if (productsApiCache.size > 150) {
+function toOptimizedThumb(url: string | null | undefined): string {
+  if (!url) return "";
+  const s = url.trim();
+  // Automatically serve high-performance 350x350 CDN thumbnails for product lists (drastically cuts bandwidth & render lag)
+  if (
+    (s.includes("alicdn.com") || s.includes("aliexpress-media.com") || s.includes("aliexpress.com")) &&
+    !s.includes("_350x350") &&
+    !s.includes("_220x220") &&
+    !s.includes(".jpg_") &&
+    !s.includes(".png_")
+  ) {
+    return `${s}_350x350.jpg`;
+  }
+  return s;
+}
+
+function setCachedProducts(key: string, data: any, ttlSec: number = 600) {
+  if (productsApiCache.size > 1000) {
     const first = productsApiCache.keys().next().value;
     if (first) productsApiCache.delete(first);
   }
@@ -1142,14 +1158,14 @@ router.get("/products", async (req, res, next) => {
     const { category_id, lang, page = "1", limit, search = "" } = req.query as Record<string, string>;
     const requestLang = lang || (req.headers["accept-language"]?.includes("en") ? "en" : "ar");
     const p = Math.max(1, parseInt(page) || 1);
-    // Sensible default limit for blazing mobile performance
-    const defaultLimit = category_id ? 150 : (limit ? Math.min(300, Math.max(1, parseInt(limit))) : 100);
+    // Optimized page limit: 40 products for lightning fast mobile responsiveness & instant rendering
+    const defaultLimit = limit ? Math.min(100, Math.max(1, parseInt(limit))) : 40;
 
     const cacheKey = `p_${category_id || "all"}_${requestLang}_${p}_${defaultLimit}_${search.trim().toLowerCase()}`;
     const cached = getCachedProducts(cacheKey);
     if (cached) {
       res.setHeader("X-Cache", "HIT");
-      res.setHeader("Cache-Control", "public, max-age=60, stale-while-revalidate=180");
+      res.setHeader("Cache-Control", "public, max-age=120, stale-while-revalidate=600");
       return res.json(cached);
     }
 
@@ -1187,14 +1203,15 @@ router.get("/products", async (req, res, next) => {
     const data = rawData.map(p => ({
       ...p,
       name: requestLang === "en" ? (p.name_en || (p as any).name || p.name_ar) : (p.name_ar || (p as any).name || p.name_en),
+      image: toOptimizedThumb(p.image),
       description: "", // Full description fetched only on product details page
     }));
 
     const result = { success: true, data, total: data.length, page: p, limit: defaultLimit };
-    setCachedProducts(cacheKey, result, 180);
+    setCachedProducts(cacheKey, result, 600);
 
     res.setHeader("X-Cache", "MISS");
-    res.setHeader("Cache-Control", "public, max-age=60, stale-while-revalidate=180");
+    res.setHeader("Cache-Control", "public, max-age=120, stale-while-revalidate=600");
     return res.json(result);
   } catch (err) { next(err); }
 });

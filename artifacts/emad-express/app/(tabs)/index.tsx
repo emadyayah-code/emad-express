@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, FlatList, Platform, Dimensions } from "react-native";
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, FlatList, Platform, Dimensions } from "react-native";
+import { Image as ExpoImage } from "expo-image";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
@@ -87,7 +88,7 @@ export default function HomeScreen() {
     <ScrollView style={[styles.container, { backgroundColor: colors.background }]} showsVerticalScrollIndicator={false}>
       <LinearGradient colors={["#0a0a0a", "#1a1000", "#0a0a0a"]} style={[styles.heroSection, { paddingTop: topPad + 10, paddingBottom: 16 }]}>
         <View style={styles.headerRow}>
-          <Image source={logoImg} style={styles.logo} resizeMode="contain" />
+          <ExpoImage source={logoImg} style={styles.logo} contentFit="contain" />
           <View style={{ flexDirection: "row", gap: 10 }}>
             <TouchableOpacity onPress={() => router.push("/favorites")} style={[styles.cartBtn, { backgroundColor: "rgba(239,68,68,0.15)", borderWidth: 1, borderColor: "rgba(239,68,68,0.3)" }]}>
               <Feather name="heart" size={19} color="#ef4444" />
@@ -222,7 +223,7 @@ export default function HomeScreen() {
               <TouchableOpacity style={[styles.catCard, { backgroundColor: colors.card, borderColor: colors.border }]}
                 onPress={() => router.push({ pathname: "/(tabs)/products", params: { category_id: item.id } })}>
                 {item.image ? (
-                  <Image source={{ uri: item.image }} style={styles.catImage} resizeMode="cover" />
+                  <ExpoImage source={{ uri: item.image }} style={styles.catImage} contentFit="cover" transition={150} cachePolicy="memory-disk" />
                 ) : (
                   <View style={[styles.catImage, { alignItems: "center", justifyContent: "center", backgroundColor: colors.muted }]}>
                     <Text style={styles.catIcon}>{item.icon || CATEGORIES_ICONS[item.name] || "📦"}</Text>
@@ -256,7 +257,7 @@ export default function HomeScreen() {
                 onPress={() => router.push({ pathname: "/product/[id]", params: { id: item.id } })}>
                 <View style={{ position: "relative" }}>
                   {item.image ? (
-                    <Image source={{ uri: item.image }} style={styles.productImage} resizeMode="cover" />
+                    <ExpoImage source={{ uri: item.image }} style={styles.productImage} contentFit="cover" transition={150} cachePolicy="memory-disk" />
                   ) : (
                     <View style={[styles.productImage, { backgroundColor: colors.muted, alignItems: "center", justifyContent: "center" }]}>
                       <Feather name="package" size={32} color={colors.mutedForeground} />
@@ -316,7 +317,7 @@ export default function HomeScreen() {
               <TouchableOpacity key={item.id} style={[styles.listItem, { backgroundColor: colors.card, borderColor: colors.border }]}
                 onPress={() => router.push({ pathname: "/product/[id]", params: { id: item.id } })}>
                 {item.image ? (
-                  <Image source={{ uri: item.image }} style={styles.listImage} resizeMode="cover" />
+                  <ExpoImage source={{ uri: item.image }} style={styles.listImage} contentFit="cover" transition={150} cachePolicy="memory-disk" />
                 ) : (
                   <View style={[styles.listImage, { backgroundColor: colors.muted, alignItems: "center", justifyContent: "center" }]}>
                     <Feather name="package" size={24} color={colors.mutedForeground} />
@@ -334,7 +335,7 @@ export default function HomeScreen() {
       </View>
 
       {/* Dynamic Category Showcase Sections */}
-      {categoriesWithProducts.map((cat: any) => {
+      {categoriesWithProducts.slice(0, 6).map((cat: any) => {
         const catName = language === "ar" ? (cat.name_ar || cat.name) : (cat.name_en || cat.name);
         return (
           <View key={`cat-sec-${cat.id}`} style={styles.section}>
@@ -362,7 +363,7 @@ export default function HomeScreen() {
                   >
                     <View style={{ position: "relative" }}>
                       {item.image ? (
-                        <Image source={{ uri: item.image }} style={styles.productImage} resizeMode="cover" />
+                        <ExpoImage source={{ uri: item.image }} style={styles.productImage} contentFit="cover" transition={150} cachePolicy="memory-disk" />
                       ) : (
                         <View style={[styles.productImage, { backgroundColor: colors.muted, alignItems: "center", justifyContent: "center" }]}>
                           <Feather name="package" size={32} color={colors.mutedForeground} />

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, FlatList, Platform, TextInput } from "react-native";
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, FlatList, Platform, TextInput } from "react-native";
+import { Image as ExpoImage } from "expo-image";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { Feather } from "@expo/vector-icons";
@@ -19,7 +20,7 @@ export default function ProductsScreen() {
   const { addItem } = useCart();
   const { t, language, isRTL } = useLanguage();
   const { format } = useCurrency();
-  const { isFavorite, toggleFavorite } = useFavorites();
+  const { isFavorites, toggleFavorite, isFavorite } = useFavorites() as any;
 
   const [search, setSearch] = useState("");
   const [selectedCat, setSelectedCat] = useState<number | null>(params.category_id ? parseInt(params.category_id) : null);
@@ -118,9 +119,9 @@ export default function ProductsScreen() {
           contentContainerStyle={{ padding: 12, gap: 10 }}
           columnWrapperStyle={{ gap: 10 }}
           showsVerticalScrollIndicator={false}
-          initialNumToRender={8}
-          maxToRenderPerBatch={10}
-          windowSize={5}
+          initialNumToRender={6}
+          maxToRenderPerBatch={6}
+          windowSize={3}
           removeClippedSubviews={Platform.OS === "android"}
           renderItem={({ item }: { item: any }) => {
             const displayName = language === "ar" ? (item.name_ar || item.name) : (item.name_en || item.name);
@@ -132,7 +133,13 @@ export default function ProductsScreen() {
               >
                 <View style={{ position: "relative" }}>
                   {item.image ? (
-                    <Image source={{ uri: item.image }} style={styles.productImage} resizeMode="cover" />
+                    <ExpoImage
+                      source={{ uri: item.image }}
+                      style={styles.productImage}
+                      contentFit="cover"
+                      transition={200}
+                      cachePolicy="memory-disk"
+                    />
                   ) : (
                     <View style={[styles.productImage, { backgroundColor: colors.muted, alignItems: "center", justifyContent: "center" }]}>
                       <Feather name="package" size={32} color={colors.mutedForeground} />
