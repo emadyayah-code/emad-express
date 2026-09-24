@@ -2899,6 +2899,7 @@ export async function verifyAndSyncDropshipProductStock(
         deleted_at: new Date(),
       }).where(eq(products.id, productId));
       await db.delete(dropship_products).where(eq(dropship_products.id, dp.id));
+      clearProductsCache();
       const res = { available: false, reason };
       dropshipStockCheckCache.set(productId, { timestamp: Date.now(), result: res });
       return res;
