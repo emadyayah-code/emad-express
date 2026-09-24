@@ -32,7 +32,7 @@ export default function CheckoutScreen() {
   const { addresses, defaultAddress } = useAddress();
 
   const [address, setAddress] = useState("");
-  const [payMethod, setPayMethod] = useState("electronic_payment");
+  const [payMethod, setPayMethod] = useState("paypal");
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
 
@@ -49,34 +49,26 @@ export default function CheckoutScreen() {
 
   const PAYMENT_METHODS = [
     {
-      key: "electronic_payment",
-      label: "الدفع الإلكتروني الآمن (مدى / فيزا / ماستركارد)",
-      icon: "shield",
-      desc: "بوابة دفع إلكترونية آمنة ومشفرة 256-bit SSL لضمان حماية المشتري وإتمام الطلب فوراً",
-      badges: [
-        { label: "مدى Mada", bg: "#007a3d" },
-        { label: "VISA", bg: "#1a1f71" },
-        { label: "Mastercard", bg: "#eb001b" },
-        { label: "دفع آمن 100%", bg: "#374151" },
-      ],
-    },
-    {
       key: "paypal",
       label: "PayPal (حساب بايبال / بطاقات عالمية)",
       icon: "shield",
-      desc: "دفع عالمي فوري وآمن بضمان وحماية المشتري عبر حسابك أو بطاقتك في PayPal",
+      desc: "دفع عالمي فوري وآمن بضمان وحماية المشتري عبر حسابك أو بطاقتك في PayPal داخل نافذة الدفع المشفرة",
       badges: [
-        { label: "PayPal", bg: "#003087" },
+        { label: "PayPal Live", bg: "#003087" },
         { label: "حماية المشتري", bg: "#0079C1" },
+        { label: "دفع فوري ⚡", bg: "#059669" },
       ],
     },
     {
-      key: "cod",
-      label: "الدفع عند الاستلام (Cash on Delivery)",
+      key: "electronic_payment",
+      label: "الدفع المباشر عبر WebView (AliExpress / بوابات المنصة)",
       icon: "shield",
-      desc: "ادفع نقداً عند استلام طلبك ومشترياتك عند باب منزلك",
+      desc: "نافذة دفع إلكتروني آمنة ومباشرة (WebView) تفتح داخل التطبيق لإتمام الطلب مباشرة من المصدر مع حماية كاملة",
       badges: [
-        { label: "دفع عند الباب", bg: "#4b5563" },
+        { label: "AliExpress WebView", bg: "#e11d48" },
+        { label: "مدى Mada", bg: "#007a3d" },
+        { label: "VISA", bg: "#1a1f71" },
+        { label: "Mastercard", bg: "#eb001b" },
       ],
     },
   ];
@@ -206,7 +198,7 @@ export default function CheckoutScreen() {
 
       clearCart();
 
-      if (orderId && payMethod !== "cod") {
+      if (orderId) {
         router.replace(`/payment/${orderId}`);
       } else {
         setSuccess(true);
