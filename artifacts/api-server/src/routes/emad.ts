@@ -23,7 +23,7 @@ import { searchAmazonItems, fetchAmazonItems, type AmazonCredentials } from "../
 import { searchAlibabaProducts, getAlibabaProduct, type AlibabaCredentials } from "../lib/alibaba";
 import { convertCurrency, formatCurrency, seedCurrencies, getExchangeRates } from "../lib/currency";
 import { translateProduct, translateProducts, getProductTranslation, setProductTranslation, getCategoryTranslation, SUPPORTED_LANGUAGES, DEFAULT_LANGUAGE, type SupportedLanguage } from "../lib/i18n";
-import { processPayment, confirmStripePayment, capturePayPalOrder, seedPaymentGateways, createStripeConnectAccount, getStripeConnectAccount, createSplitPaymentIntent } from "../lib/payment";
+import { processPayment, confirmStripePayment, createPayPalOrder, capturePayPalOrder, seedPaymentGateways, createStripeConnectAccount, getStripeConnectAccount, createSplitPaymentIntent } from "../lib/payment";
 import { seedShippingCarriers, createShipment, getOrderShipments, updateShipmentStatus } from "../lib/shipping";
 import { fulfillAliExpressOrder, fulfillAmazonOrder, fulfillAlibabaOrder, fulfillLocalVendorOrder, autoFulfillOrder, getFulfillmentTracking } from "../lib/fulfillment";
 import { startBulkImport, stopBulkImport, getJobStatus, getAllJobs, getActiveJob } from "../lib/bulk-import";
@@ -4124,13 +4124,52 @@ router.post("/orders/:id/pay/stripe-confirm", requireAuth, validateParams(idPara
   } catch (err) { next(err); }
 });
 
+router.post("/orders/:id/pay/paypal-create", requireAuth, validateParams(idParamSchema), async (req, res, next) => {
+  try {
+    const session = (req as any).session;
+    const [order] = await db.select().from(orders).where(eq(orders.id, req.params.id));
+    if (!order) return res.status(404).json({ success: false, message: "الطلب غير موجود" });
+    if (session.role !== "admin" && order.customer_id !== session.customerId) return res.status(403).json({ success: false, message: "غير مصرح" });
+    if (order.payment_status === "paid") return res.status(400).json({ success: false, message: "الطلب مدفوع بالفعل" });
+
+    const [gateway] = await db.select().from(payment_gateways).where(eq(payment_gateways.provider, "paypal"));
+    if (!gateway || !gateway.is_active) return res.status(400).json({ success: false, message: "بوابة PayPal غير مفعلة" });
+    const config = gateway.config as Record<string, string>;
+    if (!config.client_id || !config.secret) return res.status(400).json({ success: false, message: "مفاتيح PayPal غير مكونة" });
+
+    const mode = (config.mode === "sandbox" ? "sandbox" : "live") as "sandbox" | "live";
+    const paypalOrder = await createPayPalOrder(
+      Number(order.total),
+      order.currency || "USD",
+      String(order.id),
+      config.client_id,
+      config.secret,
+      mode
+    );
+
+    await db.update(orders).set({
+      payment_gateway: "paypal",
+      payment_transaction_id: paypalOrder.id,
+    }).where(eq(orders.id, order.id));
+
+    return res.json({
+      success: true,
+      data: {
+        paypal_order_id: paypalOrder.id,
+        approval_url: paypalOrder.approval_url,
+      }
+    });
+  } catch (err) { next(err); }
+});
+
 router.post("/orders/:id/pay/paypal-capture", requireAuth, validateParams(idParamSchema), async (req, res, next) => {
   try {
     const { paypal_order_id } = req.body;
     const [gateway] = await db.select().from(payment_gateways).where(eq(payment_gateways.provider, "paypal"));
     if (!gateway) return res.status(400).json({ success: false, message: "PayPal غير مفعل" });
     const config = gateway.config as Record<string, string>;
-    const result = await capturePayPalOrder(paypal_order_id, config.client_id, config.secret);
+    const mode = (config.mode === "sandbox" ? "sandbox" : "live") as "sandbox" | "live";
+    const result = await capturePayPalOrder(paypal_order_id, config.client_id, config.secret, mode);
 
     if (result.success) {
       await db.update(orders).set({

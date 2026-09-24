@@ -60,6 +60,25 @@ export default function CheckoutScreen() {
         { label: "دفع آمن 100%", bg: "#374151" },
       ],
     },
+    {
+      key: "paypal",
+      label: "PayPal (حساب بايبال / بطاقات عالمية)",
+      icon: "shield",
+      desc: "دفع عالمي فوري وآمن بضمان وحماية المشتري عبر حسابك أو بطاقتك في PayPal",
+      badges: [
+        { label: "PayPal", bg: "#003087" },
+        { label: "حماية المشتري", bg: "#0079C1" },
+      ],
+    },
+    {
+      key: "cod",
+      label: "الدفع عند الاستلام (Cash on Delivery)",
+      icon: "shield",
+      desc: "ادفع نقداً عند استلام طلبك ومشترياتك عند باب منزلك",
+      badges: [
+        { label: "دفع عند الباب", bg: "#4b5563" },
+      ],
+    },
   ];
 
   const tax = Math.round(total * 0.15);
@@ -105,7 +124,7 @@ export default function CheckoutScreen() {
 
       clearCart();
 
-      if (orderId) {
+      if (orderId && payMethod !== "cod") {
         router.replace(`/payment/${orderId}`);
       } else {
         setSuccess(true);

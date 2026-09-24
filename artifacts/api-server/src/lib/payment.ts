@@ -98,10 +98,12 @@ export async function createPayPalOrder(
   orderId: string,
   paypalClientId: string,
   paypalSecret: string,
+  mode: "sandbox" | "live" = "live",
 ): Promise<{ id: string; approval_url?: string }> {
   try {
+    const baseUrl = mode === "sandbox" ? "https://api-m.sandbox.paypal.com" : "https://api-m.paypal.com";
     // Get access token
-    const tokenRes = await fetch("https://api-m.sandbox.paypal.com/v1/oauth2/token", {
+    const tokenRes = await fetch(`${baseUrl}/v1/oauth2/token`, {
       method: "POST",
       headers: {
         "Authorization": `Basic ${Buffer.from(`${paypalClientId}:${paypalSecret}`).toString("base64")}`,
@@ -113,9 +115,13 @@ export async function createPayPalOrder(
 
     const tokenData = await tokenRes.json();
     const accessToken = tokenData.access_token;
+    if (!accessToken) {
+      logger.error({ tokenData }, "PayPal token request failed");
+      throw new Error(tokenData.error_description || "فشل الاتصال بـ PayPal للحصول على توكن الصلاحية");
+    }
 
     // Create order
-    const orderRes = await fetch("https://api-m.sandbox.paypal.com/v2/checkout/orders", {
+    const orderRes = await fetch(`${baseUrl}/v2/checkout/orders`, {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${accessToken}`,
@@ -145,9 +151,11 @@ export async function capturePayPalOrder(
   paypalOrderId: string,
   paypalClientId: string,
   paypalSecret: string,
+  mode: "sandbox" | "live" = "live",
 ): Promise<PaymentResult> {
   try {
-    const tokenRes = await fetch("https://api-m.sandbox.paypal.com/v1/oauth2/token", {
+    const baseUrl = mode === "sandbox" ? "https://api-m.sandbox.paypal.com" : "https://api-m.paypal.com";
+    const tokenRes = await fetch(`${baseUrl}/v1/oauth2/token`, {
       method: "POST",
       headers: {
         "Authorization": `Basic ${Buffer.from(`${paypalClientId}:${paypalSecret}`).toString("base64")}`,
@@ -159,8 +167,11 @@ export async function capturePayPalOrder(
 
     const tokenData = await tokenRes.json();
     const accessToken = tokenData.access_token;
+    if (!accessToken) {
+      throw new Error(tokenData.error_description || "فشل الحصول على توكن PayPal لتأكيد الدفع");
+    }
 
-    const captureRes = await fetch(`https://api-m.sandbox.paypal.com/v2/checkout/orders/${paypalOrderId}/capture`, {
+    const captureRes = await fetch(`${baseUrl}/v2/checkout/orders/${paypalOrderId}/capture`, {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${accessToken}`,

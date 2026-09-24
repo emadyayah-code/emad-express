@@ -62,10 +62,17 @@ export default function PaymentScreen() {
       }
 
       // 2. Automatically initiate payment link
-      const payRes: any = await api.post(`/orders/${id}/pay/internal`, {}, token);
+      let payRes: any;
+      if (orderData?.payment_method === "paypal") {
+        payRes = await api.post(`/orders/${id}/pay/paypal-create`, {}, token);
+      } else {
+        payRes = await api.post(`/orders/${id}/pay/internal`, {}, token);
+      }
 
       // Handle payRes in both direct { success, data: { payment_url } } and Axios-like formats
-      const data = payRes?.data?.payment_url
+      const data = payRes?.data?.approval_url
+        ? { payment_url: payRes.data.approval_url, platform: "paypal", shipping_by: "PayPal" }
+        : payRes?.data?.payment_url
         ? payRes.data
         : payRes?.payment_url
         ? payRes
@@ -73,12 +80,12 @@ export default function PaymentScreen() {
         ? payRes.data.data
         : null;
 
-      const url = data?.payment_url || payRes?.payment_url;
+      const url = data?.payment_url || payRes?.payment_url || payRes?.data?.approval_url || payRes?.approval_url;
 
       if (url) {
         setPaymentUrl(url);
-        setPlatform(data?.platform || "aliexpress");
-        setShippingBy(data?.shipping_by || "AliExpress");
+        setPlatform(data?.platform || (orderData?.payment_method === "paypal" ? "paypal" : "aliexpress"));
+        setShippingBy(data?.shipping_by || (orderData?.payment_method === "paypal" ? "PayPal" : "AliExpress"));
         setStep("webview");
       } else {
         console.warn("Payment response did not contain payment_url:", payRes);
@@ -100,8 +107,16 @@ export default function PaymentScreen() {
       url.includes("payment_success") ||
       url.includes("thank_you") ||
       url.includes("/order/confirm") ||
-      url.includes("checkout/success")
+      url.includes("checkout/success") ||
+      (url.includes("paypal.com") && url.includes("PayerID="))
     ) {
+      if (url.includes("token=") && url.includes("PayerID=")) {
+        const match = url.match(/token=([^&]+)/);
+        const paypalOrderId = match ? match[1] : "";
+        if (paypalOrderId) {
+          api.post(`/orders/${id}/pay/paypal-capture`, { paypal_order_id: paypalOrderId }, token).catch(console.error);
+        }
+      }
       confirmPayment();
     }
   };
