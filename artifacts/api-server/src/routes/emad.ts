@@ -24,7 +24,7 @@ import { searchAlibabaProducts, getAlibabaProduct, type AlibabaCredentials } fro
 import { convertCurrency, formatCurrency, seedCurrencies, getExchangeRates } from "../lib/currency";
 import { translateProduct, translateProducts, getProductTranslation, setProductTranslation, getCategoryTranslation, SUPPORTED_LANGUAGES, DEFAULT_LANGUAGE, type SupportedLanguage } from "../lib/i18n";
 import { processPayment, confirmStripePayment, createPayPalOrder, capturePayPalOrder, seedPaymentGateways, createStripeConnectAccount, getStripeConnectAccount, createSplitPaymentIntent } from "../lib/payment";
-import { seedShippingCarriers, createShipment, getOrderShipments, updateShipmentStatus } from "../lib/shipping";
+import { seedShippingCarriers, createShipment, getOrderShipments, updateShipmentStatus, calculateAliExpressShipping, isYemenDestination, isSaudiDestination } from "../lib/shipping";
 import { fulfillAliExpressOrder, fulfillAmazonOrder, fulfillAlibabaOrder, fulfillLocalVendorOrder, autoFulfillOrder, getFulfillmentTracking } from "../lib/fulfillment";
 import { startBulkImport, stopBulkImport, getJobStatus, getAllJobs, getActiveJob } from "../lib/bulk-import";
 import { matchCategoryId } from "../lib/category-matcher";
@@ -1272,6 +1272,27 @@ router.get("/orders", requireAuth, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// ========== SHIPPING CALCULATION (AliExpress Rules: Yemen DHL 529 SAR, Global Choice Free >= 100 SAR) ==========
+router.post("/shipping/calculate", async (req, res, next) => {
+  try {
+    const { address, country, countryCode, city, subtotal = 0, items = [], method, currency = "SAR" } = req.body;
+    let computedSubtotal = Number(subtotal) || 0;
+    if (computedSubtotal <= 0 && Array.isArray(items) && items.length > 0) {
+      computedSubtotal = items.reduce((s: number, i: any) => s + (i.total || (i.price * i.quantity) || 0), 0);
+    }
+    const result = await calculateAliExpressShipping({
+      subtotal: computedSubtotal,
+      address: address || "",
+      country: country || "",
+      countryCode: countryCode || "",
+      city: city || "",
+      method: method || undefined,
+      currency,
+    });
+    return res.json({ success: true, data: result });
+  } catch (err) { next(err); }
+});
+
 router.post("/orders", requireAuth, validateBody(orderSchema), async (req, res, next) => {
   const client = await pool.connect();
   try {
@@ -1281,7 +1302,7 @@ router.post("/orders", requireAuth, validateBody(orderSchema), async (req, res, 
     const [customer] = await db.select().from(customers).where(eq(customers.id, session.customerId));
     if (!customer) { await client.query("ROLLBACK"); return res.status(404).json({ success: false, message: "العميل غير موجود" }); }
 
-    const { items, shipping_address, payment_method } = req.body;
+    const { items, shipping_address, payment_method, shipping_method, shipping_country, shipping_city, currency } = req.body;
     let cleanPayMethod = "cod";
     const pm = (payment_method || "").toString().toLowerCase();
     if (pm.includes("card") || pm.includes("stripe") || pm.includes("بطاقة") || pm.includes("فيزا") || pm.includes("ماستركارد")) {
@@ -1325,18 +1346,45 @@ router.post("/orders", requireAuth, validateBody(orderSchema), async (req, res, 
     }
 
     const subtotal = items.reduce((s: number, i: any) => s + (i.total || i.price * i.quantity || 0), 0);
-    const tax = Math.round(subtotal * 0.15);
-    const shipping = subtotal > 500 ? 0 : 25;
-    const total = subtotal + tax + shipping;
+    const orderCurrency = currency || customer.preferred_currency || "SAR";
+
+    // AliExpress Shipping Calculation (Yemen DHL 529 SAR / Economic 25 SAR, Global Choice Free >= 100 SAR else 15 SAR, Premium 45 SAR)
+    const shippingCalc = await calculateAliExpressShipping({
+      subtotal,
+      address: shipping_address || customer.address || "",
+      country: shipping_country || customer.country || "",
+      city: shipping_city || customer.city || "",
+      method: shipping_method,
+      currency: orderCurrency,
+    });
+
+    const shipping = shippingCalc.shippingFee;
+    const tax = shippingCalc.tax;
+    const total = parseFloat((subtotal + tax + shipping).toFixed(2));
 
     const timestamp = Date.now();
     const random = Math.floor(Math.random() * 1000);
     const orderNumber = `ORD-${new Date().getFullYear()}-${timestamp.toString(36).toUpperCase()}-${random}`;
 
     const [newOrder] = await db.insert(orders).values({
-      order_number: orderNumber, customer_id: customer.id, customer_name: customer.name, customer_email: customer.email,
-      customer_phone: customer.phone || "", shipping_address: shipping_address || customer.address || "",
-      payment_method: cleanPayMethod, payment_status: "pending", status: "pending", subtotal, discount: 0, tax, shipping, total, items,
+      order_number: orderNumber,
+      customer_id: customer.id,
+      customer_name: customer.name,
+      customer_email: customer.email,
+      customer_phone: customer.phone || "",
+      shipping_address: shipping_address || customer.address || "",
+      shipping_city: shippingCalc.detectedCity || customer.city || "",
+      shipping_country: shippingCalc.destinationCountry,
+      payment_method: cleanPayMethod,
+      payment_status: "pending",
+      status: "pending",
+      subtotal,
+      discount: 0,
+      tax,
+      shipping,
+      total,
+      currency: orderCurrency,
+      items,
     }).returning();
 
     await db.update(customers).set({ total_orders: customer.total_orders + 1, total_spent: customer.total_spent + total, loyalty_points: customer.loyalty_points + Math.floor(total / 10) }).where(eq(customers.id, customer.id));

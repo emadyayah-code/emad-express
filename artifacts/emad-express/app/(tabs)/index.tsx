@@ -168,7 +168,7 @@ export default function HomeScreen() {
 
                     <View style={styles.showcaseImageWrap}>
                       {item.image ? (
-                        <Image source={{ uri: item.image }} style={styles.showcaseImage} resizeMode="cover" />
+                        <ExpoImage source={{ uri: item.image }} style={styles.showcaseImage} contentFit="cover" cachePolicy="memory-disk" />
                       ) : (
                         <View style={[styles.showcaseImage, { backgroundColor: "#1f1f1f", alignItems: "center", justifyContent: "center" }]}>
                           <Feather name="package" size={40} color="#666" />

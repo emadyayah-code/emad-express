@@ -81,9 +81,89 @@ export default function CheckoutScreen() {
     },
   ];
 
-  const tax = Math.round(total * 0.15);
-  const shipping = total > 500 ? 0 : 25;
-  const grandTotal = total + tax + shipping;
+  const isYemen = React.useMemo(() => {
+    const text = (address || "").toLowerCase();
+    const yemenKeywords = [
+      "اليمن", "yemen", "ye", "تعز", "taiz", "صنعاء", "sana", "عدن", "aden",
+      "حضرموت", "hadramout", "الحديدة", "hodeida", "إب", "ibb", "ذمار", "dhamar",
+      "مأرب", "marib", "شبوة", "shabwa", "المهرة", "mahrah", "لحج", "lahj",
+      "أبين", "abyan", "صعدة", "saada", "حجة", "hajjah", "عمران", "amran",
+      "الضالع", "dhale", "ريمة", "raymah", "سقطرى", "socotra", "المكلا", "mukalla", "سيئون", "seiyun"
+    ];
+    return yemenKeywords.some(k => text.includes(k));
+  }, [address]);
+
+  const [shippingMethod, setShippingMethod] = useState<string>("dhl");
+
+  useEffect(() => {
+    if (isYemen) {
+      if (shippingMethod !== "dhl" && shippingMethod !== "economic") {
+        setShippingMethod("dhl");
+      }
+    } else {
+      if (shippingMethod !== "standard" && shippingMethod !== "premium") {
+        setShippingMethod("standard");
+      }
+    }
+  }, [isYemen]);
+
+  // AliExpress Shipping Options Definition
+  const yemenOptions = [
+    {
+      id: "dhl",
+      carrier: "DHL Express",
+      title: "دي إتش إل إكسبريس (DHL Express)",
+      badge: "شحن سريع دولي علي إكسبرس ✈️",
+      badgeBg: "#d97706",
+      desc: "شحن جوي سريع ومباشر لليمن مطابق لـ AliExpress • تسليم 7-15 يوم عمل",
+      fee: 529,
+      isFree: false,
+    },
+    {
+      id: "economic",
+      carrier: "AliExpress Economic Freight",
+      title: "شحن اقتصادي مجمّع (Combined Freight)",
+      badge: "موفّر واقتصادي 📦",
+      badgeBg: "#059669",
+      desc: "شحن مجمّع موفر إلى المحافظات اليمنية • تسليم 20-35 يوم عمل",
+      fee: 25,
+      isFree: false,
+    },
+  ];
+
+  const globalOptions = [
+    {
+      id: "standard",
+      carrier: "AliExpress Standard Shipping",
+      title: total >= 100 ? "شحن مجاني علي إكسبرس (AliExpress Choice)" : "شحن قياسي علي إكسبرس (AliExpress Standard)",
+      badge: total >= 100 ? "Choice مجاني 🎉" : "توصيل قياسي",
+      badgeBg: total >= 100 ? "#059669" : "#2563eb",
+      desc: total >= 100
+        ? "شحن مجاني رسمي عبر Choice لطلبك بقيمة 100+ ر.س • تسليم 10-18 يوم"
+        : "شحن قياسي دولي موثوق مع تتبع • تسليم 10-18 يوم (مجاني عند الشراء بـ 100 ر.س)",
+      fee: total >= 100 ? 0 : 15,
+      isFree: total >= 100,
+    },
+    {
+      id: "premium",
+      carrier: "AliExpress Premium Shipping",
+      title: "شحن سريع بريميوم (AliExpress Premium)",
+      badge: "أولوية فائقة ⚡",
+      badgeBg: "#7c3aed",
+      desc: "شحن جوي سريع بأعلى أولوية وتسليم للباب • تسليم 5-9 أيام عمل",
+      fee: 45,
+      isFree: false,
+    },
+  ];
+
+  const shippingOptions = isYemen ? yemenOptions : globalOptions;
+  const currentShippingOption = shippingOptions.find(o => o.id === shippingMethod) || shippingOptions[0];
+  const shippingFee = currentShippingOption.fee;
+
+  // Tax: 15% VAT for Saudi Arabia, 0% for Yemen and International (AliExpress export)
+  const isSaudi = !isYemen && (address.includes("السعودية") || address.includes("Saudi") || address.includes("SA") || address.includes("الرياض") || address.includes("جدة") || address.includes("الدمام") || address.includes("مكة") || address.includes("المدينة"));
+  const tax = isSaudi ? Math.round(total * 0.15) : 0;
+  const grandTotal = total + tax + shippingFee;
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
   const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
@@ -112,6 +192,8 @@ export default function CheckoutScreen() {
             total: i.price * i.quantity,
           })),
           shipping_address: address,
+          shipping_method: shippingMethod,
+          shipping_country: isYemen ? "YE" : (isSaudi ? "SA" : "GLOBAL"),
           payment_method: payMethod,
         },
         token
@@ -182,12 +264,17 @@ export default function CheckoutScreen() {
             <View style={[styles.divider, { backgroundColor: colors.border }]} />
             <View style={styles.orderItem}>
               <Text style={{ color: colors.mutedForeground, fontSize: 13 }}>{t.checkout.tax}</Text>
-              <Text style={{ color: colors.foreground, fontSize: 13 }}>{format(tax)}</Text>
+              <Text style={{ color: colors.foreground, fontSize: 13 }}>{tax === 0 ? "0 ر.س (معفى)" : format(tax)}</Text>
             </View>
             <View style={styles.orderItem}>
-              <Text style={{ color: colors.mutedForeground, fontSize: 13 }}>{t.checkout.shipping}</Text>
-              <Text style={{ color: shipping === 0 ? "#059669" : colors.foreground, fontSize: 13 }}>
-                {shipping === 0 ? t.checkout.free_shipping : format(shipping)}
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                <Text style={{ color: colors.mutedForeground, fontSize: 13 }}>{t.checkout.shipping}</Text>
+                <View style={[styles.miniBadge, { backgroundColor: currentShippingOption.badgeBg }]}>
+                  <Text style={styles.miniBadgeText}>{currentShippingOption.carrier}</Text>
+                </View>
+              </View>
+              <Text style={{ color: shippingFee === 0 ? "#059669" : colors.foreground, fontSize: 13, fontWeight: "700" }}>
+                {shippingFee === 0 ? t.checkout.free_shipping : format(shippingFee)}
               </Text>
             </View>
             <View style={[styles.orderItem, { marginTop: 4 }]}>
@@ -247,6 +334,85 @@ export default function CheckoutScreen() {
               numberOfLines={3}
               style={[styles.addressInput, { color: colors.foreground, backgroundColor: colors.muted, borderColor: colors.border }]}
             />
+          </View>
+
+          {/* Shipping Methods Selection (AliExpress Shipping) */}
+          <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                <Feather name="truck" size={18} color={colors.primary} />
+                <Text style={[styles.cardTitle, { color: colors.foreground, marginBottom: 0 }]}>طريقة الشحن (AliExpress Shipping)</Text>
+              </View>
+              <View style={[styles.miniBadge, { backgroundColor: "#f59e0b" }]}>
+                <Text style={styles.miniBadgeText}>مطابق لعلي إكسبرس ⚡</Text>
+              </View>
+            </View>
+
+            {isYemen ? (
+              <View style={[styles.infoBanner, { backgroundColor: "rgba(217, 119, 6, 0.08)", borderColor: "rgba(217, 119, 6, 0.3)", marginBottom: 12 }]}>
+                <Feather name="map-pin" size={16} color="#d97706" />
+                <View style={{ flex: 1 }}>
+                  <Text style={{ color: "#d97706", fontWeight: "700", fontSize: 12, marginBottom: 2 }}>
+                    📍 التوصيل إلى اليمن (AliExpress Yemen Direct)
+                  </Text>
+                  <Text style={{ color: colors.mutedForeground, fontSize: 11, lineHeight: 16 }}>
+                    يحتسب علي إكسبرس الشحن المباشر لليمن عبر DHL Express بمبلغ 529 ر.س، ويتوفر أيضاً خيار الشحن الاقتصادي المجمّع بـ 25 ر.س.
+                  </Text>
+                </View>
+              </View>
+            ) : (
+              <View style={[styles.infoBanner, { backgroundColor: total >= 100 ? "rgba(5, 150, 105, 0.08)" : "rgba(37, 99, 235, 0.08)", borderColor: total >= 100 ? "rgba(5, 150, 105, 0.3)" : "rgba(37, 99, 235, 0.3)", marginBottom: 12 }]}>
+                <Feather name="gift" size={16} color={total >= 100 ? "#059669" : "#2563eb"} />
+                <View style={{ flex: 1 }}>
+                  <Text style={{ color: total >= 100 ? "#059669" : "#2563eb", fontWeight: "700", fontSize: 12, marginBottom: 2 }}>
+                    {total >= 100 ? "🎉 مؤهل للشحن المجاني (AliExpress Choice)" : `💡 أضف منتجات بقيمة ${format(100 - total)} إضافية للحصول على شحن مجاني!`}
+                  </Text>
+                  <Text style={{ color: colors.mutedForeground, fontSize: 11, lineHeight: 16 }}>
+                    خدمة شحن علي إكسبرس القياسية مجانية لجميع الطلبات من 100 ر.س فأكثر.
+                  </Text>
+                </View>
+              </View>
+            )}
+
+            {shippingOptions.map((opt) => {
+              const isSelected = shippingMethod === opt.id;
+              return (
+                <TouchableOpacity
+                  key={opt.id}
+                  style={[
+                    styles.payOption,
+                    {
+                      borderColor: isSelected ? colors.primary : colors.border,
+                      backgroundColor: isSelected ? "rgba(245, 158, 11, 0.08)" : "transparent",
+                    },
+                  ]}
+                  onPress={() => setShippingMethod(opt.id)}
+                >
+                  <View style={[styles.radio, { borderColor: isSelected ? colors.primary : colors.border }]}>
+                    {isSelected && <View style={[styles.radioDot, { backgroundColor: colors.primary }]} />}
+                  </View>
+
+                  <View style={{ flex: 1 }}>
+                    <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 6 }}>
+                      <Text style={{ color: colors.foreground, fontWeight: "700", fontSize: 14 }}>
+                        {opt.title}
+                      </Text>
+                      <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                        <View style={[styles.miniBadge, { backgroundColor: opt.badgeBg }]}>
+                          <Text style={styles.miniBadgeText}>{opt.badge}</Text>
+                        </View>
+                        <Text style={{ color: opt.fee === 0 ? "#059669" : colors.primary, fontWeight: "800", fontSize: 14 }}>
+                          {opt.fee === 0 ? "مجاني" : format(opt.fee)}
+                        </Text>
+                      </View>
+                    </View>
+                    <Text style={{ color: colors.mutedForeground, fontSize: 12, marginTop: 4, lineHeight: 16 }}>
+                      {opt.desc}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
           </View>
 
           {/* Payment Methods Selection */}

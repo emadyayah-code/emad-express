@@ -52,6 +52,10 @@ export const orderSchema = z.object({
   })).min(1, "السلة فارغة").max(100, "عدد العناصر كبير جداً"),
   shipping_address: z.string().max(2000).optional(),
   payment_method: z.string().max(255).default("cod"),
+  shipping_method: z.string().max(100).optional(),
+  shipping_country: z.string().max(100).optional(),
+  shipping_city: z.string().max(100).optional(),
+  currency: z.string().max(10).optional(),
 });
 
 export const employeeSchema = z.object({

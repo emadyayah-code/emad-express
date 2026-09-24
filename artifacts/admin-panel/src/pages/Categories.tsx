@@ -132,7 +132,7 @@ export default function Categories() {
     setReorganizing(true);
     setReorganizeMsg("");
     try {
-      const res = await api.post("/admin/categories/reorganize");
+      const res = await api.post("/admin/categories/reorganize", {});
       setReorganizeMsg(res.message || "تمت إعادة تصنيف وتوزيع المنتجات بنجاح!");
       qc.invalidateQueries({ queryKey: ["categories-admin"] });
       qc.invalidateQueries({ queryKey: ["categories"] });
