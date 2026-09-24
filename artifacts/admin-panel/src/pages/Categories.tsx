@@ -1,7 +1,7 @@
 import { useState, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, getApiBase } from "@/lib/api";
-import { Plus, Edit, Trash2, X, Upload, Image as ImageIcon } from "lucide-react";
+import { Plus, Edit, Trash2, X, Upload, Image as ImageIcon, Sparkles, Loader2 } from "lucide-react";
 
 interface Category {
   id: number; name: string; icon: string; image: string;
@@ -124,14 +124,60 @@ export default function Categories() {
     else updateMut.mutate(form);
   }
 
+  const [reorganizing, setReorganizing] = useState(false);
+  const [reorganizeMsg, setReorganizeMsg] = useState("");
+
+  const handleReorganize = async () => {
+    if (!confirm("هل تريد إعادة فحص وتوزيع جميع منتجات المتجر وتصنيفها على أقسامها الصحيحة تلقائياً بدقة ذكية؟")) return;
+    setReorganizing(true);
+    setReorganizeMsg("");
+    try {
+      const res = await api.post("/admin/categories/reorganize");
+      setReorganizeMsg(res.message || "تمت إعادة تصنيف وتوزيع المنتجات بنجاح!");
+      qc.invalidateQueries({ queryKey: ["categories-admin"] });
+      qc.invalidateQueries({ queryKey: ["categories"] });
+      qc.invalidateQueries({ queryKey: ["products"] });
+      setTimeout(() => setReorganizeMsg(""), 10000);
+    } catch (e: any) {
+      alert(e?.message || "حدث خطأ أثناء إعادة التصنيف");
+    } finally {
+      setReorganizing(false);
+    }
+  };
+
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-amber-400">الفئات</h1>
-        <button onClick={openAdd} className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-black" style={{ background: "linear-gradient(135deg,#f59e0b,#d97706)" }}>
-          <Plus size={16} /> إضافة فئة
-        </button>
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <h1 className="text-2xl font-bold text-amber-400">الفئات والأقسام</h1>
+        <div className="flex items-center gap-2.5 flex-wrap">
+          <button
+            onClick={handleReorganize}
+            disabled={reorganizing}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold border border-amber-500/40 text-amber-300 bg-slate-900 hover:bg-amber-500/10 disabled:opacity-50 transition-all cursor-pointer shadow-md"
+          >
+            {reorganizing ? (
+              <span className="flex items-center gap-2">
+                <Loader2 size={16} className="animate-spin text-amber-400" />
+                جارٍ إعادة الفرز والتوزيع الذكي لجميع المنتجات...
+              </span>
+            ) : (
+              <span className="flex items-center gap-2">
+                <Sparkles size={16} className="text-amber-400" />
+                ⚡ إعادة توزيع وتصنيف منتجات المتجر بدقة
+              </span>
+            )}
+          </button>
+          <button onClick={openAdd} className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold text-black cursor-pointer shadow-md" style={{ background: "linear-gradient(135deg,#f59e0b,#d97706)" }}>
+            <Plus size={16} /> إضافة فئة
+          </button>
+        </div>
       </div>
+
+      {reorganizeMsg && (
+        <div className="p-3 bg-emerald-500/15 border border-emerald-500/40 rounded-xl text-emerald-400 text-xs sm:text-sm font-bold animate-pulse text-right">
+          ✓ {reorganizeMsg}
+        </div>
+      )}
 
       {isLoading ? (
         <div className="flex items-center justify-center h-32">

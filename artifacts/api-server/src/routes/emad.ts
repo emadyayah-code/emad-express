@@ -725,6 +725,40 @@ router.delete("/admin/categories/:id", requireAuth, requireRole("admin", "manage
   } catch (err) { next(err); }
 });
 
+router.post("/admin/categories/reorganize", requireAuth, requireRole("admin", "manager"), async (_req, res, next) => {
+  try {
+    const allProds = await db.select({
+      id: products.id,
+      name_ar: products.name_ar,
+      name_en: products.name_en,
+      category_id: products.category_id,
+      description_ar: products.description_ar,
+    }).from(products).where(isNull(products.deleted_at));
+
+    let updatedCount = 0;
+    const chunkSize = 200;
+
+    for (let i = 0; i < allProds.length; i += chunkSize) {
+      const chunk = allProds.slice(i, i + chunkSize);
+      await Promise.all(chunk.map(async (p) => {
+        const title = `${p.name_ar} ${p.name_en || ""}`;
+        const newCatId = await matchCategoryId(title, null);
+        if (newCatId && newCatId !== p.category_id) {
+          await db.update(products).set({ category_id: newCatId }).where(eq(products.id, p.id));
+          updatedCount++;
+        }
+      }));
+    }
+
+    return res.json({
+      success: true,
+      message: `تم بنجاح إعادة فرز وتوزيع ${updatedCount} منتج على أقسامها الصحيحة من أصل ${allProds.length} منتج!`,
+      totalScanned: allProds.length,
+      totalUpdated: updatedCount,
+    });
+  } catch (err) { next(err); }
+});
+
 // ========== ORDERS (Admin) ==========
 router.get("/admin/orders", requireAuth, requireRole("admin", "manager", "sales", "support"), async (req, res, next) => {
   try {
@@ -2062,7 +2096,7 @@ router.post("/admin/dropship/import-chunk", requireAuth, requireRole("admin", "m
         const sourcePrice = parsePrice(p.target_sale_price || p.target_original_price, 25);
         const salePrice = Number((sourcePrice * margin).toFixed(2));
         const skuUnique = `ALI-${srcId}-${Date.now().toString(36).slice(-4)}`;
-        const autoCatId = await matchCategoryId(`${p.product_title} ${p.first_level_category_name || ""}`, category_id ? Number(category_id) : null);
+        const autoCatId = await matchCategoryId(p.product_title, category_id ? Number(category_id) : null, p.first_level_category_name);
 
         productRecords.push({
           name_ar: String(p.product_title || `AliExpress Product ${srcId}`).slice(0, 450),
@@ -2389,7 +2423,7 @@ router.post("/admin/dropship/bulk-import-1000", requireAuth, requireRole("admin"
         const sourcePrice = parsePrice(item.cost, 25);
         const salePrice = Number((sourcePrice * margin).toFixed(2));
         const skuUnique = `ALI-${item.source_id}-${Date.now().toString(36).slice(-4)}`;
-        const autoCatId = await matchCategoryId(`${item.name} ${item.category_name || ""}`, category_id ? Number(category_id) : null);
+        const autoCatId = await matchCategoryId(item.name, category_id ? Number(category_id) : null, item.category_name);
 
         productRecords.push({
           name_ar: String(item.name || `AliExpress Product ${item.source_id}`).slice(0, 450),
@@ -2501,7 +2535,7 @@ router.post("/admin/dropship/import-batch", requireAuth, requireRole("admin", "m
         const sourcePrice = parseFloat(item.price || item.source_price || 25) || 25;
         const salePrice = Number((sourcePrice * margin).toFixed(2));
         const skuUnique = `ALI-${srcId}-${Date.now().toString(36).slice(-4)}`;
-        const autoCatId = await matchCategoryId(`${item.name || ""} ${item.category_name || ""}`);
+        const autoCatId = await matchCategoryId(item.name || "", null, item.category_name);
         productRecords.push({
           name_ar: String(item.name || `AliExpress Product ${srcId}`).slice(0, 450),
           name_en: String(item.name_en || item.name || `AliExpress Product ${srcId}`).slice(0, 450),
