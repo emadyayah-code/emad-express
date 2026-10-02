@@ -45,7 +45,7 @@ export default function Dropshipping() {
         const batch = browseList.slice(i, i + batchSize);
         const res = await api.post("/admin/dropship/import-batch", {
           items: batch,
-          margin_percent: 35,
+          margin_percent: margin || 300,
         });
         totalImported += res.imported || 0;
       }
@@ -962,7 +962,7 @@ function AutoFetchButton({ platform, onResults }: { platform: string; onResults:
           const res = await api.post("/admin/dropship/import-chunk", { 
             platform, 
             page: p,
-            margin_percent: 35, 
+            margin_percent: margin || 300, 
             category_id: selectedCat || undefined,
             keyword: keyword || undefined,
             seed
@@ -1062,7 +1062,7 @@ function BulkImportSection({ onBrowse, onGoProducts }: { onBrowse: (r: any[]) =>
   const [selectedCat, setSelectedCat] = useState("");
   const [keyword, setKeyword] = useState("");
   const [count, setCount] = useState(1000);
-  const [margin, setMargin] = useState(35);
+  const [margin, setMargin] = useState(300);
   const [importing, setImporting] = useState(false);
   const [importProgress, setImportProgress] = useState<{ current: number; total: number; percent: number; imported: number } | null>(null);
   const [browsing, setBrowsing] = useState(false);
@@ -1291,7 +1291,7 @@ function BulkImportSection({ onBrowse, onGoProducts }: { onBrowse: (r: any[]) =>
             <p className="text-xs text-slate-400 mt-0.5">سيتم حساب سعر البيع تلقائياً: سعر المورد + {margin}%</p>
           </div>
           <div className="flex items-center gap-2">
-            {[20, 30, 35, 50, 75].map(m => (
+            {[50, 100, 150, 200, 300].map(m => (
               <button
                 key={m}
                 type="button"

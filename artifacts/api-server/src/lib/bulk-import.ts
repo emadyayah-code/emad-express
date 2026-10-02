@@ -266,7 +266,7 @@ export async function startBulkImport(
   platform: "aliexpress" | "amazon" | "alibaba" | "all",
   keywords: string,
   maxProducts: number,
-  marginPercent: number,
+  marginPercent: number = 300,
 ): Promise<string> {
   if (activeJobId && jobs.get(activeJobId)?.status === "running") {
     throw new Error("There is already an active import job. Please wait or stop it first.");

@@ -2110,7 +2110,7 @@ router.get("/admin/dropship/fetch-chunk", requireAuth, requireRole("admin", "man
 
 router.post("/admin/dropship/import-chunk", requireAuth, requireRole("admin", "manager"), async (req, res, next) => {
   try {
-    const { platform = "aliexpress", page = 1, category_id, keyword, margin_percent = 35, seed = 0 } = req.body || {};
+    const { platform = "aliexpress", page = 1, category_id, keyword, margin_percent = 300, seed = 0 } = req.body || {};
     const creds = await getAliExpressCreds();
     if (platform !== "aliexpress" || !creds) {
       return res.status(400).json({ success: false, message: "بيانات اعتماد AliExpress غير متوفرة" });
@@ -2129,7 +2129,7 @@ router.post("/admin/dropship/import-chunk", requireAuth, requireRole("admin", "m
       existingProducts.map(p => normalizeImageUrl(p.image)).filter(Boolean)
     );
 
-    const margin = (100 + (margin_percent || 35)) / 100;
+    const margin = (100 + (margin_percent || 300)) / 100;
     let productRecords: any[] = [];
     let metaRecords: any[] = [];
     let skippedCount = 0;
@@ -2342,8 +2342,8 @@ router.get("/admin/dropship/auto-fetch", requireAuth, requireRole("admin", "mana
 
 router.post("/admin/dropship/bulk-import-1000", requireAuth, requireRole("admin", "manager"), async (req, res, next) => {
   try {
-    const { platform = "aliexpress", count = 1000, margin_percent = 30, category_id, keyword } = req.body || {};
-    const margin = (100 + (margin_percent || 30)) / 100;
+    const { platform = "aliexpress", count = 1000, margin_percent = 300, category_id, keyword } = req.body || {};
+    const margin = (100 + (margin_percent || 300)) / 100;
     const creds = await getAliExpressCreds();
 
     // Fetch existing source_ids and SKUs to prevent duplicate insertion
@@ -2570,11 +2570,11 @@ router.post("/admin/dropship/bulk-import-1000", requireAuth, requireRole("admin"
 // Batch import selected or all browsed products in one click
 router.post("/admin/dropship/import-batch", requireAuth, requireRole("admin", "manager"), async (req, res, next) => {
   try {
-    const { items = [], margin_percent = 35 } = req.body || {};
+    const { items = [], margin_percent = 300 } = req.body || {};
     if (!Array.isArray(items) || items.length === 0) {
       return res.status(400).json({ success: false, message: "لا توجد منتجات للاستيراد" });
     }
-    const margin = (100 + (margin_percent || 35)) / 100;
+    const margin = (100 + (margin_percent || 300)) / 100;
     const existingDropships = await db.select({ source_id: dropship_products.source_id }).from(dropship_products);
     const existingProducts = await db.select({ sku: products.sku, image: products.image }).from(products).where(isNull(products.deleted_at));
     const existingSet = new Set([
@@ -2974,7 +2974,7 @@ export async function verifyAndSyncDropshipProductStock(
           return await markOutOfStockAndRemove("نفدت كمية المنتج من AliExpress (السعر غير متوفر أو 0)");
         }
 
-        const margin = dp.source_price > 0 ? dp.our_price / dp.source_price : 1.3;
+        const margin = dp.source_price > 0 ? dp.our_price / dp.source_price : 4.0;
         const newOurPrice = parseFloat((newSourcePrice * margin).toFixed(2));
         await db.update(dropship_products).set({
           source_price: newSourcePrice,
@@ -3007,7 +3007,7 @@ export async function verifyAndSyncDropshipProductStock(
         if (price <= 0) {
           return await markOutOfStockAndRemove("نفد مخزون المنتج من أمازون");
         }
-        const margin = dp.source_price > 0 ? dp.our_price / dp.source_price : 1.3;
+        const margin = dp.source_price > 0 ? dp.our_price / dp.source_price : 4.0;
         const newOurPrice = parseFloat((price * margin).toFixed(2));
         await db.update(dropship_products).set({
           source_price: price,
@@ -3491,7 +3491,7 @@ router.get("/admin/dropship/alibaba-search", requireAuth, requireRole("admin", "
 
 router.post("/admin/dropship/bulk-import", requireAuth, requireRole("admin", "manager"), async (req, res, next) => {
   try {
-    const { platform, keywords, total = 3000, margin_percent = 30, category_id } = req.body as {
+    const { platform, keywords, total = 3000, margin_percent = 300, category_id } = req.body as {
       platform: string; keywords: string; total?: number; margin_percent?: number; category_id?: number;
     };
 
@@ -3516,7 +3516,7 @@ router.post("/admin/dropship/bulk-import", requireAuth, requireRole("admin", "ma
       credentials.alibaba = creds;
     }
 
-    const jobId = await startBulkImport(platform, keywords, totalTarget, margin_percent || 30, category_id || null, credentials);
+    const jobId = await startBulkImport(platform, keywords, totalTarget, margin_percent || 300, category_id || null, credentials);
 
     return res.status(202).json({
       success: true,
@@ -3654,7 +3654,7 @@ router.get("/admin/dropship/aliexpress-search", requireAuth, requireRole("admin"
 // Import from real AliExpress API
 router.post("/admin/dropship/aliexpress-import", requireAuth, requireRole("admin", "manager"), async (req, res, next) => {
   try {
-    const { source_id, margin_percent = 30 } = req.body as { source_id: string; margin_percent?: number };
+    const { source_id, margin_percent = 300 } = req.body as { source_id: string; margin_percent?: number };
     if (!source_id) return res.status(400).json({ success: false, message: "رقم المنتج (source_id) مطلوب" });
 
     const creds = await getAliExpressCreds();
@@ -3711,7 +3711,7 @@ router.post("/admin/dropship/aliexpress-import", requireAuth, requireRole("admin
 // Start bulk import job
 router.post("/admin/dropship/bulk-import", requireAuth, requireRole("admin", "manager"), async (req, res, next) => {
   try {
-    const { platform = "all", keywords, max_products = 3000, margin_percent = 30 } = req.body as {
+    const { platform = "all", keywords, max_products = 3000, margin_percent = 300 } = req.body as {
       platform: "aliexpress" | "amazon" | "alibaba" | "all";
       keywords: string;
       max_products?: number;
@@ -3736,7 +3736,7 @@ router.post("/admin/dropship/bulk-import", requireAuth, requireRole("admin", "ma
       if (!creds) return res.status(400).json({ success: false, message: "أضف App Key و App Secret لعلي بابا أولاً في الإعدادات" });
     }
 
-    const jobId = await startBulkImport(platform, keywords, Math.min(max_products || 3000, 10000), margin_percent || 30);
+    const jobId = await startBulkImport(platform, keywords, Math.min(max_products || 3000, 10000), margin_percent || 300);
     return res.status(202).json({
       success: true,
       message: "تم بدء عملية الاستيراد الجماعي",
@@ -3840,7 +3840,7 @@ router.get("/admin/dropship/amazon-search", requireAuth, requireRole("admin", "m
 
 router.post("/admin/dropship/amazon-import", requireAuth, requireRole("admin", "manager"), async (req, res, next) => {
   try {
-    const { source_id, margin_percent = 30 } = req.body as { source_id: string; margin_percent?: number };
+    const { source_id, margin_percent = 300 } = req.body as { source_id: string; margin_percent?: number };
     if (!source_id) return res.status(400).json({ success: false, message: "رقم ASIN مطلوب" });
 
     const creds = await getAmazonCreds();
@@ -3950,7 +3950,7 @@ router.get("/admin/dropship/alibaba-search", requireAuth, requireRole("admin", "
 
 router.post("/admin/dropship/alibaba-import", requireAuth, requireRole("admin", "manager"), async (req, res, next) => {
   try {
-    const { source_id, margin_percent = 30 } = req.body as { source_id: string; margin_percent?: number };
+    const { source_id, margin_percent = 300 } = req.body as { source_id: string; margin_percent?: number };
     if (!source_id) return res.status(400).json({ success: false, message: "رقم المنتج مطلوب" });
 
     const creds = await getAlibabaCreds();
