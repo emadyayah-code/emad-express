@@ -7,11 +7,6 @@ import { seedIfEmpty, startPriceSyncJob } from "./routes/emad";
 const port = env.PORT;
 
 const server = app.listen(port, "0.0.0.0", async () => {
-  if (err) {
-    logger.error({ err }, "Error listening on port");
-    process.exit(1);
-  }
-
   logger.info({ port, nodeEnv: env.NODE_ENV }, "Server listening");
   try {
     logger.info("Initializing database schema...");
@@ -22,6 +17,11 @@ const server = app.listen(port, "0.0.0.0", async () => {
   } catch (e) {
     logger.error({ err: e }, "Database initialization/seed failed");
   }
+});
+
+server.on("error", (err) => {
+  logger.error({ err }, "Error listening on port");
+  process.exit(1);
 });
 
 // Graceful shutdown
