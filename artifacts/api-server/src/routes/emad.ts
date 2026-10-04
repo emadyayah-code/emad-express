@@ -80,17 +80,18 @@ export async function seedIfEmpty() {
   if (seeded) return;
   seeded = true;
 
-  const hashedAdmin = await hashPassword("772223645");
-  const hashedUser = await hashPassword("user123");
-
   const [adminUser] = await db.select().from(users).where(eq(users.email, "ealakhly@gmail.com"));
   if (!adminUser) {
+    const defaultAdminPwd = process.env.ADMIN_DEFAULT_PASSWORD || "Admin@ChangeMe123!";
+    const hashedAdmin = await hashPassword(defaultAdminPwd);
+    const hashedUser = await hashPassword("user123");
     await db.insert(users).values([
       { name: "عماد الاكحلي", email: "ealakhly@gmail.com", password: hashedAdmin, role: "admin", email_verified: true },
       { name: "أحمد محمد", email: "ahmed@example.com", password: hashedUser, phone: "0501234567", role: "customer", email_verified: true },
     ]);
   } else {
-    await db.update(users).set({ password: hashedAdmin, role: "admin", email_verified: true }).where(eq(users.email, "ealakhly@gmail.com"));
+    // If admin already exists, do not overwrite password
+    await db.update(users).set({ role: "admin", email_verified: true }).where(eq(users.email, "ealakhly@gmail.com"));
   }
 
   try {
