@@ -38,6 +38,7 @@ export default function HomeScreen() {
 
   const { data: productsData } = useQuery({ queryKey: ["products", language], queryFn: () => api.get(`/products?lang=${language}`) });
   const { data: categoriesData } = useQuery({ queryKey: ["categories", language], queryFn: () => api.get("/categories") });
+  const { data: homeFeedData } = useQuery({ queryKey: ["home-feed", language], queryFn: () => api.get(`/home-feed?lang=${language}`) });
 
   const products = Array.isArray(productsData) ? productsData : (productsData?.data || productsData?.products || []);
   const categories = Array.isArray(categoriesData) ? categoriesData : (categoriesData?.data || []);
@@ -45,15 +46,19 @@ export default function HomeScreen() {
   const featured = products.slice(0, 6);
   const topSelling = products.slice(6, 12);
 
-  // Group products by category dynamically for rich Home showcase (high performance memoized O(N) grouping)
+  // Group products by all categories dynamically
   const categoriesWithProducts = React.useMemo(() => {
+    const serverSections = homeFeedData?.sections;
+    if (Array.isArray(serverSections) && serverSections.length > 0) {
+      return serverSections;
+    }
     if (!categories.length || !products.length) return [];
     const prodMap = new Map<number, any[]>();
     for (const p of products) {
       const cid = Number(p.category_id);
       if (!prodMap.has(cid)) prodMap.set(cid, []);
       const list = prodMap.get(cid)!;
-      if (list.length < 8) list.push(p);
+      if (list.length < 10) list.push(p);
     }
     return categories
       .map((cat: any) => ({
@@ -61,7 +66,7 @@ export default function HomeScreen() {
         products: prodMap.get(Number(cat.id)) || [],
       }))
       .filter((c: any) => c.products.length > 0);
-  }, [categories, products]);
+  }, [categories, products, homeFeedData]);
 
   const [activeSlide, setActiveSlide] = useState(0);
   const sliderRef = useRef<FlatList>(null);
@@ -334,8 +339,8 @@ export default function HomeScreen() {
         </View>
       </View>
 
-      {/* Dynamic Category Showcase Sections */}
-      {categoriesWithProducts.slice(0, 6).map((cat: any) => {
+      {/* Dynamic Category Showcase Sections (All Categories) */}
+      {categoriesWithProducts.map((cat: any) => {
         const catName = language === "ar" ? (cat.name_ar || cat.name) : (cat.name_en || cat.name);
         return (
           <View key={`cat-sec-${cat.id}`} style={styles.section}>

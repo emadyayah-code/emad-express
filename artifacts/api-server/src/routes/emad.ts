@@ -1263,6 +1263,71 @@ router.get("/categories", async (_req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// ========== HOME MULTI-CATEGORY SHOWCASE FEED ==========
+router.get("/home-feed", async (req, res, next) => {
+  try {
+    const { lang } = req.query as Record<string, string>;
+    const requestLang = lang || (req.headers["accept-language"]?.includes("en") ? "en" : "ar");
+    const cacheKey = `cached_home_feed_${requestLang}`;
+    const cached = getCachedProducts(cacheKey);
+    if (cached) {
+      res.setHeader("X-Cache", "HIT");
+      return res.json(cached);
+    }
+
+    const allCats = await db
+      .select()
+      .from(categories)
+      .where(and(eq(categories.is_active, true), isNull(categories.deleted_at)))
+      .orderBy(categories.id);
+
+    // Fetch latest active products across all categories with an efficient window query or multi-category sample
+    const allProds = await db
+      .select({
+        id: products.id,
+        name_ar: products.name_ar,
+        name_en: products.name_en,
+        sku: products.sku,
+        price: products.price,
+        cost: products.cost,
+        quantity: products.quantity,
+        category_id: products.category_id,
+        image: products.image,
+        is_active: products.is_active,
+      })
+      .from(products)
+      .where(and(eq(products.is_active, true), isNull(products.deleted_at)))
+      .orderBy(desc(products.id))
+      .limit(600);
+
+    const prodMap = new Map<number, any[]>();
+    for (const p of allProds) {
+      const cid = Number(p.category_id);
+      if (!prodMap.has(cid)) prodMap.set(cid, []);
+      const list = prodMap.get(cid)!;
+      if (list.length < 10) {
+        list.push({
+          ...p,
+          name: requestLang === "en" ? (p.name_en || (p as any).name || p.name_ar) : (p.name_ar || (p as any).name || p.name_en),
+          image: toOptimizedThumb(p.image),
+        });
+      }
+    }
+
+    const sections = allCats
+      .map(cat => ({
+        ...cat,
+        products: prodMap.get(Number(cat.id)) || [],
+      }))
+      .filter(c => c.products.length > 0);
+
+    const result = { success: true, sections };
+    setCachedProducts(cacheKey, result, 300); // 5 min cache
+    res.setHeader("X-Cache", "MISS");
+    return res.json(result);
+  } catch (err) { next(err); }
+});
+
 // ========== PUBLIC ORDERS ==========
 router.get("/orders", requireAuth, async (req, res, next) => {
   try {
