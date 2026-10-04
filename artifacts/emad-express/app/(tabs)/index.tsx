@@ -42,9 +42,6 @@ export default function HomeScreen() {
 
   const products = Array.isArray(productsData) ? productsData : (productsData?.data || productsData?.products || []);
   const categories = Array.isArray(categoriesData) ? categoriesData : (categoriesData?.data || []);
-  const showcaseProducts = products.slice(0, 6);
-  const featured = products.slice(0, 6);
-  const topSelling = products.slice(6, 12);
 
   // Group products by all categories dynamically
   const categoriesWithProducts = React.useMemo(() => {
@@ -67,6 +64,39 @@ export default function HomeScreen() {
       }))
       .filter((c: any) => c.products.length > 0);
   }, [categories, products, homeFeedData]);
+
+  // Distinctly diversified collections across all categories
+  const { showcaseProducts, featured, topSelling } = React.useMemo(() => {
+    const allSections = categoriesWithProducts;
+    if (!allSections.length) {
+      return {
+        showcaseProducts: products.slice(0, 8),
+        featured: products.slice(0, 10),
+        topSelling: products.slice(10, 20),
+      };
+    }
+
+    const scList: any[] = [];
+    const featList: any[] = [];
+    const topList: any[] = [];
+
+    // Round-robin selection across different categories to guarantee maximum diversity
+    allSections.forEach((sec: any) => {
+      const pList = sec.products || [];
+      if (pList[0]) scList.push(pList[0]);
+      if (pList[1]) featList.push(pList[1]);
+      else if (pList[0]) featList.push(pList[0]);
+
+      if (pList[2]) topList.push(pList[2]);
+      else if (pList[0]) topList.push(pList[0]);
+    });
+
+    return {
+      showcaseProducts: scList.slice(0, 10),
+      featured: featList.slice(0, 12),
+      topSelling: topList.slice(0, 10),
+    };
+  }, [categoriesWithProducts, products]);
 
   const [activeSlide, setActiveSlide] = useState(0);
   const sliderRef = useRef<FlatList>(null);
