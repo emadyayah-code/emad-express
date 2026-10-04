@@ -9,7 +9,7 @@ import { useLanguage, LANGUAGES, Lang } from "@/context/LanguageContext";
 import { useCurrency, CURRENCIES, CurrencyCode } from "@/context/CurrencyContext";
 import { useAppSettings } from "@/hooks/useAppSettings";
 
-const APP_VERSION = "2.2.5";
+const APP_VERSION = "15.0.0";
 
 function MenuItem({ icon, label, onPress, danger, rightEl }: { icon: string; label: string; onPress: () => void; danger?: boolean; rightEl?: React.ReactNode }) {
   const colors = useColors();
