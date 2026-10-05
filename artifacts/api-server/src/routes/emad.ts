@@ -3436,6 +3436,179 @@ export function startPriceSyncJob() {
   setInterval(syncPrices, INTERVAL_MS);
 }
 
+// ========== AUTO IMPORT 2000 PRODUCTS EVERY 5 MINUTES (ZERO MANUAL INTERVENTION) ==========
+let autoImportRunning = false;
+let autoImportPageIndex = 1;
+
+export async function runAutoImportCycle(targetCount = 2000): Promise<{ imported: number; skipped: number; totalInDb: number }> {
+  if (autoImportRunning) {
+    logger.info("Auto-import cycle is already in progress, skipping concurrent run.");
+    return { imported: 0, skipped: 0, totalInDb: 0 };
+  }
+  autoImportRunning = true;
+  const startTime = Date.now();
+  let totalImported = 0;
+  let totalSkipped = 0;
+  let consecutiveEmptyBatches = 0;
+
+  try {
+    const creds = await getAliExpressCreds();
+    if (!creds) {
+      logger.warn("AliExpress credentials not configured, auto-import cycle aborted.");
+      return { imported: 0, skipped: 0, totalInDb: 0 };
+    }
+
+    const existingDropships = await db.select({ source_id: dropship_products.source_id }).from(dropship_products);
+    const existingProducts = await db.select({ sku: products.sku, image: products.image }).from(products).where(isNull(products.deleted_at));
+
+    const existingSet = new Set([
+      ...existingDropships.map(d => String(d.source_id).trim()),
+      ...existingProducts.map(p => (p.sku || "").replace(/^ALI-/, "").split("-")[0].trim()).filter(Boolean),
+    ]);
+    const existingImageSet = new Set(
+      existingProducts.map(p => normalizeImageUrl(p.image)).filter(Boolean)
+    );
+
+    const margin = 4.0; // 300% profit margin
+    const seed = Math.floor(Math.random() * 80) + 1;
+    const maxPagesToScan = Math.max(120, Math.ceil(targetCount / 10));
+
+    for (let i = 0; i < maxPagesToScan && totalImported < targetCount; i++) {
+      const pageToFetch = autoImportPageIndex++;
+      const { kw, catId, actualPage } = getAliSearchParams(pageToFetch, "", undefined, seed);
+
+      let prods = await searchAliExpressProducts(kw, creds, actualPage, 50, catId).catch(() => []);
+      if ((!prods || prods.length === 0) && catId) {
+        prods = await searchAliExpressProducts(kw, creds, actualPage, 50).catch(() => []);
+      }
+
+      if (!prods || prods.length === 0) {
+        consecutiveEmptyBatches++;
+        if (consecutiveEmptyBatches >= 15) {
+          logger.info("Auto-import: Reached multiple empty search results, rotating page index.");
+          autoImportPageIndex = ((autoImportPageIndex + 10) % 200) + 1;
+          break;
+        }
+        continue;
+      }
+
+      consecutiveEmptyBatches = 0;
+      const productRecords: any[] = [];
+      const metaRecords: any[] = [];
+
+      for (const p of prods) {
+        if (totalImported >= targetCount) break;
+
+        const srcId = String(p.product_id).trim();
+        let img = p.product_main_image_url || "";
+        if (img.startsWith("//")) img = `https:${img}`;
+        const normImg = normalizeImageUrl(img);
+
+        if (!srcId || existingSet.has(srcId) || (normImg && existingImageSet.has(normImg))) {
+          totalSkipped++;
+          continue;
+        }
+
+        existingSet.add(srcId);
+        if (normImg) existingImageSet.add(normImg);
+
+        const sourcePrice = parsePrice(p.target_sale_price || p.target_original_price, 25);
+        const salePrice = Number((sourcePrice * margin).toFixed(2));
+        const skuUnique = `ALI-${srcId}-${Date.now().toString(36).slice(-4)}`;
+        const autoCatId = await matchCategoryId(p.product_title, null, p.first_level_category_name);
+
+        productRecords.push({
+          name_ar: String(p.product_title || `AliExpress Product ${srcId}`).slice(0, 450),
+          name_en: String(p.product_title || `AliExpress Product ${srcId}`).slice(0, 450),
+          sku: skuUnique,
+          price: salePrice,
+          cost: sourcePrice,
+          quantity: 500 + ((parseInt(srcId.slice(-4)) || 100) % 1500),
+          min_quantity: 5,
+          category_id: autoCatId,
+          description_ar: `${p.product_title} - منتج أصلي عالي الجودة متوفر للشحن السريع والتسليم الفوري.`,
+          description_en: `${p.product_title} - Premium quality genuine product with fast direct delivery.`,
+          image: img,
+          is_active: true,
+        });
+
+        metaRecords.push({
+          source_id: srcId,
+          source_url: p.product_detail_url || `https://www.aliexpress.com/item/${srcId}.html`,
+          source_price: sourcePrice,
+          our_price: salePrice,
+          supplier_name: p.shop_name || "AliExpress Verified Seller",
+        });
+      }
+
+      if (productRecords.length > 0) {
+        try {
+          const inserted = await db.insert(products).values(productRecords).onConflictDoNothing({ target: products.sku }).returning({ id: products.id, sku: products.sku });
+          if (inserted && inserted.length > 0) {
+            const metaMap = new Map(metaRecords.map(m => [m.source_id, m]));
+            const dropshipRows = inserted.map(prod => {
+              const sId = prod.sku.split("-")[1] || "";
+              const meta = metaMap.get(sId) || metaRecords[0];
+              return {
+                product_id: prod.id,
+                platform: "aliexpress",
+                source_id: meta.source_id,
+                source_url: meta.source_url,
+                source_price: meta.source_price,
+                source_currency: "USD",
+                our_price: meta.our_price,
+                supplier_name: meta.supplier_name,
+                platform_commission_rate: 8,
+              };
+            });
+            await db.insert(dropship_products).values(dropshipRows);
+            totalImported += inserted.length;
+          }
+        } catch (insertErr: any) {
+          logger.warn({ err: insertErr.message }, "Auto-import batch insert error");
+        }
+      }
+
+      // Gentle pause to protect API rate limits
+      await new Promise(r => setTimeout(r, 120));
+    }
+
+    if (totalImported > 0) {
+      clearProductsCache();
+    }
+
+    const [{ totalInDb = 0 } = {}] = await db.select({ totalInDb: sql<number>`COUNT(*)` }).from(products).where(isNull(products.deleted_at));
+    const durationSec = Math.round((Date.now() - startTime) / 1000);
+
+    logger.info(
+      { totalImported, totalSkipped, totalInDb: Number(totalInDb), durationSec },
+      "🚀 Auto-import cycle finished successfully! Products imported to store without manual intervention."
+    );
+
+    return { imported: totalImported, skipped: totalSkipped, totalInDb: Number(totalInDb) };
+  } catch (err: any) {
+    logger.error({ err: err.message }, "Auto-import cycle unexpected failure");
+    return { imported: totalImported, skipped: totalSkipped, totalInDb: 0 };
+  } finally {
+    autoImportRunning = false;
+  }
+}
+
+export function startAutoImportJob() {
+  const INTERVAL_MS = 5 * 60 * 1000; // Run automatically every 5 minutes
+  // First run starts 45 seconds after server boots up
+  setTimeout(() => {
+    runAutoImportCycle(2000).catch(err => logger.error({ err }, "Initial auto-import job failed"));
+  }, 45 * 1000);
+
+  // Then recurring runs every 5 minutes
+  setInterval(() => {
+    runAutoImportCycle(2000).catch(err => logger.error({ err }, "Recurring auto-import job failed"));
+  }, INTERVAL_MS);
+
+  logger.info("🤖 Auto-import job scheduled: 2,000 products will be fetched and imported every 5 minutes automatically.");
+}
+
 
 // ========== AMAZON REAL API ==========
 

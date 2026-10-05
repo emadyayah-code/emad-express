@@ -2,7 +2,7 @@ import app from "./app";
 import { logger } from "./lib/logger";
 import { env } from "./lib/env";
 import { pool, initDbSchema } from "@workspace/db";
-import { seedIfEmpty, startPriceSyncJob } from "./routes/emad";
+import { seedIfEmpty, startPriceSyncJob, startAutoImportJob } from "./routes/emad";
 
 const port = env.PORT;
 
@@ -14,6 +14,7 @@ const server = app.listen(port, "0.0.0.0", async () => {
     logger.info("Database schema initialized. Seeding initial data...");
     await seedIfEmpty();
     startPriceSyncJob();
+    startAutoImportJob();
   } catch (e) {
     logger.error({ err: e }, "Database initialization/seed failed");
   }
