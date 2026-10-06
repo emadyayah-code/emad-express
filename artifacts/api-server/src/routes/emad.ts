@@ -3403,37 +3403,40 @@ router.get("/admin/dropship/api-search", requireAuth, requireRole("admin", "mana
 });
 
 // ========== AUTO PRICE & STOCK SYNC (ALL PLATFORMS) ==========
-export function startPriceSyncJob() {
-  const INTERVAL_MS = 15 * 60 * 1000; // Every 15 minutes
-  async function syncPrices() {
-    try {
-      const dps = await db.select().from(dropship_products);
-      if (!dps.length) return;
-      let synced = 0;
-      let deletedOutOfStock = 0;
+export async function syncAllDropshipPricesAndStock() {
+  try {
+    const dps = await db.select().from(dropship_products);
+    if (!dps.length) return { total: 0, synced: 0, deletedOutOfStock: 0 };
+    let synced = 0;
+    let deletedOutOfStock = 0;
 
-      for (const dp of dps) {
-        if (dp.product_id) {
-          try {
-            const res = await verifyAndSyncDropshipProductStock(dp.product_id, { forceLive: true });
-            if (!res.available) {
-              deletedOutOfStock++;
-            } else {
-              synced++;
-            }
-          } catch (itemErr: any) {
-            logger.error({ err: itemErr.message, product_id: dp.product_id, platform: dp.platform }, "Stock sync error for item");
+    for (const dp of dps) {
+      if (dp.product_id) {
+        try {
+          const res = await verifyAndSyncDropshipProductStock(dp.product_id, { forceLive: true });
+          if (!res.available) {
+            deletedOutOfStock++;
+          } else {
+            synced++;
           }
+        } catch (itemErr: any) {
+          logger.error({ err: itemErr.message, product_id: dp.product_id, platform: dp.platform }, "Stock sync error for item");
         }
       }
-      logger.info({ total: dps.length, synced, deletedOutOfStock }, "Background price and stock sync finished. Out-of-stock items removed.");
-    } catch (e: any) {
-      logger.error({ err: e.message }, "Background price & stock sync job error");
     }
+    logger.info({ total: dps.length, synced, deletedOutOfStock }, "Background price and stock sync finished. Out-of-stock items removed.");
+    return { total: dps.length, synced, deletedOutOfStock };
+  } catch (e: any) {
+    logger.error({ err: e.message }, "Background price & stock sync job error");
+    return { total: 0, synced: 0, deletedOutOfStock: 0 };
   }
+}
+
+export function startPriceSyncJob() {
+  const INTERVAL_MS = 15 * 60 * 1000; // Every 15 minutes
   // Initial run 30s after startup, then every 15 minutes
-  setTimeout(syncPrices, 30 * 1000);
-  setInterval(syncPrices, INTERVAL_MS);
+  setTimeout(syncAllDropshipPricesAndStock, 30 * 1000);
+  setInterval(syncAllDropshipPricesAndStock, INTERVAL_MS);
 }
 
 // ========== AUTO IMPORT 2000 PRODUCTS EVERY 5 MINUTES (ZERO MANUAL INTERVENTION) ==========
@@ -3575,6 +3578,11 @@ export async function runAutoImportCycle(targetCount = 2000): Promise<{ imported
 
     if (totalImported > 0) {
       clearProductsCache();
+      // Run automatic stock & price sync immediately after the import cycle
+      logger.info("🔄 Initiating automatic price and stock synchronization after import cycle...");
+      syncAllDropshipPricesAndStock().catch(syncErr => {
+        logger.error({ err: syncErr?.message }, "Post-import sync error");
+      });
     }
 
     const [{ totalInDb = 0 } = {}] = await db.select({ totalInDb: sql<number>`COUNT(*)` }).from(products).where(isNull(products.deleted_at));
@@ -3582,7 +3590,7 @@ export async function runAutoImportCycle(targetCount = 2000): Promise<{ imported
 
     logger.info(
       { totalImported, totalSkipped, totalInDb: Number(totalInDb), durationSec },
-      "🚀 Auto-import cycle finished successfully! Products imported to store without manual intervention."
+      "🚀 Auto-import cycle finished successfully! Products imported and synchronized automatically."
     );
 
     return { imported: totalImported, skipped: totalSkipped, totalInDb: Number(totalInDb) };
