@@ -10,23 +10,23 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
   const { t, language, dir } = useI18n();
 
   const navItems = [
-    { path: "/", icon: LayoutDashboard, label: t.dashboard },
-    { path: "/products", icon: Package, label: t.products },
-    { path: "/categories", icon: Tag, label: t.categories },
-    { path: "/orders", icon: ShoppingCart, label: t.orders },
-    { path: "/returns", icon: RotateCcw, label: t.returns },
-    { path: "/users", icon: Users, label: t.users },
-    { path: "/vendors", icon: Store, label: t.vendors },
-    { path: "/dropshipping", icon: Globe, label: t.dropshipping },
-    { path: "/affiliates", icon: Share2, label: t.affiliates },
-    { path: "/my-commission", icon: DollarSign, label: t.my_commission },
-    { path: "/supplier-payments", icon: CreditCard, label: t.supplier_payments },
-    { path: "/accounting", icon: Calculator, label: t.accounting },
-    { path: "/reports", icon: BarChart2, label: t.reports },
-    { path: "/partner-ads", icon: TrendingUp, label: t.partner_ads },
-    { path: "/affiliate-settings", icon: Globe, label: t.affiliate_settings },
-    { path: "/settings", icon: Settings, label: t.settings },
-    { path: "/privacy-policy", icon: Shield, label: t.privacy_policy },
+    { path: "/admin", icon: LayoutDashboard, label: t.dashboard },
+    { path: "/admin/products", icon: Package, label: t.products },
+    { path: "/admin/categories", icon: Tag, label: t.categories },
+    { path: "/admin/orders", icon: ShoppingCart, label: t.orders },
+    { path: "/admin/returns", icon: RotateCcw, label: t.returns },
+    { path: "/admin/users", icon: Users, label: t.users },
+    { path: "/admin/vendors", icon: Store, label: t.vendors },
+    { path: "/admin/dropshipping", icon: Globe, label: t.dropshipping },
+    { path: "/admin/affiliates", icon: Share2, label: t.affiliates },
+    { path: "/admin/my-commission", icon: DollarSign, label: t.my_commission },
+    { path: "/admin/supplier-payments", icon: CreditCard, label: t.supplier_payments },
+    { path: "/admin/accounting", icon: Calculator, label: t.accounting },
+    { path: "/admin/reports", icon: BarChart2, label: t.reports },
+    { path: "/admin/partner-ads", icon: TrendingUp, label: t.partner_ads },
+    { path: "/admin/affiliate-settings", icon: Globe, label: t.affiliate_settings },
+    { path: "/admin/settings", icon: Settings, label: t.settings },
+    { path: "/admin/privacy-policy", icon: Shield, label: t.privacy_policy },
   ];
 
   return (
@@ -53,7 +53,9 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
 
       <nav className="flex-1 overflow-y-auto py-4 space-y-0.5">
         {navItems.map(({ path, icon: Icon, label }) => {
-          const active = path === "/" ? location === "/" : location.startsWith(path);
+          const active = path === "/admin"
+            ? (location === "/admin" || location === "/admin/")
+            : (location === path || location.startsWith(`${path}/`));
           return (
             <Link
               key={path}
@@ -141,10 +143,25 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
           <div className="flex-1" />
 
+          {/* Direct link to public storefront */}
+          <a
+            href="/"
+            className="flex items-center gap-1.5 text-xs px-3.5 py-1.5 rounded-xl font-bold transition-all border shadow-sm hover:scale-105"
+            style={{
+              background: "rgba(245,158,11,0.12)",
+              color: "#fbbf24",
+              borderColor: "rgba(245,158,11,0.3)",
+            }}
+            title="زيارة المتجر الإلكتروني الرئيسي"
+          >
+            <Store size={15} />
+            <span className="hidden sm:inline">زيارة المتجر</span>
+          </a>
+
           {/* Language Toggle Button */}
           <button
             onClick={toggleLanguage}
-            className="flex items-center gap-2 text-xs px-3.5 py-1.5 rounded-xl font-bold transition-all border shadow-sm cursor-pointer"
+            className="flex items-center gap-2 text-xs px-3.5 py-1.5 rounded-xl font-bold transition-all border shadow-sm cursor-pointer hover:scale-105"
             style={{
               background: "rgba(245,158,11,0.12)",
               color: "#fbbf24",

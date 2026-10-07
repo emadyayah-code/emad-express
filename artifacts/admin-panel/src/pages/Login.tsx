@@ -148,6 +148,15 @@ export default function Login() {
             >
               {loading ? "جارٍ تسجيل الدخول..." : "تسجيل الدخول"}
             </button>
+
+            <div className="pt-2 text-center">
+              <a
+                href="/"
+                className="text-xs text-amber-400/80 hover:text-amber-300 transition-colors inline-flex items-center gap-1.5 hover:underline"
+              >
+                <span>🏪 العودة إلى متجر عماد إكسبرس الرئيسي</span>
+              </a>
+            </div>
           </form>
         </div>
       </div>
