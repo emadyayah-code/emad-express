@@ -391,11 +391,13 @@ export function StoreFooter() {
             <span>أقسام المتجر الرئيسية</span>
           </h4>
           <ul className="space-y-2.5">
-            <li><Link href="/?category=200000345" className="hover:text-amber-400 transition-colors">👗 أزياء وملابس نسائية</Link></li>
-            <li><Link href="/?category=200000343" className="hover:text-amber-400 transition-colors">👔 أزياء وملابس رجالية</Link></li>
-            <li><Link href="/?category=44" className="hover:text-amber-400 transition-colors">📱 إلكترونيات وأجهزة ذكية</Link></li>
-            <li><Link href="/?category=1511" className="hover:text-amber-400 transition-colors">⌚ ساعات وإكسسوارات فاخرة</Link></li>
-            <li><Link href="/?category=15" className="hover:text-amber-400 transition-colors">🏠 مستلزمات المنزل والمطبخ</Link></li>
+            <li><Link href="/?category=6" className="hover:text-amber-400 transition-colors">📱 هواتف ذكية وملحقاتها</Link></li>
+            <li><Link href="/?category=7" className="hover:text-amber-400 transition-colors">🎧 إلكترونيات وسماعات</Link></li>
+            <li><Link href="/?category=9" className="hover:text-amber-400 transition-colors">👗 أزياء وملابس نسائية</Link></li>
+            <li><Link href="/?category=10" className="hover:text-amber-400 transition-colors">👔 أزياء وملابس رجالية</Link></li>
+            <li><Link href="/?category=11" className="hover:text-amber-400 transition-colors">⌚ ساعات ومجوهرات فاخرة</Link></li>
+            <li><Link href="/?category=12" className="hover:text-amber-400 transition-colors">👟 حقائب وأحذية رياضية</Link></li>
+            <li><Link href="/?category=13" className="hover:text-amber-400 transition-colors">🏠 المنزل والمطبخ والحديقة</Link></li>
           </ul>
         </div>
 

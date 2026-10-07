@@ -10,21 +10,6 @@ import {
   Clock, X, Plus, Minus, MessageCircle, Heart, Share2, Award, Zap
 } from "lucide-react";
 
-const CATEGORIES_MENU = [
-  { id: "", name: "جميع الأقسام", icon: "🌐" },
-  { id: "200000345", name: "أزياء وملابس نسائية", icon: "👗" },
-  { id: "200000343", name: "أزياء وملابس رجالية", icon: "👔" },
-  { id: "44", name: "إلكترونيات وأجهزة ذكية", icon: "📱" },
-  { id: "1511", name: "ساعات وإكسسوارات فاخرة", icon: "⌚" },
-  { id: "15", name: "أجهزة منزلية ومطبخ", icon: "🏠" },
-  { id: "1524", name: "حقائب ومحافظ وأمتعة", icon: "🎒" },
-  { id: "322", name: "أحذية رياضية ورسمية", icon: "👟" },
-  { id: "66", name: "جمال وعناية ومكياج", icon: "💄" },
-  { id: "18", name: "رياضة ولياقة وترفيه", icon: "⚽" },
-  { id: "1509", name: "مجوهرات وإكسسوارات", icon: "💍" },
-  { id: "7", name: "كمبيوتر ومستلزمات مكتب", icon: "💻" },
-];
-
 const HERO_SLIDES = [
   {
     id: 1,
@@ -107,28 +92,78 @@ export default function StoreHome() {
     return () => clearInterval(interval);
   }, [isCarouselPaused]);
 
+  // Fetch real-time categories from database (Identical to Mobile App)
+  const { data: categoriesData, isLoading: loadingCategories } = useQuery({
+    queryKey: ["store-categories"],
+    queryFn: () => api.get("/categories"),
+  });
+
   // Fetch store products dynamically
   const { data: productsData, isLoading: loadingProducts } = useQuery({
     queryKey: ["store-products", selectedCategory, searchQuery],
     queryFn: async () => {
-      let url = `/products?limit=60`;
+      let url = `/products?limit=80`;
       if (selectedCategory) url += `&category_id=${selectedCategory}`;
       if (searchQuery) url += `&search=${encodeURIComponent(searchQuery)}`;
       return api.get(url);
     },
   });
 
-  // Fetch categorized feed for AliExpress multi-shelf display
+  // Fetch categorized feed for multi-shelf display (Identical to Mobile App)
   const { data: homeFeed } = useQuery({
     queryKey: ["store-home-feed"],
     queryFn: () => api.get("/home-feed?lang=ar"),
   });
 
+  const categoriesList: any[] = Array.isArray(categoriesData)
+    ? categoriesData
+    : (categoriesData?.data || []);
+
   const productsList: any[] = Array.isArray(productsData)
     ? productsData
     : (productsData?.data || productsData?.products || []);
 
-  const sections = homeFeed?.sections || [];
+  // Group products by categories dynamically (Identical to mobile app index.tsx)
+  const categoriesWithProducts = React.useMemo(() => {
+    const serverSections = homeFeed?.sections;
+    if (Array.isArray(serverSections) && serverSections.length > 0) {
+      return serverSections;
+    }
+    if (!categoriesList.length || !productsList.length) return [];
+    const prodMap = new Map<number, any[]>();
+    for (const p of productsList) {
+      const cid = Number(p.category_id);
+      if (!prodMap.has(cid)) prodMap.set(cid, []);
+      const list = prodMap.get(cid)!;
+      if (list.length < 10) list.push(p);
+    }
+    return categoriesList
+      .map((cat: any) => ({
+        ...cat,
+        products: prodMap.get(Number(cat.id)) || [],
+      }))
+      .filter((c: any) => c.products.length > 0);
+  }, [categoriesList, productsList, homeFeed]);
+
+  // Diverse collections across categories for Flash Deals
+  const { showcaseProducts } = React.useMemo(() => {
+    const allSections = categoriesWithProducts;
+    if (!allSections.length) {
+      return {
+        showcaseProducts: productsList.slice(0, 10),
+      };
+    }
+    const scList: any[] = [];
+    allSections.forEach((sec: any) => {
+      const pList = sec.products || [];
+      if (pList[0]) scList.push(pList[0]);
+    });
+    return {
+      showcaseProducts: scList.slice(0, 10),
+    };
+  }, [categoriesWithProducts, productsList]);
+
+  const activeCategoryObj = categoriesList.find((c) => String(c.id) === String(selectedCategory));
 
   const handleAddToCart = (product: any, qty = 1) => {
     for (let i = 0; i < qty; i++) {
@@ -171,33 +206,67 @@ export default function StoreHome() {
       {/* Main hero & categories shelf (AliExpress style) */}
       <section className="max-w-7xl mx-auto px-4 pt-6 pb-4 w-full">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          {/* Categories Sidebar */}
-          <div className="lg:col-span-3 bg-slate-900/85 border border-slate-800 rounded-3xl p-3.5 backdrop-blur-md shadow-xl hidden md:block">
-            <div className="flex items-center gap-2 px-3 py-2 text-amber-400 font-black text-sm border-b border-slate-800 mb-2">
-              <Layers size={18} />
-              <span>أقسام وفئات علي إكسبرس</span>
+          {/* Dynamic Categories Sidebar (Directly from Database / Mobile App API) */}
+          <div className="lg:col-span-3 bg-slate-900/85 border border-slate-800 rounded-3xl p-3.5 backdrop-blur-md shadow-xl hidden md:block max-h-[580px] overflow-y-auto">
+            <div className="flex items-center justify-between px-3 py-2 text-amber-400 font-black text-sm border-b border-slate-800 mb-2">
+              <div className="flex items-center gap-2">
+                <Layers size={18} />
+                <span>أقسام وفئات المتجر</span>
+              </div>
+              <span className="text-[10px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full font-bold">
+                {categoriesList.length} قسم
+              </span>
             </div>
+
             <div className="space-y-1">
-              {CATEGORIES_MENU.map((cat) => (
-                <button
-                  key={cat.id}
-                  onClick={() => {
-                    setSelectedCategory(cat.id);
-                    setSearchQuery("");
-                  }}
-                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-semibold transition-all cursor-pointer ${
-                    selectedCategory === cat.id
-                      ? "bg-gradient-to-r from-amber-500 to-amber-600 text-black font-black shadow-lg shadow-amber-500/20 translate-x-1"
-                      : "text-slate-300 hover:bg-slate-800/80 hover:text-white"
-                  }`}
-                >
-                  <span className="flex items-center gap-2.5">
-                    <span className="text-base">{cat.icon}</span>
-                    <span>{cat.name}</span>
-                  </span>
-                  <ChevronLeft size={14} className={selectedCategory === cat.id ? "text-black" : "text-slate-500"} />
-                </button>
-              ))}
+              {/* All Categories Option */}
+              <button
+                onClick={() => {
+                  setSelectedCategory("");
+                  setSearchQuery("");
+                }}
+                className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-semibold transition-all cursor-pointer ${
+                  selectedCategory === ""
+                    ? "bg-gradient-to-r from-amber-500 to-amber-600 text-black font-black shadow-lg shadow-amber-500/20 translate-x-1"
+                    : "text-slate-300 hover:bg-slate-800/80 hover:text-white"
+                }`}
+              >
+                <span className="flex items-center gap-2.5">
+                  <span className="text-base">🌐</span>
+                  <span>جميع الأقسام</span>
+                </span>
+                <ChevronLeft size={14} className={selectedCategory === "" ? "text-black" : "text-slate-500"} />
+              </button>
+
+              {/* Real Database Categories */}
+              {loadingCategories ? (
+                <div className="space-y-2 py-4">
+                  {Array.from({ length: 8 }).map((_, i) => (
+                    <div key={i} className="h-8 bg-slate-800/50 rounded-xl animate-pulse" />
+                  ))}
+                </div>
+              ) : (
+                categoriesList.map((cat: any) => (
+                  <button
+                    key={cat.id}
+                    onClick={() => {
+                      setSelectedCategory(String(cat.id));
+                      setSearchQuery("");
+                    }}
+                    className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-semibold transition-all cursor-pointer ${
+                      selectedCategory === String(cat.id)
+                        ? "bg-gradient-to-r from-amber-500 to-amber-600 text-black font-black shadow-lg shadow-amber-500/20 translate-x-1"
+                        : "text-slate-300 hover:bg-slate-800/80 hover:text-white"
+                    }`}
+                  >
+                    <span className="flex items-center gap-2.5 truncate">
+                      <span className="text-base shrink-0">{cat.icon || "📦"}</span>
+                      <span className="truncate">{cat.name_ar || cat.name || cat.name_en}</span>
+                    </span>
+                    <ChevronLeft size={14} className={selectedCategory === String(cat.id) ? "text-black" : "text-slate-500"} />
+                  </button>
+                ))
+              )}
             </div>
           </div>
 
@@ -260,13 +329,15 @@ export default function StoreHome() {
 
                   <button
                     onClick={() => {
-                      setSelectedCategory("44");
+                      if (categoriesList.length > 0) {
+                        setSelectedCategory(String(categoriesList[0].id));
+                      }
                       const catalogEl = document.getElementById("products-catalog");
                       catalogEl?.scrollIntoView({ behavior: "smooth" });
                     }}
                     className="bg-white/25 hover:bg-white text-black font-black text-xs sm:text-sm px-5 py-3.5 rounded-2xl backdrop-blur-md transition-all shadow-md flex items-center gap-2 cursor-pointer hover:scale-105 active:scale-95"
                   >
-                    <span>عروض الأجهزة والتكنولوجيا</span>
+                    <span>أقوى الأقسام المميزة</span>
                     <ArrowRight size={16} />
                   </button>
                 </div>
@@ -341,8 +412,48 @@ export default function StoreHome() {
         </div>
       </section>
 
+      {/* Horizontal Category Scroll Pills (For Fast Navigation on Mobile & Desktop) */}
+      <section className="max-w-7xl mx-auto px-4 py-2 w-full">
+        <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
+          <button
+            onClick={() => {
+              setSelectedCategory("");
+              setSearchQuery("");
+            }}
+            className={`px-4 py-2 rounded-2xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${
+              selectedCategory === ""
+                ? "bg-amber-500 text-black shadow-lg shadow-amber-500/20"
+                : "bg-slate-900/90 text-slate-300 border border-slate-800 hover:border-slate-700"
+            }`}
+          >
+            <span>🌐</span>
+            <span>جميع المنتجات ({productsList.length})</span>
+          </button>
+
+          {categoriesList.map((cat: any) => (
+            <button
+              key={`pill-${cat.id}`}
+              onClick={() => {
+                setSelectedCategory(String(cat.id));
+                setSearchQuery("");
+                const catalogEl = document.getElementById("products-catalog");
+                catalogEl?.scrollIntoView({ behavior: "smooth" });
+              }}
+              className={`px-4 py-2 rounded-2xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${
+                selectedCategory === String(cat.id)
+                  ? "bg-amber-500 text-black shadow-lg shadow-amber-500/20"
+                  : "bg-slate-900/90 text-slate-300 border border-slate-800 hover:border-slate-700 hover:text-white"
+              }`}
+            >
+              <span>{cat.icon || "📦"}</span>
+              <span>{cat.name_ar || cat.name || cat.name_en}</span>
+            </button>
+          ))}
+        </div>
+      </section>
+
       {/* AliExpress Live Flash Deals & Super Shelf with Real-Time Countdown Timer */}
-      <section className="max-w-7xl mx-auto px-4 py-5 w-full">
+      <section className="max-w-7xl mx-auto px-4 py-4 w-full">
         <div className="bg-gradient-to-r from-red-950/50 via-slate-900/90 to-amber-950/40 border border-red-500/30 rounded-3xl p-5 shadow-2xl backdrop-blur-md">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800/80 pb-4 mb-5">
             <div className="flex items-center gap-3">
@@ -381,9 +492,9 @@ export default function StoreHome() {
             </div>
           </div>
 
-          {/* Flash Deals Horizontal Carousel Row */}
+          {/* Flash Deals Horizontal Carousel Row (Diverse Selection) */}
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-            {productsList.slice(0, 5).map((prod) => (
+            {(showcaseProducts.length > 0 ? showcaseProducts : productsList).slice(0, 5).map((prod) => (
               <ProductCard
                 key={`flash-deal-${prod.id}`}
                 product={prod}
@@ -399,21 +510,25 @@ export default function StoreHome() {
         </div>
       </section>
 
-      {/* AliExpress Multi-Category Showcase Shelves */}
-      {!searchQuery && sections.length > 0 && (
+      {/* Dynamic Multi-Category Showcase Shelves (Direct from Database / Home-Feed) */}
+      {!searchQuery && categoriesWithProducts.length > 0 && (
         <section className="max-w-7xl mx-auto px-4 py-4 w-full space-y-10">
-          {sections.slice(0, 4).map((sec: any) => (
+          {categoriesWithProducts.slice(0, 6).map((sec: any) => (
             <div key={`shelf-${sec.id}`} className="space-y-4">
               <div className="flex items-center justify-between border-b border-slate-800 pb-3">
                 <div className="flex items-center gap-2.5">
                   <span className="text-2xl">{sec.icon || "📦"}</span>
-                  <h2 className="text-xl font-black text-white">{sec.name_ar || sec.name}</h2>
+                  <h2 className="text-xl font-black text-white">{sec.name_ar || sec.name || sec.name_en}</h2>
                   <span className="text-xs font-bold text-amber-400/90 bg-amber-400/10 px-2.5 py-0.5 rounded-full border border-amber-400/20">
-                    رائج الآن
+                    رائج ومطلوب
                   </span>
                 </div>
                 <button
-                  onClick={() => setSelectedCategory(String(sec.id))}
+                  onClick={() => {
+                    setSelectedCategory(String(sec.id));
+                    const catalogEl = document.getElementById("products-catalog");
+                    catalogEl?.scrollIntoView({ behavior: "smooth" });
+                  }}
                   className="text-xs font-bold text-amber-400 hover:text-amber-300 flex items-center gap-1 cursor-pointer hover:underline"
                 >
                   <span>عرض الكل ({sec.products?.length || 0})</span>
@@ -449,8 +564,8 @@ export default function StoreHome() {
             <h2 className="text-2xl font-black text-white">
               {searchQuery
                 ? `نتائج البحث عن: "${searchQuery}"`
-                : selectedCategory
-                ? `منتجات فئة: ${CATEGORIES_MENU.find((c) => c.id === selectedCategory)?.name || "المحددة"}`
+                : activeCategoryObj
+                ? `منتجات قسم: ${activeCategoryObj.name_ar || activeCategoryObj.name}`
                 : "جميع المنتجات الأكثر طلباً في المتجر"}
             </h2>
             <span className="text-xs bg-slate-800 text-slate-300 px-3 py-1 rounded-full font-bold">
@@ -481,13 +596,13 @@ export default function StoreHome() {
           <div className="text-center py-20 bg-slate-900/40 border border-slate-800 rounded-3xl p-8 max-w-md mx-auto">
             <ShoppingBag size={48} className="mx-auto text-amber-400/40 mb-3" />
             <h3 className="text-lg font-bold text-white">لم يتم العثور على منتجات مطابقة</h3>
-            <p className="text-xs text-slate-400 mt-1">جرب البحث بكلمة أخرى أو اختر تصنيفاً مختلفاً من القائمة</p>
+            <p className="text-xs text-slate-400 mt-1">جرب البحث بكلمة أخرى أو اختر قسماً مختلفاً من القائمة</p>
             <button
               onClick={() => {
                 setSelectedCategory("");
                 setSearchQuery("");
               }}
-              className="mt-4 bg-amber-500 hover:bg-amber-600 text-black font-bold text-xs px-5 py-2.5 rounded-xl transition-all"
+              className="mt-4 bg-amber-500 hover:bg-amber-600 text-black font-bold text-xs px-5 py-2.5 rounded-xl transition-all cursor-pointer"
             >
               العودة لكافة المنتجات
             </button>
