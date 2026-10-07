@@ -121,6 +121,48 @@ export async function fetchAliExpressProduct(
   }
 }
 
+export async function fetchAliExpressProductsBatch(
+  productIds: string[],
+  creds: AliExpressCredentials,
+): Promise<Map<string, AliExpressProduct>> {
+  const result = new Map<string, AliExpressProduct>();
+  if (!productIds || productIds.length === 0) return result;
+
+  try {
+    const idsString = productIds.slice(0, 50).join(",");
+    const url = buildApiUrl("aliexpress.affiliate.productdetail.get", {
+      product_ids: idsString,
+      target_currency: "USD",
+      target_language: "AR",
+      ...(creds.trackingId ? { tracking_id: creds.trackingId } : {}),
+    }, creds);
+
+    const res = await fetch(url, {
+      headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" },
+      signal: AbortSignal.timeout(20000),
+    }).then(r => r.json()).catch(() => null);
+
+    const resp = res?.aliexpress_affiliate_productdetail_get_response ||
+                 res?.aliexpress_affiliate_product_detail_get_response;
+    const body = resp?.resp_result || resp?.result || resp;
+    let list = body?.result?.products?.product ||
+               body?.products?.product ||
+               body?.products || [];
+    if (!Array.isArray(list) && list && typeof list === "object") list = [list];
+
+    for (const p of list || []) {
+      if (p?.product_id) {
+        let img = p.product_main_image_url || p.product_image_url || p.image || "";
+        if (img.startsWith("//")) img = `https:${img}`;
+        result.set(String(p.product_id), { ...p, product_main_image_url: img });
+      }
+    }
+  } catch (err: any) {
+    logger.error({ err: err.message }, "AliExpress batch fetch error");
+  }
+  return result;
+}
+
 export async function searchAliExpressProducts(
   keywords: string,
   creds: AliExpressCredentials,

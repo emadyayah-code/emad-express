@@ -18,7 +18,7 @@ import {
   dropshipImportSchema, fulfillmentSchema, trackingSchema,
   idParamSchema,
 } from "../validation/schemas";
-import { searchAliExpressProducts, fetchAliExpressProduct, type AliExpressCredentials } from "../lib/aliexpress";
+import { searchAliExpressProducts, fetchAliExpressProduct, fetchAliExpressProductsBatch, type AliExpressCredentials } from "../lib/aliexpress";
 import { searchAmazonItems, fetchAmazonItems, type AmazonCredentials } from "../lib/amazon";
 import { searchAlibabaProducts, getAlibabaProduct, type AlibabaCredentials } from "../lib/alibaba";
 import { convertCurrency, formatCurrency, seedCurrencies, getExchangeRates } from "../lib/currency";
@@ -3141,27 +3141,13 @@ export async function verifyAndSyncDropshipProductStock(
 // ========== SYNC LIVE STOCK & PRICES FROM ALL PLATFORMS (ALIEXPRESS, AMAZON, EXTERNAL) ==========
 router.post("/admin/dropship/sync-stock", requireAuth, requireRole("admin", "manager"), async (_req, res, next) => {
   try {
-    const dropships = await db.select().from(dropship_products);
-    let updatedCount = 0;
-    let deletedCount = 0;
-
-    for (const dp of dropships) {
-      if (dp.product_id) {
-        const check = await verifyAndSyncDropshipProductStock(dp.product_id, { forceLive: true });
-        if (!check.available) {
-          deletedCount++;
-        } else {
-          updatedCount++;
-        }
-      }
-    }
-
+    const result = await syncAllDropshipPricesAndStock();
     return res.json({
       success: true,
-      message: `تمت مزامنة وفحص المخزون بنجاح (فحص ${dropships.length} منتج، تحديث ${updatedCount}، وحذف/إخفاء ${deletedCount} منتج نفد من المصدر)!`,
-      total_checked: dropships.length,
-      synced_count: updatedCount,
-      deleted_count: deletedCount,
+      message: `تمت مزامنة وفحص المخزون بنجاح (فحص ${result.total} منتج، تحديث ${result.synced}، وحذف/إخفاء ${result.deletedOutOfStock} منتج نفد من المصدر)!`,
+      total_checked: result.total,
+      synced_count: result.synced,
+      deleted_count: result.deletedOutOfStock,
     });
   } catch (err) { next(err); }
 });
@@ -3405,25 +3391,75 @@ router.get("/admin/dropship/api-search", requireAuth, requireRole("admin", "mana
 // ========== AUTO PRICE & STOCK SYNC (ALL PLATFORMS) ==========
 export async function syncAllDropshipPricesAndStock() {
   try {
+    const creds = await getAliExpressCreds();
     const dps = await db.select().from(dropship_products);
     if (!dps.length) return { total: 0, synced: 0, deletedOutOfStock: 0 };
     let synced = 0;
     let deletedOutOfStock = 0;
 
-    for (const dp of dps) {
+    const aliDropships = dps.filter(d => d.platform === "aliexpress" && d.source_id && d.product_id);
+    const otherDropships = dps.filter(d => d.platform !== "aliexpress");
+
+    // Fast-path: Batch query AliExpress in chunks of 40 products to avoid rate-limiting and 429
+    if (creds && aliDropships.length > 0) {
+      const BATCH_SIZE = 40;
+      for (let i = 0; i < aliDropships.length; i += BATCH_SIZE) {
+        const batch = aliDropships.slice(i, i + BATCH_SIZE);
+        const sourceIds = batch.map(b => String(b.source_id).trim()).filter(Boolean);
+        const aliProductsMap = await fetchAliExpressProductsBatch(sourceIds, creds);
+
+        for (const dp of batch) {
+          const aliProd = aliProductsMap.get(String(dp.source_id).trim());
+          if (!aliProd) {
+            await db.update(products).set({ is_active: false, quantity: 0, deleted_at: new Date() }).where(eq(products.id, dp.product_id!));
+            await db.delete(dropship_products).where(eq(dropship_products.id, dp.id));
+            deletedOutOfStock++;
+          } else {
+            const targetSalePrice = parseFloat(aliProd.target_sale_price) || 0;
+            const targetOrigPrice = parseFloat(aliProd.target_original_price) || 0;
+            const newSourcePrice = targetSalePrice || targetOrigPrice;
+
+            if (newSourcePrice <= 0) {
+              await db.update(products).set({ is_active: false, quantity: 0, deleted_at: new Date() }).where(eq(products.id, dp.product_id!));
+              await db.delete(dropship_products).where(eq(dropship_products.id, dp.id));
+              deletedOutOfStock++;
+            } else {
+              const margin = dp.source_price > 0 ? dp.our_price / dp.source_price : 4.0;
+              const newOurPrice = parseFloat((newSourcePrice * margin).toFixed(2));
+              await db.update(dropship_products).set({
+                source_price: newSourcePrice,
+                our_price: newOurPrice,
+                supplier_name: aliProd.shop_name || dp.supplier_name,
+              }).where(eq(dropship_products.id, dp.id));
+              await db.update(products).set({
+                price: newOurPrice,
+                cost: newSourcePrice,
+                is_active: true,
+              }).where(eq(products.id, dp.product_id!));
+              synced++;
+            }
+          }
+        }
+        if (i + BATCH_SIZE < aliDropships.length) {
+          await new Promise(r => setTimeout(r, 200));
+        }
+      }
+    }
+
+    // Process other platforms
+    for (const dp of otherDropships) {
       if (dp.product_id) {
         try {
           const res = await verifyAndSyncDropshipProductStock(dp.product_id, { forceLive: true });
-          if (!res.available) {
-            deletedOutOfStock++;
-          } else {
-            synced++;
-          }
+          if (!res.available) deletedOutOfStock++;
+          else synced++;
         } catch (itemErr: any) {
           logger.error({ err: itemErr.message, product_id: dp.product_id, platform: dp.platform }, "Stock sync error for item");
         }
       }
     }
+
+    clearProductsCache();
     logger.info({ total: dps.length, synced, deletedOutOfStock }, "Background price and stock sync finished. Out-of-stock items removed.");
     return { total: dps.length, synced, deletedOutOfStock };
   } catch (e: any) {

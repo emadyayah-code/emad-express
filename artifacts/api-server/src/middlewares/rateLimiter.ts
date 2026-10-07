@@ -12,11 +12,18 @@ const getClientIp = (req: any) => {
 
 export const globalRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: Math.max(3000, Number(env.RATE_LIMIT_MAX) || 3000), // 3000 requests per 15 minutes (plenty for apps and dashboards)
+  max: Math.max(5000, Number(env.RATE_LIMIT_MAX) || 5000), // Generous limit for high-volume store traffic
   standardHeaders: true,
   legacyHeaders: false,
-  message: { success: false, message: "تم تجاوز عدد الطلبات المسموح بها. يرجى المحاولة لاحقاً" },
+  message: { success: false, message: "تم تجاوز عدد الطلبات المسموح بها مؤقتاً. يرجى المحاولة بعد قليل" },
   keyGenerator: getClientIp,
+  skip: (req: any) => {
+    // Completely exempt admin operations and internal dropship synchronization from rate limiting
+    if (req.path?.startsWith("/admin") || req.path?.includes("sync") || req.path?.includes("dropship")) {
+      return true;
+    }
+    return false;
+  },
 });
 
 export const authRateLimiter = rateLimit({
