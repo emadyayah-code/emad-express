@@ -1,13 +1,19 @@
 import React, { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { Search, ShoppingCart, Shield, Globe, Menu, X, Trash2, ArrowLeft, ArrowRight, Zap, Award } from "lucide-react";
+import { Search, ShoppingCart, Shield, Globe, Menu, X, Trash2, ArrowLeft, ArrowRight, Zap, Award, User, LogOut, CheckCircle2 } from "lucide-react";
 import { useCart } from "@/context/CartContext";
+import { useCustomerAuth } from "@/context/CustomerAuthContext";
+import { CheckoutModal } from "@/components/CheckoutModal";
+import { CustomerAuthModal } from "@/components/CustomerAuthModal";
 
 export function StoreNavbar({ onSearch }: { onSearch?: (q: string) => void }) {
   const [query, setQuery] = useState("");
   const [, setLocation] = useLocation();
   const { totalItems, items, subtotal, removeFromCart, updateQuantity } = useCart();
+  const { customer, logout, openLoginModal, openRegisterModal } = useCustomerAuth();
+  
   const [showCartDrawer, setShowCartDrawer] = useState(false);
+  const [showCheckoutModal, setShowCheckoutModal] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
@@ -30,18 +36,40 @@ export function StoreNavbar({ onSearch }: { onSearch?: (q: string) => void }) {
               <span>شحن سريع ومباشر | استيراد رسمي وضمان الجودة 100%</span>
             </span>
           </div>
-          <div className="flex items-center gap-4">
+
+          <div className="flex items-center gap-3">
+            {customer ? (
+              <div className="flex items-center gap-2 text-xs">
+                <span className="text-slate-300">مرحباً، <strong className="text-amber-300">{customer.name}</strong></span>
+                <button
+                  onClick={logout}
+                  className="text-red-400 hover:text-red-300 transition-colors inline-flex items-center gap-1 cursor-pointer"
+                  title="تسجيل الخروج"
+                >
+                  <LogOut size={12} />
+                  <span>خروج</span>
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 text-xs">
+                <button
+                  onClick={openLoginModal}
+                  className="text-amber-300 hover:text-amber-200 font-bold transition-colors cursor-pointer"
+                >
+                  تسجيل الدخول
+                </button>
+                <span className="text-slate-600">|</span>
+                <button
+                  onClick={openRegisterModal}
+                  className="text-amber-300 hover:text-amber-200 font-bold transition-colors cursor-pointer"
+                >
+                  إنشاء حساب جديد
+                </button>
+              </div>
+            )}
+            <span className="text-slate-600">|</span>
             <Link href="/privacy-policy" className="hover:text-amber-200 transition-colors">
               سياسة الخصوصية
-            </Link>
-            <span className="text-slate-600">|</span>
-            {/* Direct Admin Panel Portal Link */}
-            <Link
-              href="/admin"
-              className="flex items-center gap-1 bg-amber-500/15 hover:bg-amber-500 text-amber-300 hover:text-black border border-amber-500/30 px-2.5 py-0.5 rounded-full font-bold transition-all"
-            >
-              <Shield size={12} />
-              <span>لوحة الإدارة</span>
             </Link>
           </div>
         </div>
@@ -91,6 +119,34 @@ export function StoreNavbar({ onSearch }: { onSearch?: (q: string) => void }) {
 
         {/* Action Controls */}
         <div className="flex items-center gap-3">
+          {/* Customer Auth Account Pill Button */}
+          {customer ? (
+            <div className="hidden sm:flex items-center gap-2 bg-slate-800/80 border border-slate-700 px-3 py-2 rounded-2xl">
+              <div className="w-6 h-6 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 text-black font-black text-xs flex items-center justify-center">
+                {customer.name.charAt(0)}
+              </div>
+              <div className="flex flex-col text-right">
+                <span className="text-xs font-bold text-white max-w-[100px] truncate">{customer.name}</span>
+                <span className="text-[9px] text-emerald-400 font-semibold">حساب موحد</span>
+              </div>
+              <button
+                onClick={logout}
+                className="text-red-400 hover:text-red-300 pr-1 text-xs"
+                title="تسجيل الخروج"
+              >
+                <LogOut size={13} />
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={openLoginModal}
+              className="hidden sm:flex items-center gap-1.5 bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700 text-white px-3.5 py-2 rounded-2xl text-xs font-bold transition-all cursor-pointer hover:border-amber-500/40"
+            >
+              <User size={16} className="text-amber-400" />
+              <span>تسجيل الدخول / حساب</span>
+            </button>
+          )}
+
           {/* Cart Icon & Trigger */}
           <button
             onClick={() => setShowCartDrawer(true)}
@@ -109,15 +165,6 @@ export function StoreNavbar({ onSearch }: { onSearch?: (q: string) => void }) {
               <span className="text-xs font-bold text-amber-300">{subtotal.toLocaleString()} ر.س</span>
             </div>
           </button>
-
-          {/* Direct Admin Login Pill */}
-          <Link
-            href="/admin"
-            className="hidden sm:flex items-center gap-1.5 bg-gradient-to-r from-amber-500/10 to-amber-600/20 hover:from-amber-500 hover:to-amber-600 text-amber-300 hover:text-black border border-amber-500/30 px-3.5 py-2 rounded-2xl text-xs font-bold transition-all shadow-sm"
-          >
-            <Shield size={15} />
-            <span>لوحة الإدارة</span>
-          </Link>
 
           {/* Mobile hamburger */}
           <button
@@ -149,11 +196,65 @@ export function StoreNavbar({ onSearch }: { onSearch?: (q: string) => void }) {
         </form>
       </div>
 
-      {/* Shopping Cart Drawer */}
+      {/* Mobile Menu Dropdown */}
+      {mobileMenuOpen && (
+        <div className="md:hidden border-t border-slate-800 bg-slate-950 p-4 space-y-3">
+          {customer ? (
+            <div className="bg-slate-900 p-3 rounded-xl flex items-center justify-between border border-slate-800">
+              <div className="flex items-center gap-2">
+                <User size={16} className="text-amber-400" />
+                <span className="text-xs font-bold text-white">{customer.name}</span>
+              </div>
+              <button
+                onClick={() => {
+                  logout();
+                  setMobileMenuOpen(false);
+                }}
+                className="text-xs text-red-400 font-bold"
+              >
+                تسجيل الخروج
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={() => {
+                  openLoginModal();
+                  setMobileMenuOpen(false);
+                }}
+                className="bg-amber-500 text-black font-bold text-xs py-2.5 rounded-xl text-center"
+              >
+                تسجيل الدخول
+              </button>
+              <button
+                onClick={() => {
+                  openRegisterModal();
+                  setMobileMenuOpen(false);
+                }}
+                className="bg-slate-800 text-white font-bold text-xs py-2.5 rounded-xl text-center border border-slate-700"
+              >
+                حساب جديد
+              </button>
+            </div>
+          )}
+
+          <div className="border-t border-slate-800/80 pt-2 space-y-2">
+            <Link
+              href="/privacy-policy"
+              onClick={() => setMobileMenuOpen(false)}
+              className="block text-xs text-slate-300 py-1.5"
+            >
+              سياسة الخصوصية
+            </Link>
+          </div>
+        </div>
+      )}
+
+      {/* Slide-out Cart Drawer */}
       {showCartDrawer && (
-        <div className="fixed inset-0 z-50 overflow-hidden" dir="rtl">
+        <div className="fixed inset-0 z-50 overflow-hidden">
           <div
-            className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
+            className="absolute inset-0 bg-black/80 backdrop-blur-sm transition-opacity"
             onClick={() => setShowCartDrawer(false)}
           />
           <div className="absolute inset-y-0 left-0 max-w-full flex">
@@ -165,7 +266,7 @@ export function StoreNavbar({ onSearch }: { onSearch?: (q: string) => void }) {
                 </div>
                 <button
                   onClick={() => setShowCartDrawer(false)}
-                  className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800"
+                  className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 cursor-pointer"
                 >
                   <X size={20} />
                 </button>
@@ -199,14 +300,14 @@ export function StoreNavbar({ onSearch }: { onSearch?: (q: string) => void }) {
                         <div className="flex items-center gap-2 mt-2">
                           <button
                             onClick={() => updateQuantity(item.id, -1)}
-                            className="w-6 h-6 rounded bg-slate-800 hover:bg-slate-700 text-white flex items-center justify-center text-xs"
+                            className="w-6 h-6 rounded bg-slate-800 hover:bg-slate-700 text-white flex items-center justify-center text-xs cursor-pointer"
                           >
                             -
                           </button>
                           <span className="text-xs font-bold px-1.5">{item.quantity}</span>
                           <button
                             onClick={() => updateQuantity(item.id, 1)}
-                            className="w-6 h-6 rounded bg-slate-800 hover:bg-slate-700 text-white flex items-center justify-center text-xs"
+                            className="w-6 h-6 rounded bg-slate-800 hover:bg-slate-700 text-white flex items-center justify-center text-xs cursor-pointer"
                           >
                             +
                           </button>
@@ -214,7 +315,8 @@ export function StoreNavbar({ onSearch }: { onSearch?: (q: string) => void }) {
                       </div>
                       <button
                         onClick={() => removeFromCart(item.id)}
-                        className="text-red-400/80 hover:text-red-400 p-1.5"
+                        className="text-red-400/80 hover:text-red-400 p-1.5 cursor-pointer"
+                        title="حذف الصنف"
                       >
                         <Trash2 size={16} />
                       </button>
@@ -231,11 +333,12 @@ export function StoreNavbar({ onSearch }: { onSearch?: (q: string) => void }) {
                   </div>
                   <button
                     onClick={() => {
-                      alert("جاري تحويلك لبوابة الدفع لإتمام طلبك...");
+                      setShowCartDrawer(false);
+                      setShowCheckoutModal(true);
                     }}
-                    className="w-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-black py-3 rounded-xl shadow-lg shadow-amber-500/20 text-sm transition-all"
+                    className="w-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-black py-3.5 rounded-xl shadow-lg shadow-amber-500/20 text-sm transition-all cursor-pointer flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-[0.98]"
                   >
-                    متابعة الدفع والشحن 🚀
+                    <span>متابعة إتمام الشراء والدفع 🚀</span>
                   </button>
                 </div>
               )}
@@ -243,11 +346,20 @@ export function StoreNavbar({ onSearch }: { onSearch?: (q: string) => void }) {
           </div>
         </div>
       )}
+
+      {/* Global Modals */}
+      <CustomerAuthModal />
+      <CheckoutModal
+        isOpen={showCheckoutModal}
+        onClose={() => setShowCheckoutModal(false)}
+      />
     </header>
   );
 }
 
 export function StoreFooter() {
+  const { openRegisterModal } = useCustomerAuth();
+
   return (
     <footer className="bg-slate-950 border-t border-slate-900 text-slate-400 text-xs py-14 px-4" dir="rtl">
       <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-8">
@@ -312,18 +424,25 @@ export function StoreFooter() {
         <div>
           <h4 className="font-bold text-white text-sm mb-3.5 flex items-center gap-2">
             <span className="w-1.5 h-3.5 bg-amber-500 rounded-full" />
-            <span>بوابة الإدارة المركزية</span>
+            <span>شحن وضمان 100%</span>
           </h4>
           <p className="text-slate-400 mb-3.5 text-xs leading-relaxed">
-            اللوحة الإدارية للتحكم في استيراد المنتجات، مزامنة الأسعار اللحظية، وإدارة شحنات الدروب شيبينغ:
+            نوفر شحن دولي ومحلي سريع ومباشر، مع خيارات استبدال واسترجاع مضمونة وسياسة دفع آمنة تحمي حقوق المشتري بالكامل.
           </p>
-          <Link
-            href="/admin"
-            className="inline-flex items-center gap-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-black px-5 py-2.5 rounded-xl transition-all shadow-lg shadow-amber-500/20 cursor-pointer"
+          <div className="bg-slate-900 border border-slate-800 p-3 rounded-2xl flex items-center gap-2.5">
+            <span className="text-xl">🚀</span>
+            <div className="flex flex-col">
+              <span className="text-white font-bold text-xs">توصيل إلى باب البيت</span>
+              <span className="text-[10px] text-slate-400">تتبع الشحنة برقم التتبع فور الشحن</span>
+            </div>
+          </div>
+
+          <button
+            onClick={openRegisterModal}
+            className="mt-3 w-full bg-slate-900 hover:bg-slate-800 border border-amber-500/30 text-amber-300 font-bold text-xs py-2 rounded-xl transition-all cursor-pointer"
           >
-            <Shield size={16} />
-            <span>الدخول إلى لوحة التحكم الإدارية</span>
-          </Link>
+            📱 حساب موحد للموقع وتطبيق الهاتف
+          </button>
         </div>
       </div>
 
@@ -339,9 +458,6 @@ export function StoreFooter() {
 
         <div className="flex items-center gap-4">
           <span>© 2026 جميع الحقوق محفوظة لمتجر <strong>عماد إكسبرس (Emad Express)</strong>.</span>
-          <Link href="/admin" className="text-amber-400/80 hover:text-amber-300 font-bold">
-            بوابة المشرفين
-          </Link>
         </div>
       </div>
     </footer>

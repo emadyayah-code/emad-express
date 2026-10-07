@@ -16,6 +16,8 @@ export function clearToken() {
 }
 
 export function getToken(): string | null {
+  const customerToken = localStorage.getItem("customer_token");
+  if (customerToken && customerToken !== "undefined" && customerToken !== "null") return customerToken;
   const t = localStorage.getItem("token");
   if (!t || t === "undefined" || t === "null") return null;
   return t;

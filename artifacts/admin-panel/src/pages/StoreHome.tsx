@@ -258,13 +258,17 @@ export default function StoreHome() {
                     <span>تصفح العروض الآن</span>
                   </button>
 
-                  <Link
-                    href="/admin"
-                    className="bg-white/25 hover:bg-white text-black font-black text-xs sm:text-sm px-5 py-3 rounded-2xl backdrop-blur-md transition-all shadow-md flex items-center gap-2"
+                  <button
+                    onClick={() => {
+                      setSelectedCategory("44");
+                      const catalogEl = document.getElementById("products-catalog");
+                      catalogEl?.scrollIntoView({ behavior: "smooth" });
+                    }}
+                    className="bg-white/25 hover:bg-white text-black font-black text-xs sm:text-sm px-5 py-3.5 rounded-2xl backdrop-blur-md transition-all shadow-md flex items-center gap-2 cursor-pointer hover:scale-105 active:scale-95"
                   >
-                    <span>لوحة إدارة المتجر</span>
+                    <span>عروض الأجهزة والتكنولوجيا</span>
                     <ArrowRight size={16} />
-                  </Link>
+                  </button>
                 </div>
 
                 {/* Carousel Controls (Arrows & Dots) */}

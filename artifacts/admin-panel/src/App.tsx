@@ -24,6 +24,7 @@ import PartnerAds from "@/pages/PartnerAds";
 import Privacy from "@/pages/Privacy";
 import StoreHome from "@/pages/StoreHome";
 import { CartProvider } from "@/context/CartContext";
+import { CustomerAuthProvider } from "@/context/CustomerAuthContext";
 import { Layout } from "@/components/Sidebar";
 
 const queryClient = new QueryClient({
@@ -168,9 +169,11 @@ function App() {
       <QueryClientProvider client={queryClient}>
         <I18nProvider>
           <AuthProvider>
-            <CartProvider>
-              <AppRoutes />
-            </CartProvider>
+            <CustomerAuthProvider>
+              <CartProvider>
+                <AppRoutes />
+              </CartProvider>
+            </CustomerAuthProvider>
           </AuthProvider>
         </I18nProvider>
       </QueryClientProvider>
