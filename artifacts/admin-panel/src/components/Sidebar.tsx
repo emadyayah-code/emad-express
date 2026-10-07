@@ -39,11 +39,17 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
     >
       {/* Logo header */}
       <div className="p-5 flex items-center justify-between" style={{ borderBottom: "1px solid rgba(245,158,11,0.12)" }}>
-        <img
-          src="/logo.png"
-          alt="Emad Express"
-          style={{ height: "48px", objectFit: "contain", filter: "drop-shadow(0 0 12px rgba(245,158,11,0.5))" }}
-        />
+        <div className="flex items-center gap-3">
+          <img
+            src="/app-logo.png"
+            alt="Emad Express"
+            className="w-10 h-10 rounded-xl object-cover ring-2 ring-amber-500/40 shadow-md"
+          />
+          <div className="flex flex-col">
+            <span className="text-sm font-black text-white">عماد إكسبرس</span>
+            <span className="text-[10px] text-amber-400/80 font-bold">لوحة الإدارة المركزية</span>
+          </div>
+        </div>
         {onClose && (
           <button onClick={onClose} className="lg:hidden text-amber-400/60 hover:text-amber-400">
             <X size={20} />

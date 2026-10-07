@@ -64,10 +64,9 @@ export default function Login() {
         {/* Logo */}
         <div className="text-center mb-6">
           <img
-            src="/logo.png"
+            src="/app-logo.png"
             alt="Emad Express"
-            className="mx-auto mb-3"
-            style={{ height: "90px", objectFit: "contain", filter: "drop-shadow(0 0 25px rgba(245,158,11,0.6))" }}
+            className="mx-auto mb-3 w-20 h-20 rounded-2xl object-cover ring-2 ring-amber-500/50 shadow-2xl shadow-amber-500/40"
           />
           <h1 className="text-2xl font-bold bg-gradient-to-r from-amber-200 via-amber-400 to-amber-200 bg-clip-text text-transparent">
             لوحة تحكم عماد إكسبريس

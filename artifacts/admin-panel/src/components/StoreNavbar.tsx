@@ -49,17 +49,22 @@ export function StoreNavbar({ onSearch }: { onSearch?: (q: string) => void }) {
 
       {/* Main navigation container */}
       <div className="max-w-7xl mx-auto px-4 py-3.5 flex items-center justify-between gap-4">
-        {/* Brand Logo */}
-        <Link href="/" className="flex items-center gap-2 group shrink-0">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-lg shadow-amber-500/20 group-hover:scale-105 transition-transform">
-            <span className="text-black font-black text-xl tracking-tighter">E</span>
+        {/* Official Brand Logo */}
+        <Link href="/" className="flex items-center gap-3 group shrink-0">
+          <div className="relative">
+            <img
+              src="/app-logo.png"
+              alt="عماد إكسبرس - الشعار الرسمي"
+              className="h-11 w-11 rounded-2xl object-cover ring-2 ring-amber-500/50 shadow-lg shadow-amber-500/30 group-hover:scale-105 group-hover:ring-amber-400 transition-all duration-300 bg-slate-900"
+            />
+            <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-emerald-500 rounded-full border-2 border-slate-900 shadow-sm" title="المتجر يعمل بنجاح" />
           </div>
           <div className="flex flex-col">
-            <span className="text-xl font-black tracking-tight text-white flex items-center gap-1">
+            <span className="text-xl font-black tracking-tight text-white flex items-center gap-1 group-hover:text-amber-300 transition-colors">
               عماد <span className="text-amber-400">إكسبرس</span>
             </span>
-            <span className="text-[10px] text-amber-200/60 font-semibold tracking-wider">
-              EMADEXPRESS • GLOBAL STORE
+            <span className="text-[10px] text-amber-200/70 font-semibold tracking-wider">
+              EMAD EXPRESS • GLOBAL STORE
             </span>
           </div>
         </Link>
@@ -244,59 +249,98 @@ export function StoreNavbar({ onSearch }: { onSearch?: (q: string) => void }) {
 
 export function StoreFooter() {
   return (
-    <footer className="bg-slate-950 border-t border-slate-900 text-slate-400 text-xs py-12 px-4" dir="rtl">
+    <footer className="bg-slate-950 border-t border-slate-900 text-slate-400 text-xs py-14 px-4" dir="rtl">
       <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-8">
-        <div>
-          <div className="flex items-center gap-2 mb-3">
-            <div className="w-8 h-8 rounded-lg bg-amber-500 flex items-center justify-center text-black font-black text-lg">
-              E
+        <div className="space-y-3">
+          <div className="flex items-center gap-3">
+            <img
+              src="/app-logo.png"
+              alt="عماد إكسبرس"
+              className="w-12 h-12 rounded-2xl object-cover ring-2 ring-amber-500/40 shadow-lg shadow-amber-500/20"
+            />
+            <div>
+              <span className="font-black text-white text-base block">عماد إكسبرس</span>
+              <span className="text-[10px] text-amber-400/80 font-bold tracking-wider">EMAD EXPRESS GLOBAL</span>
             </div>
-            <span className="font-bold text-white text-base">عماد إكسبرس</span>
           </div>
           <p className="text-slate-400 leading-relaxed text-xs">
-            متجرك العالمي المباشر لاستيراد أفضل المنتجات العالمية من علي إكسبرس بأفضل الأسعار وأسرع خيارات الشحن المباشر.
+            منصتك العالمية الأولى للتسوق والدروب شيبينغ المباشر من علي إكسبرس، بأفضل الأسعار المصنعية، مع فحص آلي للمخزون وشحن مباشر وسريع.
           </p>
+          <div className="flex items-center gap-2 pt-2">
+            <span className="bg-amber-500/10 text-amber-300 border border-amber-500/30 px-3 py-1 rounded-full text-[11px] font-bold">
+              ⭐️ ضمان الجودة والاسترجاع 100%
+            </span>
+          </div>
         </div>
 
         <div>
-          <h4 className="font-bold text-white text-sm mb-3">أقسام المتجر</h4>
-          <ul className="space-y-2">
-            <li><Link href="/?category=200000345" className="hover:text-amber-400">👗 أزياء نسائية</Link></li>
-            <li><Link href="/?category=200000343" className="hover:text-amber-400">👔 أزياء رجالية</Link></li>
-            <li><Link href="/?category=44" className="hover:text-amber-400">📱 إلكترونيات وأجهزة ذكية</Link></li>
-            <li><Link href="/?category=1511" className="hover:text-amber-400">⌚ ساعات وإكسسوارات</Link></li>
+          <h4 className="font-bold text-white text-sm mb-3.5 flex items-center gap-2">
+            <span className="w-1.5 h-3.5 bg-amber-500 rounded-full" />
+            <span>أقسام المتجر الرئيسية</span>
+          </h4>
+          <ul className="space-y-2.5">
+            <li><Link href="/?category=200000345" className="hover:text-amber-400 transition-colors">👗 أزياء وملابس نسائية</Link></li>
+            <li><Link href="/?category=200000343" className="hover:text-amber-400 transition-colors">👔 أزياء وملابس رجالية</Link></li>
+            <li><Link href="/?category=44" className="hover:text-amber-400 transition-colors">📱 إلكترونيات وأجهزة ذكية</Link></li>
+            <li><Link href="/?category=1511" className="hover:text-amber-400 transition-colors">⌚ ساعات وإكسسوارات فاخرة</Link></li>
+            <li><Link href="/?category=15" className="hover:text-amber-400 transition-colors">🏠 مستلزمات المنزل والمطبخ</Link></li>
           </ul>
         </div>
 
         <div>
-          <h4 className="font-bold text-white text-sm mb-3">خدمة العملاء</h4>
-          <ul className="space-y-2">
-            <li><Link href="/privacy-policy" className="hover:text-amber-400">سياسة الخصوصية والشروط</Link></li>
-            <li><span>الدعم الفني عبر واتساب: 772223645</span></li>
-            <li><span>ضمان الاسترجاع والتوصيل</span></li>
+          <h4 className="font-bold text-white text-sm mb-3.5 flex items-center gap-2">
+            <span className="w-1.5 h-3.5 bg-amber-500 rounded-full" />
+            <span>خدمة العملاء والدعم</span>
+          </h4>
+          <ul className="space-y-2.5">
+            <li>
+              <a
+                href="https://wa.me/967772223645?text=%D9%85%D8%B1%D8%AD%D8%A8%D8%A7%20%D8%B9%D9%85%D8%A7%D8%AF%20%D8%A5%D9%83%D8%B3%D8%A8%D8%B1%D8%B3%D8%8C%20%D9%84%D8%AF%D9%8A%20%D8%A7%D8%B3%D8%AA%D9%81%D8%B3%D8%A7%D8%B1%20%D8%B9%D9%86%20%D8%B7%D9%84%D8%A8%D9%8A"
+                target="_blank"
+                rel="noreferrer"
+                className="text-emerald-400 hover:text-emerald-300 font-bold inline-flex items-center gap-1.5 transition-colors"
+              >
+                <span>💬 خدمة العملاء عبر واتساب: 772223645</span>
+              </a>
+            </li>
+            <li><Link href="/privacy-policy" className="hover:text-amber-400 transition-colors">🔒 سياسة الخصوصية والشروط</Link></li>
+            <li><span className="text-slate-400">⚡ شحن وتوصيل فوري مع تتبع لحظي</span></li>
+            <li><span className="text-slate-400">🛡️ حماية المشتريات والدفع الآمن</span></li>
           </ul>
         </div>
 
         <div>
-          <h4 className="font-bold text-white text-sm mb-3">الإدارة والمشرفين</h4>
-          <p className="text-slate-400 mb-3 text-xs">
-            بوابة الإدارة المركزية لإدارة المنتجات والطلبات والدروب شيبينغ:
+          <h4 className="font-bold text-white text-sm mb-3.5 flex items-center gap-2">
+            <span className="w-1.5 h-3.5 bg-amber-500 rounded-full" />
+            <span>بوابة الإدارة المركزية</span>
+          </h4>
+          <p className="text-slate-400 mb-3.5 text-xs leading-relaxed">
+            اللوحة الإدارية للتحكم في استيراد المنتجات، مزامنة الأسعار اللحظية، وإدارة شحنات الدروب شيبينغ:
           </p>
           <Link
             href="/admin"
-            className="inline-flex items-center gap-2 bg-slate-900 hover:bg-amber-500 hover:text-black border border-amber-500/30 text-amber-300 font-bold px-4 py-2 rounded-xl transition-all"
+            className="inline-flex items-center gap-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-black px-5 py-2.5 rounded-xl transition-all shadow-lg shadow-amber-500/20 cursor-pointer"
           >
-            <Shield size={14} />
-            <span>الدخول إلى لوحة التحكم</span>
+            <Shield size={16} />
+            <span>الدخول إلى لوحة التحكم الإدارية</span>
           </Link>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto border-t border-slate-900 mt-8 pt-6 flex flex-col sm:flex-row items-center justify-between text-slate-400 gap-4">
-        <p>© جميع الحقوق محفوظة لدى متجر عماد إكسبرس (Emad Express) 2026.</p>
+      {/* Trust & Payment Badges Ribbon */}
+      <div className="max-w-7xl mx-auto border-t border-slate-900 mt-10 pt-6 flex flex-wrap items-center justify-between gap-4 text-[11px] text-slate-500">
+        <div className="flex flex-wrap items-center gap-3">
+          <span className="text-slate-400 font-semibold">وسائل الدفع والشحن المعتمدة:</span>
+          <span className="bg-slate-900 px-2.5 py-1 rounded-md border border-slate-800 text-slate-300 font-bold">💳 مدى Mada</span>
+          <span className="bg-slate-900 px-2.5 py-1 rounded-md border border-slate-800 text-slate-300 font-bold">💳 Visa / MasterCard</span>
+          <span className="bg-slate-900 px-2.5 py-1 rounded-md border border-slate-800 text-slate-300 font-bold">🍏 Apple Pay</span>
+          <span className="bg-slate-900 px-2.5 py-1 rounded-md border border-slate-800 text-amber-300 font-bold">✈️ DHL & FedEx Direct</span>
+        </div>
+
         <div className="flex items-center gap-4">
-          <Link href="/admin" className="text-amber-400/80 hover:text-amber-300 font-semibold">
-            لوحة الإدارة (Admin Panel)
+          <span>© 2026 جميع الحقوق محفوظة لمتجر <strong>عماد إكسبرس (Emad Express)</strong>.</span>
+          <Link href="/admin" className="text-amber-400/80 hover:text-amber-300 font-bold">
+            بوابة المشرفين
           </Link>
         </div>
       </div>
