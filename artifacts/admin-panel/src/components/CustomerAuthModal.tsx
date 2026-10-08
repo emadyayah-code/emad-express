@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { createPortal } from "react-dom";
 import { useCustomerAuth } from "@/context/CustomerAuthContext";
 import { X, User, Mail, Lock, Phone, CheckCircle2, AlertCircle, Sparkles, Smartphone } from "lucide-react";
 
@@ -79,8 +80,10 @@ export function CustomerAuthModal() {
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-200" dir="rtl">
+  if (typeof document === "undefined") return null;
+
+  return createPortal(
+    <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-200" dir="rtl">
       <div className="bg-slate-900 border border-amber-500/40 rounded-3xl max-w-md w-full overflow-hidden shadow-2xl relative">
         {/* Close button */}
         <button
@@ -311,6 +314,7 @@ export function CustomerAuthModal() {
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { StoreNavbar, StoreFooter } from "@/components/StoreNavbar";
@@ -117,7 +118,7 @@ export default function StoreHome() {
 
   const categoriesList: any[] = Array.isArray(categoriesData)
     ? categoriesData
-    : (categoriesData?.data || []);
+    : (categoriesData?.categories || categoriesData?.data || []);
 
   const productsList: any[] = Array.isArray(productsData)
     ? productsData
@@ -145,21 +146,36 @@ export default function StoreHome() {
       .filter((c: any) => c.products.length > 0);
   }, [categoriesList, productsList, homeFeed]);
 
-  // Diverse collections across categories for Flash Deals
-  const { showcaseProducts } = React.useMemo(() => {
+  // Distinctly diversified collections across all categories (Identical to Mobile App)
+  const { showcaseProducts, featured, topSelling } = React.useMemo(() => {
     const allSections = categoriesWithProducts;
     if (!allSections.length) {
       return {
         showcaseProducts: productsList.slice(0, 10),
+        featured: productsList.slice(0, 10),
+        topSelling: productsList.slice(10, 20),
       };
     }
+
     const scList: any[] = [];
+    const featList: any[] = [];
+    const topList: any[] = [];
+
+    // Round-robin selection across different categories to guarantee maximum diversity
     allSections.forEach((sec: any) => {
       const pList = sec.products || [];
       if (pList[0]) scList.push(pList[0]);
+      if (pList[1]) featList.push(pList[1]);
+      else if (pList[0]) featList.push(pList[0]);
+
+      if (pList[2]) topList.push(pList[2]);
+      else if (pList[0]) topList.push(pList[0]);
     });
+
     return {
       showcaseProducts: scList.slice(0, 10),
+      featured: featList.slice(0, 12),
+      topSelling: topList.slice(0, 10),
     };
   }, [categoriesWithProducts, productsList]);
 
@@ -510,10 +526,92 @@ export default function StoreHome() {
         </div>
       </section>
 
-      {/* Dynamic Multi-Category Showcase Shelves (Direct from Database / Home-Feed) */}
+      {/* Featured Products Shelf (Identical to Mobile App) */}
+      {!searchQuery && featured.length > 0 && (
+        <section className="max-w-7xl mx-auto px-4 py-4 w-full">
+          <div className="bg-slate-900/60 border border-slate-800 rounded-3xl p-5 shadow-xl">
+            <div className="flex items-center justify-between border-b border-slate-800/80 pb-3 mb-4">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold">
+                  <Sparkles size={18} />
+                </div>
+                <h2 className="text-xl font-black text-white">المنتجات المميزة (Featured)</h2>
+                <span className="text-xs font-bold text-amber-400/90 bg-amber-400/10 px-2.5 py-0.5 rounded-full border border-amber-400/20">
+                  مختارة بعناية
+                </span>
+              </div>
+              <a
+                href="#products-catalog"
+                className="text-xs font-bold text-amber-400 hover:text-amber-300 flex items-center gap-1 cursor-pointer hover:underline"
+              >
+                <span>تصفح الكل</span>
+                <ChevronLeft size={14} />
+              </a>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+              {featured.slice(0, 5).map((prod: any) => (
+                <ProductCard
+                  key={`featured-${prod.id}`}
+                  product={prod}
+                  onAddToCart={(p) => handleAddToCart(p, 1)}
+                  onQuickView={(p) => {
+                    setQuickViewProduct(p);
+                    setQuickViewQty(1);
+                  }}
+                  isAdded={addedItemNotice === prod.id}
+                />
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Best Sellers Shelf (Identical to Mobile App) */}
+      {!searchQuery && topSelling.length > 0 && (
+        <section className="max-w-7xl mx-auto px-4 py-2 w-full">
+          <div className="bg-slate-900/60 border border-slate-800 rounded-3xl p-5 shadow-xl">
+            <div className="flex items-center justify-between border-b border-slate-800/80 pb-3 mb-4">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-red-500/20 text-red-400 flex items-center justify-center font-bold">
+                  <Flame size={18} />
+                </div>
+                <h2 className="text-xl font-black text-white">الأكثر طلباً ومبيعاً (Best Sellers)</h2>
+                <span className="text-xs font-bold text-red-400/90 bg-red-400/10 px-2.5 py-0.5 rounded-full border border-red-400/20">
+                  الأعلى تقييماً
+                </span>
+              </div>
+              <a
+                href="#products-catalog"
+                className="text-xs font-bold text-amber-400 hover:text-amber-300 flex items-center gap-1 cursor-pointer hover:underline"
+              >
+                <span>تصفح الكل</span>
+                <ChevronLeft size={14} />
+              </a>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+              {topSelling.slice(0, 5).map((prod: any) => (
+                <ProductCard
+                  key={`best-seller-${prod.id}`}
+                  product={prod}
+                  onAddToCart={(p) => handleAddToCart(p, 1)}
+                  onQuickView={(p) => {
+                    setQuickViewProduct(p);
+                    setQuickViewQty(1);
+                  }}
+                  isAdded={addedItemNotice === prod.id}
+                />
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Dynamic Multi-Category Showcase Shelves (All Categories from Database / Home-Feed) */}
       {!searchQuery && categoriesWithProducts.length > 0 && (
         <section className="max-w-7xl mx-auto px-4 py-4 w-full space-y-10">
-          {categoriesWithProducts.slice(0, 6).map((sec: any) => (
+          {categoriesWithProducts.map((sec: any) => (
             <div key={`shelf-${sec.id}`} className="space-y-4">
               <div className="flex items-center justify-between border-b border-slate-800 pb-3">
                 <div className="flex items-center gap-2.5">
@@ -626,8 +724,8 @@ export default function StoreHome() {
       </section>
 
       {/* Interactive Quick View Modal (AliExpress Style) */}
-      {quickViewProduct && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
+      {quickViewProduct && typeof document !== "undefined" && createPortal(
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-200" dir="rtl">
           <div className="bg-slate-900 border border-amber-500/40 rounded-3xl max-w-2xl w-full overflow-hidden shadow-2xl relative flex flex-col md:flex-row">
             {/* Close Button */}
             <button
@@ -745,7 +843,8 @@ export default function StoreHome() {
               </div>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Floating Customer Support WhatsApp Button with Glowing Pulse */}

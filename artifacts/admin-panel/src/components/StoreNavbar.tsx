@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { createPortal } from "react-dom";
 import { Link, useLocation } from "wouter";
 import { Search, ShoppingCart, Shield, Globe, Menu, X, Trash2, ArrowLeft, ArrowRight, Zap, Award, User, LogOut, CheckCircle2 } from "lucide-react";
 import { useCart } from "@/context/CartContext";
@@ -250,15 +251,17 @@ export function StoreNavbar({ onSearch }: { onSearch?: (q: string) => void }) {
         </div>
       )}
 
-      {/* Slide-out Cart Drawer */}
-      {showCartDrawer && (
-        <div className="fixed inset-0 z-50 overflow-hidden">
+      {/* Slide-out Cart Drawer with Portal */}
+      {showCartDrawer && typeof document !== "undefined" && createPortal(
+        <div className="fixed inset-0 z-[99999] overflow-hidden" dir="rtl">
+          {/* Backdrop */}
           <div
-            className="absolute inset-0 bg-black/80 backdrop-blur-sm transition-opacity"
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm transition-opacity cursor-pointer"
             onClick={() => setShowCartDrawer(false)}
           />
-          <div className="absolute inset-y-0 left-0 max-w-full flex">
-            <div className="w-screen max-w-md bg-slate-950 border-r border-slate-800 p-6 flex flex-col shadow-2xl">
+          {/* Drawer Slide Panel */}
+          <div className="fixed inset-y-0 left-0 max-w-full flex z-10">
+            <div className="w-screen max-w-md bg-slate-950 border-r border-slate-800 p-6 flex flex-col shadow-2xl h-full animate-in slide-in-from-left duration-300">
               <div className="flex items-center justify-between pb-4 border-b border-slate-800">
                 <div className="flex items-center gap-2">
                   <ShoppingCart className="text-amber-400" size={20} />
@@ -266,7 +269,7 @@ export function StoreNavbar({ onSearch }: { onSearch?: (q: string) => void }) {
                 </div>
                 <button
                   onClick={() => setShowCartDrawer(false)}
-                  className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 cursor-pointer"
+                  className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 cursor-pointer transition-colors"
                 >
                   <X size={20} />
                 </button>
@@ -326,7 +329,7 @@ export function StoreNavbar({ onSearch }: { onSearch?: (q: string) => void }) {
               )}
 
               {items.length > 0 && (
-                <div className="pt-4 border-t border-slate-800 space-y-3">
+                <div className="pt-4 border-t border-slate-800 space-y-3 mt-auto">
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-slate-400">الإجمالي الفرعي:</span>
                     <span className="font-black text-amber-400 text-lg">{subtotal.toLocaleString()} ر.س</span>
@@ -344,7 +347,8 @@ export function StoreNavbar({ onSearch }: { onSearch?: (q: string) => void }) {
               )}
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Global Modals */}

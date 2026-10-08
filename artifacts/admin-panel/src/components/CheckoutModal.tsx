@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { useCart } from "@/context/CartContext";
 import { useCustomerAuth } from "@/context/CustomerAuthContext";
 import { getApiBase } from "@/lib/api";
@@ -202,8 +203,10 @@ export function CheckoutModal({
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-200" dir="rtl">
+  if (typeof document === "undefined") return null;
+
+  return createPortal(
+    <div className="fixed inset-0 z-[99999] flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-200" dir="rtl">
       <div className="bg-slate-900 border border-amber-500/40 rounded-3xl max-w-2xl w-full max-h-[92vh] flex flex-col overflow-hidden shadow-2xl relative">
         {/* Header */}
         <div className="p-5 border-b border-slate-800 flex items-center justify-between bg-slate-950/60">
@@ -643,6 +646,7 @@ export function CheckoutModal({
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

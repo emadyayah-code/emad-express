@@ -106,11 +106,26 @@ app.use("/api", globalRateLimiter, router);
 
 // Serve admin panel & frontend directly on root domain
 const adminPanelDir = resolve(process.cwd(), env.ADMIN_PANEL_DIR);
-app.use(express.static(adminPanelDir, { maxAge: "1h" }));
+app.use(
+  express.static(adminPanelDir, {
+    setHeaders: (res, path) => {
+      if (path.endsWith(".html")) {
+        res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+        res.setHeader("Pragma", "no-cache");
+        res.setHeader("Expires", "0");
+      } else if (path.includes("/assets/") || path.includes("\\assets\\")) {
+        res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+      }
+    },
+  })
+);
 
 app.use((req, res, next) => {
   if (req.method !== "GET") return next();
   if (req.path.startsWith("/api") || req.path.startsWith("/uploads")) return next();
+  res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+  res.setHeader("Pragma", "no-cache");
+  res.setHeader("Expires", "0");
   res.sendFile(resolve(adminPanelDir, "index.html"));
 });
 
