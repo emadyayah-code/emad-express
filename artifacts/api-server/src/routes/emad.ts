@@ -1359,30 +1359,76 @@ router.post("/shipping/calculate", async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
-router.post("/orders", requireAuth, validateBody(orderSchema), async (req, res, next) => {
-  const client = await pool.connect();
+router.post("/orders", validateBody(orderSchema), async (req, res, next) => {
   try {
-    await client.query("BEGIN");
-    const session = (req as any).session;
-    if (!session.customerId) { await client.query("ROLLBACK"); return res.status(403).json({ success: false, message: "يجب تسجيل الدخول كعميل" }); }
-    const [customer] = await db.select().from(customers).where(eq(customers.id, session.customerId));
-    if (!customer) { await client.query("ROLLBACK"); return res.status(404).json({ success: false, message: "العميل غير موجود" }); }
+    const session = getSession(req);
+    let customer: any = null;
 
-    const { items, shipping_address, payment_method, shipping_method, shipping_country, shipping_city, currency } = req.body;
-    let cleanPayMethod = "cod";
+    if (session?.customerId) {
+      const [existingCust] = await db.select().from(customers).where(eq(customers.id, session.customerId));
+      customer = existingCust;
+    }
+
+    const {
+      items,
+      shipping_address,
+      payment_method,
+      shipping_method,
+      shipping_country,
+      shipping_city,
+      currency,
+      recipient_name,
+      recipient_phone,
+      recipient_email,
+      customer_name,
+      customer_phone,
+      customer_email,
+    } = req.body;
+
+    const contactName = recipient_name || customer_name || customer?.name || "عميل متجر عماد";
+    const contactPhone = recipient_phone || customer_phone || customer?.phone || "";
+    const contactEmail = recipient_email || customer_email || customer?.email || `customer_${Date.now()}@emadexpress.com`;
+
+    if (!customer) {
+      if (contactPhone) {
+        const [foundByPhone] = await db.select().from(customers).where(eq(customers.phone, contactPhone));
+        if (foundByPhone) customer = foundByPhone;
+      }
+      if (!customer && contactEmail && !contactEmail.startsWith("customer_")) {
+        const [foundByEmail] = await db.select().from(customers).where(eq(customers.email, contactEmail));
+        if (foundByEmail) customer = foundByEmail;
+      }
+    }
+
+    if (!customer) {
+      const [createdCust] = await db.insert(customers).values({
+        name: contactName,
+        email: contactEmail,
+        phone: contactPhone,
+        address: shipping_address || "",
+        city: shipping_city || "",
+        country: shipping_country || "YE",
+        total_orders: 0,
+        total_spent: 0,
+        loyalty_points: 0,
+      }).returning();
+      customer = createdCust;
+    }
+
+    let cleanPayMethod = "paypal";
     const pm = (payment_method || "").toString().toLowerCase();
-    if (pm.includes("card") || pm.includes("stripe") || pm.includes("بطاقة") || pm.includes("فيزا") || pm.includes("ماستركارد")) {
-      cleanPayMethod = "card";
+    if (pm.includes("aliexpress") || pm.includes("direct")) {
+      cleanPayMethod = "aliexpress_direct";
     } else if (pm.includes("paypal")) {
       cleanPayMethod = "paypal";
+    } else if (pm.includes("card") || pm.includes("stripe") || pm.includes("بطاقة") || pm.includes("فيزا") || pm.includes("ماستركارد")) {
+      cleanPayMethod = "card";
     } else if (pm.includes("google")) {
       cleanPayMethod = "google_pay";
     } else if (pm.includes("apple")) {
       cleanPayMethod = "apple_pay";
-    } else if (pm.includes("bank") || pm.includes("تحويل")) {
-      cleanPayMethod = "bank_transfer";
     } else {
-      cleanPayMethod = "cod";
+      cleanPayMethod = "paypal";
     }
 
     // Inventory check & real-time dropship supplier check
@@ -1390,36 +1436,33 @@ router.post("/orders", requireAuth, validateBody(orderSchema), async (req, res, 
       if (item.product_id) {
         const [prod] = await db.select().from(products).where(and(eq(products.id, item.product_id), isNull(products.deleted_at), eq(products.is_active, true)));
         if (!prod) {
-          await client.query("ROLLBACK");
           return res.status(400).json({ success: false, message: `المنتج "${item.product_name}" غير متوفر حالياً في المتجر` });
         }
 
         // Live check against dropship supplier (AliExpress, Amazon, or external URL)
         const stockStatus = await verifyAndSyncDropshipProductStock(item.product_id, { forceLive: true }).catch(() => ({ available: true }));
         if (!stockStatus.available) {
-          await client.query("ROLLBACK");
           return res.status(400).json({
             success: false,
-            message: `عذراً، لقد نفدت كمية المنتج "${item.product_name}" من المصدر (${stockStatus.reason || "غير متوفر"}). تم إخفاؤه من المتجر فوراً لتجنب أي تعارض.`
+            message: `عذراً، لقد نفدت كمية المنتج "${item.product_name}" من المصدر (${stockStatus.reason || "غير متوفر"}). تم تحديثه في المتجر.`
           });
         }
 
         if (prod.quantity < item.quantity) {
-          await client.query("ROLLBACK");
           return res.status(400).json({ success: false, message: `الكمية غير متوفرة للمنتج ${item.product_name}. المتاح: ${prod.quantity}` });
         }
       }
     }
 
     const subtotal = items.reduce((s: number, i: any) => s + (i.total || i.price * i.quantity || 0), 0);
-    const orderCurrency = currency || customer.preferred_currency || "SAR";
+    const orderCurrency = currency || customer?.preferred_currency || "SAR";
 
-    // AliExpress Shipping Calculation (Yemen DHL 529 SAR / Economic 25 SAR, Global Choice Free >= 100 SAR else 15 SAR, Premium 45 SAR)
+    // AliExpress Shipping Calculation (Yemen DHL 529 SAR exclusively, Global Choice Free >= 100 SAR else 15 SAR, Premium 45 SAR)
     const shippingCalc = await calculateAliExpressShipping({
       subtotal,
-      address: shipping_address || customer.address || "",
-      country: shipping_country || customer.country || "",
-      city: shipping_city || customer.city || "",
+      address: shipping_address || customer?.address || "",
+      country: shipping_country || customer?.country || "",
+      city: shipping_city || customer?.city || "",
       method: shipping_method,
       currency: orderCurrency,
     });
@@ -1434,12 +1477,12 @@ router.post("/orders", requireAuth, validateBody(orderSchema), async (req, res, 
 
     const [newOrder] = await db.insert(orders).values({
       order_number: orderNumber,
-      customer_id: customer.id,
-      customer_name: customer.name,
-      customer_email: customer.email,
-      customer_phone: customer.phone || "",
-      shipping_address: shipping_address || customer.address || "",
-      shipping_city: shippingCalc.detectedCity || customer.city || "",
+      customer_id: customer?.id || null,
+      customer_name: contactName,
+      customer_email: contactEmail,
+      customer_phone: contactPhone,
+      shipping_address: shipping_address || customer?.address || "",
+      shipping_city: shippingCalc.detectedCity || customer?.city || "",
       shipping_country: shippingCalc.destinationCountry,
       payment_method: cleanPayMethod,
       payment_status: "pending",
@@ -1453,16 +1496,22 @@ router.post("/orders", requireAuth, validateBody(orderSchema), async (req, res, 
       items,
     }).returning();
 
-    await db.update(customers).set({ total_orders: customer.total_orders + 1, total_spent: customer.total_spent + total, loyalty_points: customer.loyalty_points + Math.floor(total / 10) }).where(eq(customers.id, customer.id));
-
-    for (const item of items) {
-      if (item.product_id) await db.update(products).set({ quantity: sql`GREATEST(${products.quantity} - ${item.quantity}, 0)` }).where(eq(products.id, item.product_id));
+    if (customer?.id) {
+      await db.update(customers).set({
+        total_orders: (customer.total_orders || 0) + 1,
+        total_spent: (customer.total_spent || 0) + total,
+        loyalty_points: (customer.loyalty_points || 0) + Math.floor(total / 10),
+      }).where(eq(customers.id, customer.id)).catch(() => {});
     }
 
-    await client.query("COMMIT");
+    for (const item of items) {
+      if (item.product_id) {
+        await db.update(products).set({ quantity: sql`GREATEST(${products.quantity} - ${item.quantity}, 0)` }).where(eq(products.id, item.product_id)).catch(() => {});
+      }
+    }
+
     return res.status(201).json({ success: true, data: newOrder });
-  } catch (err) { await client.query("ROLLBACK").catch(() => {}); next(err); }
-  finally { client.release(); }
+  } catch (err) { next(err); }
 });
 
 router.get("/orders/:id", requireAuth, validateParams(idParamSchema), async (req, res, next) => {
@@ -3152,6 +3201,18 @@ router.post("/admin/dropship/sync-stock", requireAuth, requireRole("admin", "man
   } catch (err) { next(err); }
 });
 
+router.post("/admin/dropship/run-auto-import", requireAuth, requireRole("admin", "manager"), async (req, res, next) => {
+  try {
+    const { count = 2000 } = req.body || {};
+    const result = await runAutoImportCycle(Number(count) || 2000);
+    return res.json({
+      success: true,
+      message: `تم تشغيل الجلب التلقائي ومزامنة المنتجات بنجاح بهامش ربح 300%!`,
+      ...result,
+    });
+  } catch (err) { next(err); }
+});
+
 // ========== ADMIN COMMISSION ==========
 router.get("/admin/my-commission", requireAuth, requireRole("admin", "manager", "accountant"), async (_req, res, next) => {
   try {
@@ -4455,12 +4516,14 @@ router.post("/orders/:id/pay/stripe-confirm", requireAuth, validateParams(idPara
   } catch (err) { next(err); }
 });
 
-router.post("/orders/:id/pay/paypal-create", requireAuth, validateParams(idParamSchema), async (req, res, next) => {
+router.post("/orders/:id/pay/paypal-create", validateParams(idParamSchema), async (req, res, next) => {
   try {
-    const session = (req as any).session;
+    const session = getSession(req);
     const [order] = await db.select().from(orders).where(eq(orders.id, req.params.id));
     if (!order) return res.status(404).json({ success: false, message: "الطلب غير موجود" });
-    if (session.role !== "admin" && order.customer_id !== session.customerId) return res.status(403).json({ success: false, message: "غير مصرح" });
+    if (session && session.role !== "admin" && order.customer_id && order.customer_id !== session.customerId) {
+      return res.status(403).json({ success: false, message: "غير مصرح" });
+    }
     if (order.payment_status === "paid") return res.status(400).json({ success: false, message: "الطلب مدفوع بالفعل" });
 
     const [gateway] = await db.select().from(payment_gateways).where(eq(payment_gateways.provider, "paypal"));
@@ -4493,7 +4556,7 @@ router.post("/orders/:id/pay/paypal-create", requireAuth, validateParams(idParam
   } catch (err) { next(err); }
 });
 
-router.post("/orders/:id/pay/paypal-capture", requireAuth, validateParams(idParamSchema), async (req, res, next) => {
+router.post("/orders/:id/pay/paypal-capture", validateParams(idParamSchema), async (req, res, next) => {
   try {
     const { paypal_order_id } = req.body;
     const [gateway] = await db.select().from(payment_gateways).where(eq(payment_gateways.provider, "paypal"));

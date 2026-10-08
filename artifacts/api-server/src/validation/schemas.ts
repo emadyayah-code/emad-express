@@ -56,6 +56,12 @@ export const orderSchema = z.object({
   shipping_country: z.string().max(100).optional(),
   shipping_city: z.string().max(100).optional(),
   currency: z.string().max(10).optional(),
+  recipient_name: z.string().max(255).optional(),
+  recipient_phone: z.string().max(100).optional(),
+  recipient_email: z.string().max(255).optional(),
+  customer_name: z.string().max(255).optional(),
+  customer_phone: z.string().max(100).optional(),
+  customer_email: z.string().max(255).optional(),
 });
 
 export const employeeSchema = z.object({

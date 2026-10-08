@@ -120,6 +120,16 @@ export async function createPayPalOrder(
       throw new Error(tokenData.error_description || "فشل الاتصال بـ PayPal للحصول على توكن الصلاحية");
     }
 
+    let paypalCurrency = (currency || "USD").toUpperCase();
+    let paypalAmount = amount;
+    if (paypalCurrency === "SAR") {
+      paypalCurrency = "USD";
+      paypalAmount = parseFloat((amount / 3.75).toFixed(2));
+    } else if (paypalCurrency === "YER") {
+      paypalCurrency = "USD";
+      paypalAmount = parseFloat((amount / 535).toFixed(2));
+    }
+
     // Create order
     const orderRes = await fetch(`${baseUrl}/v2/checkout/orders`, {
       method: "POST",
@@ -130,7 +140,7 @@ export async function createPayPalOrder(
       body: JSON.stringify({
         intent: "CAPTURE",
         purchase_units: [{
-          amount: { currency_code: currency, value: amount.toFixed(2) },
+          amount: { currency_code: paypalCurrency, value: paypalAmount.toFixed(2) },
           reference_id: orderId,
         }],
       }),

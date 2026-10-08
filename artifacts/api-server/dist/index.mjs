@@ -32764,15 +32764,15 @@ var require_pg_pool = __commonJS({
       });
       return { callback: cb, result };
     }
-    function makeIdleListener(pool2, client) {
+    function makeIdleListener(pool3, client) {
       return function idleListener(err) {
         err.client = client;
         client.removeListener("error", idleListener);
         client.on("error", () => {
-          pool2.log("additional client error after disconnection due to error", err);
+          pool3.log("additional client error after disconnection due to error", err);
         });
-        pool2._remove(client);
-        pool2.emit("error", err, client);
+        pool3._remove(client);
+        pool3.emit("error", err, client);
       };
     }
     var Pool4 = class extends EventEmitter {
@@ -42287,8 +42287,8 @@ var init_schema2 = __esm({
 });
 
 // ../../lib/db/src/migrations.ts
-async function initDbSchema(pool2) {
-  const client = await pool2.connect();
+async function initDbSchema(pool3) {
+  const client = await pool3.connect();
   try {
     await client.query("BEGIN");
     await client.query(`
@@ -42601,7 +42601,7 @@ var init_migrations = __esm({
 });
 
 // ../../lib/db/src/index.ts
-var Pool3, isProduction, dbUrl, needsSsl, pool, db;
+var Pool3, isProduction, rawDbUrl, needsSsl, dbUrl, pool, db;
 var init_src = __esm({
   "../../lib/db/src/index.ts"() {
     "use strict";
@@ -42617,8 +42617,9 @@ var init_src = __esm({
       );
     }
     isProduction = process.env.NODE_ENV === "production";
-    dbUrl = process.env.DATABASE_URL;
-    needsSsl = dbUrl.includes("sslmode=require") || dbUrl.includes("neon.tech") || dbUrl.includes("render.com") || dbUrl.includes(".aws.") || isProduction;
+    rawDbUrl = process.env.DATABASE_URL;
+    needsSsl = rawDbUrl.includes("sslmode=require") || rawDbUrl.includes("neon.tech") || rawDbUrl.includes("render.com") || rawDbUrl.includes(".aws.") || rawDbUrl.includes("aivencloud.com") || isProduction;
+    dbUrl = rawDbUrl.replace(/([?&])sslmode=[^&]+(&|$)/g, (_match, prefix, suffix) => suffix === "&" ? prefix : "").replace(/[?&]$/, "");
     pool = new Pool3({
       connectionString: dbUrl,
       max: 20,
@@ -82785,10 +82786,10 @@ var require_pool_resource = __commonJS({
     var errors = require_errors3();
     var EventEmitter = __require("events");
     var PoolResource = class extends EventEmitter {
-      constructor(pool2) {
+      constructor(pool3) {
         super();
-        this.pool = pool2;
-        this.options = pool2.options;
+        this.pool = pool3;
+        this.options = pool3.options;
         this.logger = this.pool.logger;
         if (this.options.auth) {
           switch ((this.options.auth.type || "").toString().toUpperCase()) {
@@ -85306,6 +85307,15 @@ async function createPayPalOrder(amount, currency, orderId, paypalClientId, payp
       logger.error({ tokenData }, "PayPal token request failed");
       throw new Error(tokenData.error_description || "\u0641\u0634\u0644 \u0627\u0644\u0627\u062A\u0635\u0627\u0644 \u0628\u0640 PayPal \u0644\u0644\u062D\u0635\u0648\u0644 \u0639\u0644\u0649 \u062A\u0648\u0643\u0646 \u0627\u0644\u0635\u0644\u0627\u062D\u064A\u0629");
     }
+    let paypalCurrency = (currency || "USD").toUpperCase();
+    let paypalAmount = amount;
+    if (paypalCurrency === "SAR") {
+      paypalCurrency = "USD";
+      paypalAmount = parseFloat((amount / 3.75).toFixed(2));
+    } else if (paypalCurrency === "YER") {
+      paypalCurrency = "USD";
+      paypalAmount = parseFloat((amount / 535).toFixed(2));
+    }
     const orderRes = await fetch(`${baseUrl}/v2/checkout/orders`, {
       method: "POST",
       headers: {
@@ -85315,7 +85325,7 @@ async function createPayPalOrder(amount, currency, orderId, paypalClientId, payp
       body: JSON.stringify({
         intent: "CAPTURE",
         purchase_units: [{
-          amount: { currency_code: currency, value: amount.toFixed(2) },
+          amount: { currency_code: paypalCurrency, value: paypalAmount.toFixed(2) },
           reference_id: orderId
         }]
       }),
@@ -91519,7 +91529,13 @@ var orderSchema = external_exports.object({
   shipping_method: external_exports.string().max(100).optional(),
   shipping_country: external_exports.string().max(100).optional(),
   shipping_city: external_exports.string().max(100).optional(),
-  currency: external_exports.string().max(10).optional()
+  currency: external_exports.string().max(10).optional(),
+  recipient_name: external_exports.string().max(255).optional(),
+  recipient_phone: external_exports.string().max(100).optional(),
+  recipient_email: external_exports.string().max(255).optional(),
+  customer_name: external_exports.string().max(255).optional(),
+  customer_phone: external_exports.string().max(100).optional(),
+  customer_email: external_exports.string().max(255).optional()
 });
 var employeeSchema = external_exports.object({
   name: external_exports.string().min(2).max(100),
@@ -92251,25 +92267,9 @@ async function calculateAliExpressShipping(input) {
       currency,
       isFree: false,
       estimatedDays: "7-15 \u064A\u0648\u0645 \u0639\u0645\u0644",
-      descriptionAr: "\u0634\u062D\u0646 \u062C\u0648\u064A \u062F\u0648\u0644\u064A \u0633\u0631\u064A\u0639 \u0648\u0645\u0628\u0627\u0634\u0631 \u0625\u0644\u0649 \u0627\u0644\u064A\u0645\u0646 \u0639\u0628\u0631 DHL Express (\u0634\u062D\u0646 \u0639\u0644\u064A \u0625\u0643\u0633\u0628\u0631\u0633 \u0627\u0644\u0631\u0633\u0645\u064A)",
+      descriptionAr: "\u0634\u062D\u0646 \u062C\u0648\u064A \u062F\u0648\u0644\u064A \u0633\u0631\u064A\u0639 \u0648\u0645\u0628\u0627\u0634\u0631 \u0625\u0644\u0649 \u0627\u0644\u064A\u0645\u0646 \u0639\u0628\u0631 DHL Express (\u0634\u062D\u0646 \u0639\u0644\u064A \u0625\u0643\u0633\u0628\u0631\u0633 \u0627\u0644\u0645\u0639\u062A\u0645\u062F \u0644\u0644\u064A\u0645\u0646)",
       descriptionEn: "Fast direct international air express to Yemen via DHL Express",
       isDefault: true
-    });
-    const ecoCostSar = 25;
-    const ecoCost = currency === "SAR" ? ecoCostSar : await convertCurrency(ecoCostSar, "SAR", currency);
-    availableOptions.push({
-      id: "economic",
-      carrier: "AliExpress Economic Freight",
-      nameAr: "\u0634\u062D\u0646 \u0627\u0642\u062A\u0635\u0627\u062F\u064A \u0645\u062C\u0645\u0651\u0639 (AliExpress Combined Freight)",
-      nameEn: "AliExpress Combined Economic Shipping",
-      cost: ecoCost,
-      originalCostSar: ecoCostSar,
-      currency,
-      isFree: false,
-      estimatedDays: "20-35 \u064A\u0648\u0645 \u0639\u0645\u0644",
-      descriptionAr: "\u0634\u062D\u0646 \u0627\u0642\u062A\u0635\u0627\u062F\u064A \u0645\u0648\u0641\u0651\u0631 \u0628\u0627\u0644\u062A\u062C\u0645\u064A\u0639 \u0648\u0627\u0644\u062A\u0633\u0644\u064A\u0645 \u0641\u064A \u0627\u0644\u0645\u062D\u0627\u0641\u0638\u0627\u062A \u0627\u0644\u064A\u0645\u0646\u064A\u0629",
-      descriptionEn: "Economical consolidated freight delivery to Yemen",
-      isDefault: false
     });
   } else {
     const isFree = subtotalSar >= 100;
@@ -95228,64 +95228,96 @@ router2.post("/shipping/calculate", async (req, res, next) => {
     next(err);
   }
 });
-router2.post("/orders", requireAuth, validateBody(orderSchema), async (req, res, next) => {
-  const client = await pool.connect();
+router2.post("/orders", validateBody(orderSchema), async (req, res, next) => {
   try {
-    await client.query("BEGIN");
-    const session = req.session;
-    if (!session.customerId) {
-      await client.query("ROLLBACK");
-      return res.status(403).json({ success: false, message: "\u064A\u062C\u0628 \u062A\u0633\u062C\u064A\u0644 \u0627\u0644\u062F\u062E\u0648\u0644 \u0643\u0639\u0645\u064A\u0644" });
+    const session = getSession(req);
+    let customer = null;
+    if (session?.customerId) {
+      const [existingCust] = await db.select().from(customers).where(eq(customers.id, session.customerId));
+      customer = existingCust;
     }
-    const [customer] = await db.select().from(customers).where(eq(customers.id, session.customerId));
+    const {
+      items,
+      shipping_address,
+      payment_method,
+      shipping_method,
+      shipping_country,
+      shipping_city,
+      currency,
+      recipient_name,
+      recipient_phone,
+      recipient_email,
+      customer_name,
+      customer_phone,
+      customer_email
+    } = req.body;
+    const contactName = recipient_name || customer_name || customer?.name || "\u0639\u0645\u064A\u0644 \u0645\u062A\u062C\u0631 \u0639\u0645\u0627\u062F";
+    const contactPhone = recipient_phone || customer_phone || customer?.phone || "";
+    const contactEmail = recipient_email || customer_email || customer?.email || `customer_${Date.now()}@emadexpress.com`;
     if (!customer) {
-      await client.query("ROLLBACK");
-      return res.status(404).json({ success: false, message: "\u0627\u0644\u0639\u0645\u064A\u0644 \u063A\u064A\u0631 \u0645\u0648\u062C\u0648\u062F" });
+      if (contactPhone) {
+        const [foundByPhone] = await db.select().from(customers).where(eq(customers.phone, contactPhone));
+        if (foundByPhone) customer = foundByPhone;
+      }
+      if (!customer && contactEmail && !contactEmail.startsWith("customer_")) {
+        const [foundByEmail] = await db.select().from(customers).where(eq(customers.email, contactEmail));
+        if (foundByEmail) customer = foundByEmail;
+      }
     }
-    const { items, shipping_address, payment_method, shipping_method, shipping_country, shipping_city, currency } = req.body;
-    let cleanPayMethod = "cod";
+    if (!customer) {
+      const [createdCust] = await db.insert(customers).values({
+        name: contactName,
+        email: contactEmail,
+        phone: contactPhone,
+        address: shipping_address || "",
+        city: shipping_city || "",
+        country: shipping_country || "YE",
+        total_orders: 0,
+        total_spent: 0,
+        loyalty_points: 0
+      }).returning();
+      customer = createdCust;
+    }
+    let cleanPayMethod = "paypal";
     const pm = (payment_method || "").toString().toLowerCase();
-    if (pm.includes("card") || pm.includes("stripe") || pm.includes("\u0628\u0637\u0627\u0642\u0629") || pm.includes("\u0641\u064A\u0632\u0627") || pm.includes("\u0645\u0627\u0633\u062A\u0631\u0643\u0627\u0631\u062F")) {
-      cleanPayMethod = "card";
+    if (pm.includes("aliexpress") || pm.includes("direct")) {
+      cleanPayMethod = "aliexpress_direct";
     } else if (pm.includes("paypal")) {
       cleanPayMethod = "paypal";
+    } else if (pm.includes("card") || pm.includes("stripe") || pm.includes("\u0628\u0637\u0627\u0642\u0629") || pm.includes("\u0641\u064A\u0632\u0627") || pm.includes("\u0645\u0627\u0633\u062A\u0631\u0643\u0627\u0631\u062F")) {
+      cleanPayMethod = "card";
     } else if (pm.includes("google")) {
       cleanPayMethod = "google_pay";
     } else if (pm.includes("apple")) {
       cleanPayMethod = "apple_pay";
-    } else if (pm.includes("bank") || pm.includes("\u062A\u062D\u0648\u064A\u0644")) {
-      cleanPayMethod = "bank_transfer";
     } else {
-      cleanPayMethod = "cod";
+      cleanPayMethod = "paypal";
     }
     for (const item of items) {
       if (item.product_id) {
         const [prod] = await db.select().from(products).where(and(eq(products.id, item.product_id), isNull(products.deleted_at), eq(products.is_active, true)));
         if (!prod) {
-          await client.query("ROLLBACK");
           return res.status(400).json({ success: false, message: `\u0627\u0644\u0645\u0646\u062A\u062C "${item.product_name}" \u063A\u064A\u0631 \u0645\u062A\u0648\u0641\u0631 \u062D\u0627\u0644\u064A\u0627\u064B \u0641\u064A \u0627\u0644\u0645\u062A\u062C\u0631` });
         }
         const stockStatus = await verifyAndSyncDropshipProductStock(item.product_id, { forceLive: true }).catch(() => ({ available: true }));
         if (!stockStatus.available) {
-          await client.query("ROLLBACK");
           return res.status(400).json({
             success: false,
-            message: `\u0639\u0630\u0631\u0627\u064B\u060C \u0644\u0642\u062F \u0646\u0641\u062F\u062A \u0643\u0645\u064A\u0629 \u0627\u0644\u0645\u0646\u062A\u062C "${item.product_name}" \u0645\u0646 \u0627\u0644\u0645\u0635\u062F\u0631 (${stockStatus.reason || "\u063A\u064A\u0631 \u0645\u062A\u0648\u0641\u0631"}). \u062A\u0645 \u0625\u062E\u0641\u0627\u0624\u0647 \u0645\u0646 \u0627\u0644\u0645\u062A\u062C\u0631 \u0641\u0648\u0631\u0627\u064B \u0644\u062A\u062C\u0646\u0628 \u0623\u064A \u062A\u0639\u0627\u0631\u0636.`
+            message: `\u0639\u0630\u0631\u0627\u064B\u060C \u0644\u0642\u062F \u0646\u0641\u062F\u062A \u0643\u0645\u064A\u0629 \u0627\u0644\u0645\u0646\u062A\u062C "${item.product_name}" \u0645\u0646 \u0627\u0644\u0645\u0635\u062F\u0631 (${stockStatus.reason || "\u063A\u064A\u0631 \u0645\u062A\u0648\u0641\u0631"}). \u062A\u0645 \u062A\u062D\u062F\u064A\u062B\u0647 \u0641\u064A \u0627\u0644\u0645\u062A\u062C\u0631.`
           });
         }
         if (prod.quantity < item.quantity) {
-          await client.query("ROLLBACK");
           return res.status(400).json({ success: false, message: `\u0627\u0644\u0643\u0645\u064A\u0629 \u063A\u064A\u0631 \u0645\u062A\u0648\u0641\u0631\u0629 \u0644\u0644\u0645\u0646\u062A\u062C ${item.product_name}. \u0627\u0644\u0645\u062A\u0627\u062D: ${prod.quantity}` });
         }
       }
     }
     const subtotal = items.reduce((s, i) => s + (i.total || i.price * i.quantity || 0), 0);
-    const orderCurrency = currency || customer.preferred_currency || "SAR";
+    const orderCurrency = currency || customer?.preferred_currency || "SAR";
     const shippingCalc = await calculateAliExpressShipping({
       subtotal,
-      address: shipping_address || customer.address || "",
-      country: shipping_country || customer.country || "",
-      city: shipping_city || customer.city || "",
+      address: shipping_address || customer?.address || "",
+      country: shipping_country || customer?.country || "",
+      city: shipping_city || customer?.city || "",
       method: shipping_method,
       currency: orderCurrency
     });
@@ -95297,12 +95329,12 @@ router2.post("/orders", requireAuth, validateBody(orderSchema), async (req, res,
     const orderNumber = `ORD-${(/* @__PURE__ */ new Date()).getFullYear()}-${timestamp2.toString(36).toUpperCase()}-${random}`;
     const [newOrder] = await db.insert(orders).values({
       order_number: orderNumber,
-      customer_id: customer.id,
-      customer_name: customer.name,
-      customer_email: customer.email,
-      customer_phone: customer.phone || "",
-      shipping_address: shipping_address || customer.address || "",
-      shipping_city: shippingCalc.detectedCity || customer.city || "",
+      customer_id: customer?.id || null,
+      customer_name: contactName,
+      customer_email: contactEmail,
+      customer_phone: contactPhone,
+      shipping_address: shipping_address || customer?.address || "",
+      shipping_city: shippingCalc.detectedCity || customer?.city || "",
       shipping_country: shippingCalc.destinationCountry,
       payment_method: cleanPayMethod,
       payment_status: "pending",
@@ -95315,18 +95347,23 @@ router2.post("/orders", requireAuth, validateBody(orderSchema), async (req, res,
       currency: orderCurrency,
       items
     }).returning();
-    await db.update(customers).set({ total_orders: customer.total_orders + 1, total_spent: customer.total_spent + total, loyalty_points: customer.loyalty_points + Math.floor(total / 10) }).where(eq(customers.id, customer.id));
-    for (const item of items) {
-      if (item.product_id) await db.update(products).set({ quantity: sql`GREATEST(${products.quantity} - ${item.quantity}, 0)` }).where(eq(products.id, item.product_id));
+    if (customer?.id) {
+      await db.update(customers).set({
+        total_orders: (customer.total_orders || 0) + 1,
+        total_spent: (customer.total_spent || 0) + total,
+        loyalty_points: (customer.loyalty_points || 0) + Math.floor(total / 10)
+      }).where(eq(customers.id, customer.id)).catch(() => {
+      });
     }
-    await client.query("COMMIT");
+    for (const item of items) {
+      if (item.product_id) {
+        await db.update(products).set({ quantity: sql`GREATEST(${products.quantity} - ${item.quantity}, 0)` }).where(eq(products.id, item.product_id)).catch(() => {
+        });
+      }
+    }
     return res.status(201).json({ success: true, data: newOrder });
   } catch (err) {
-    await client.query("ROLLBACK").catch(() => {
-    });
     next(err);
-  } finally {
-    client.release();
   }
 });
 router2.get("/orders/:id", requireAuth, validateParams(idParamSchema), async (req, res, next) => {
@@ -98237,12 +98274,14 @@ router2.post("/orders/:id/pay/stripe-confirm", requireAuth, validateParams(idPar
     next(err);
   }
 });
-router2.post("/orders/:id/pay/paypal-create", requireAuth, validateParams(idParamSchema), async (req, res, next) => {
+router2.post("/orders/:id/pay/paypal-create", validateParams(idParamSchema), async (req, res, next) => {
   try {
-    const session = req.session;
+    const session = getSession(req);
     const [order] = await db.select().from(orders).where(eq(orders.id, req.params.id));
     if (!order) return res.status(404).json({ success: false, message: "\u0627\u0644\u0637\u0644\u0628 \u063A\u064A\u0631 \u0645\u0648\u062C\u0648\u062F" });
-    if (session.role !== "admin" && order.customer_id !== session.customerId) return res.status(403).json({ success: false, message: "\u063A\u064A\u0631 \u0645\u0635\u0631\u062D" });
+    if (session && session.role !== "admin" && order.customer_id && order.customer_id !== session.customerId) {
+      return res.status(403).json({ success: false, message: "\u063A\u064A\u0631 \u0645\u0635\u0631\u062D" });
+    }
     if (order.payment_status === "paid") return res.status(400).json({ success: false, message: "\u0627\u0644\u0637\u0644\u0628 \u0645\u062F\u0641\u0648\u0639 \u0628\u0627\u0644\u0641\u0639\u0644" });
     const [gateway] = await db.select().from(payment_gateways).where(eq(payment_gateways.provider, "paypal"));
     if (!gateway || !gateway.is_active) return res.status(400).json({ success: false, message: "\u0628\u0648\u0627\u0628\u0629 PayPal \u063A\u064A\u0631 \u0645\u0641\u0639\u0644\u0629" });
@@ -98272,7 +98311,7 @@ router2.post("/orders/:id/pay/paypal-create", requireAuth, validateParams(idPara
     next(err);
   }
 });
-router2.post("/orders/:id/pay/paypal-capture", requireAuth, validateParams(idParamSchema), async (req, res, next) => {
+router2.post("/orders/:id/pay/paypal-capture", validateParams(idParamSchema), async (req, res, next) => {
   try {
     const { paypal_order_id } = req.body;
     const [gateway] = await db.select().from(payment_gateways).where(eq(payment_gateways.provider, "paypal"));

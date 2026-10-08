@@ -11,8 +11,11 @@ if (!process.env.DATABASE_URL) {
 }
 
 const isProduction = process.env.NODE_ENV === "production";
-const dbUrl = process.env.DATABASE_URL;
-const needsSsl = dbUrl.includes("sslmode=require") || dbUrl.includes("neon.tech") || dbUrl.includes("render.com") || dbUrl.includes(".aws.") || isProduction;
+const rawDbUrl = process.env.DATABASE_URL;
+const needsSsl = rawDbUrl.includes("sslmode=require") || rawDbUrl.includes("neon.tech") || rawDbUrl.includes("render.com") || rawDbUrl.includes(".aws.") || rawDbUrl.includes("aivencloud.com") || isProduction;
+
+// Strip ?sslmode=... or &sslmode=... from connection string so pg does not enforce strict CA verification on cloud DBs
+const dbUrl = rawDbUrl.replace(/([?&])sslmode=[^&]+(&|$)/g, (_match, prefix, suffix) => suffix === "&" ? prefix : "").replace(/[?&]$/, "");
 
 const pool = new Pool({
   connectionString: dbUrl,

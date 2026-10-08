@@ -112,7 +112,7 @@ export async function calculateAliExpressShipping(input: CalculateShippingInput)
   const availableOptions: ShippingOption[] = [];
 
   if (isYemen) {
-    // 1. DHL Express - Official AliExpress direct method to Yemen
+    // DHL Express - Official AliExpress direct method to Yemen (529 SAR strictly for Yemen)
     const dhlCostSar = 529;
     const dhlCost = currency === "SAR" ? dhlCostSar : await convertCurrency(dhlCostSar, "SAR", currency);
     availableOptions.push({
@@ -125,27 +125,9 @@ export async function calculateAliExpressShipping(input: CalculateShippingInput)
       currency,
       isFree: false,
       estimatedDays: "7-15 يوم عمل",
-      descriptionAr: "شحن جوي دولي سريع ومباشر إلى اليمن عبر DHL Express (شحن علي إكسبرس الرسمي)",
+      descriptionAr: "شحن جوي دولي سريع ومباشر إلى اليمن عبر DHL Express (شحن علي إكسبرس المعتمد لليمن)",
       descriptionEn: "Fast direct international air express to Yemen via DHL Express",
       isDefault: true,
-    });
-
-    // 2. Economic Combined Freight to Yemen
-    const ecoCostSar = 25;
-    const ecoCost = currency === "SAR" ? ecoCostSar : await convertCurrency(ecoCostSar, "SAR", currency);
-    availableOptions.push({
-      id: "economic",
-      carrier: "AliExpress Economic Freight",
-      nameAr: "شحن اقتصادي مجمّع (AliExpress Combined Freight)",
-      nameEn: "AliExpress Combined Economic Shipping",
-      cost: ecoCost,
-      originalCostSar: ecoCostSar,
-      currency,
-      isFree: false,
-      estimatedDays: "20-35 يوم عمل",
-      descriptionAr: "شحن اقتصادي موفّر بالتجميع والتسليم في المحافظات اليمنية",
-      descriptionEn: "Economical consolidated freight delivery to Yemen",
-      isDefault: false,
     });
   } else {
     // Rest of the World (Saudi Arabia, GCC, Worldwide)

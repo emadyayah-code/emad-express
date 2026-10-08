@@ -29,8 +29,8 @@ export function CheckoutModal({
   const [quickPassword, setQuickPassword] = useState("");
 
   // Shipping & Payment selection (Matches mobile app 100%)
-  const [shippingMethod, setShippingMethod] = useState<string>("economic");
-  const [paymentMethod, setPaymentMethod] = useState<string>("kuraimi");
+  const [shippingMethod, setShippingMethod] = useState<string>("dhl");
+  const [paymentMethod, setPaymentMethod] = useState<string>("paypal");
   const [transferRef, setTransferRef] = useState("");
 
   const [loading, setLoading] = useState(false);
@@ -46,10 +46,10 @@ export function CheckoutModal({
     }
   }, [customer]);
 
-  // Adjust default shipping method based on country
+  // Adjust default shipping method based on country: 529 SAR ONLY for Yemen
   useEffect(() => {
     if (country === "YE") {
-      setShippingMethod("economic");
+      setShippingMethod("dhl");
     } else {
       setShippingMethod("standard");
     }
@@ -57,20 +57,13 @@ export function CheckoutModal({
 
   if (!isOpen) return null;
 
-  // AliExpress Shipping Options (Identical to Mobile App)
+  // AliExpress Shipping Options: 529 SAR DHL Express ONLY for Yemen, Choice/Standard for Saudi & Global
   const yemenShippingOptions = [
     {
-      id: "economic",
-      title: "شحن اقتصادي مجمّع (AliExpress Combined Freight)",
-      badge: "موفّر واقتصادي 📦",
-      desc: "شحن مجمّع موفر لكافة المحافظات اليمنية • تسليم 20-35 يوم عمل",
-      fee: 25,
-    },
-    {
       id: "dhl",
-      title: "دي إتش إل إكسبريس (DHL Express)",
-      badge: "شحن سريع دولي ✈️",
-      desc: "شحن جوي سريع ومباشر لليمن مطابق لـ AliExpress • تسليم 7-15 يوم عمل",
+      title: "دي إتش إل إكسبريس لليمن (DHL Express)",
+      badge: "شحن سريع جوي لليمن ✈️",
+      desc: "شحن جوي سريع ومباشر إلى كافة المحافظات اليمنية مطابق لـ AliExpress • تسليم 7-15 يوم عمل (خاص باليمن فقط)",
       fee: 529,
     },
   ];
@@ -81,8 +74,8 @@ export function CheckoutModal({
       title: subtotal >= 100 ? "شحن مجاني علي إكسبرس (AliExpress Choice)" : "شحن قياسي علي إكسبرس (AliExpress Standard)",
       badge: subtotal >= 100 ? "Choice مجاني 🎉" : "توصيل قياسي",
       desc: subtotal >= 100
-        ? "شحن مجاني رسمي لطلبك بقيمة 100+ ر.س • تسليم 10-18 يوم"
-        : "شحن قياسي دولي موثوق مع تتبع • تسليم 10-18 يوم",
+        ? "شحن مجاني رسمي لطلبك بقيمة 100+ ر.س • تسليم 10-18 يوم عمل"
+        : "شحن قياسي دولي موثوق مع رقم تتبع • تسليم 10-18 يوم عمل (مجاني عند الشراء بـ 100 ر.س)",
       fee: subtotal >= 100 ? 0 : 15,
     },
     {
@@ -90,7 +83,7 @@ export function CheckoutModal({
       title: "شحن سريع بريميوم (AliExpress Premium)",
       badge: "أولوية فائقة ⚡",
       desc: "شحن جوي سريع بأعلى أولوية وتسليم للباب • تسليم 5-9 أيام عمل",
-      fee: 45,
+      fee: 35,
     },
   ];
 
@@ -139,12 +132,16 @@ export function CheckoutModal({
           quantity: i.quantity,
           price: i.price,
           total: i.price * i.quantity,
+          source_url: (i as any).source_url || (i as any).sourceUrl || "",
         })),
         shipping_address: fullShippingAddress,
         shipping_method: shippingMethod,
         shipping_country: country,
         shipping_city: city,
         payment_method: paymentMethod,
+        recipient_name: recipientName,
+        recipient_phone: recipientPhone,
+        recipient_email: recipientEmail,
       };
 
       const headers: Record<string, string> = { "Content-Type": "application/json" };
@@ -166,23 +163,27 @@ export function CheckoutModal({
 
       const orderId = data?.data?.id || data?.id || data?.order?.id;
 
-      // Check payment redirection if paypal or electronic
+      // Handle AliExpress Direct or PayPal payment redirection
       let redirectUrl = "";
-      if (paymentMethod === "paypal" && orderId) {
+      if (paymentMethod === "aliexpress_direct") {
+        const itemWithUrl = items.find((i: any) => i.source_url || i.sourceUrl);
+        redirectUrl = (itemWithUrl as any)?.source_url || (itemWithUrl as any)?.sourceUrl || 
+          (items[0]?.name ? `https://www.aliexpress.com/wholesale?SearchText=${encodeURIComponent(items[0].name)}` : "https://www.aliexpress.com");
+        try {
+          window.open(redirectUrl, "_blank", "noopener,noreferrer");
+        } catch {}
+      } else if (paymentMethod === "paypal" && orderId) {
         try {
           const payRes = await fetch(`${getApiBase()}/orders/${orderId}/pay/paypal-create`, {
             method: "POST",
             headers,
           }).then((r) => r.json());
           redirectUrl = payRes?.approval_url || payRes?.data?.approval_url || "";
-        } catch {}
-      } else if (paymentMethod === "electronic_payment" && orderId) {
-        try {
-          const payRes = await fetch(`${getApiBase()}/orders/${orderId}/pay/internal`, {
-            method: "POST",
-            headers,
-          }).then((r) => r.json());
-          redirectUrl = payRes?.payment_url || payRes?.data?.payment_url || "";
+          if (redirectUrl) {
+            try {
+              window.open(redirectUrl, "_blank", "noopener,noreferrer");
+            } catch {}
+          }
         } catch {}
       }
 
@@ -267,17 +268,25 @@ export function CheckoutModal({
                 </div>
               </div>
 
-              {/* Payment External Link if PayPal or Electronic */}
+              {/* Payment Action Link for PayPal or AliExpress Direct */}
               {orderSuccess.redirectUrl && (
                 <div className="pt-2">
                   <a
                     href={orderSuccess.redirectUrl}
                     target="_blank"
                     rel="noreferrer"
-                    className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-black text-xs px-6 py-3 rounded-xl shadow-lg shadow-blue-500/20 transition-all"
+                    className={`inline-flex items-center gap-2 font-black text-xs px-6 py-3.5 rounded-xl shadow-lg transition-all ${
+                      orderSuccess.paymentMethod === "aliexpress_direct"
+                        ? "bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white shadow-red-500/25"
+                        : "bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-500 hover:to-indigo-500 text-white shadow-blue-500/25"
+                    }`}
                   >
-                    <span>فتح بوابة الدفع الإلكتروني الآن</span>
-                    <ExternalLink size={15} />
+                    <span>
+                      {orderSuccess.paymentMethod === "aliexpress_direct"
+                        ? "فتح وإتمام الدفع على موقع علي إكسبرس فوراً"
+                        : "فتح بوابة الدفع عبر PayPal والبطاقات المعتمدة"}
+                    </span>
+                    <ExternalLink size={16} />
                   </a>
                 </div>
               )}
@@ -477,53 +486,11 @@ export function CheckoutModal({
               <div className="space-y-3">
                 <h4 className="text-xs font-black text-amber-400 flex items-center gap-1.5 border-b border-slate-800 pb-2">
                   <CreditCard size={15} />
-                  <span>3. طريقة الدفع (مطابقة للتطبيق بالكامل)</span>
+                  <span>3. طريقة الدفع المعتمدة (PayPal / AliExpress Direct)</span>
                 </h4>
 
                 <div className="space-y-2">
-                  {/* Local Bank Transfer (Kuraimi / OneCash / AlNajm) */}
-                  <label
-                    className={`flex flex-col p-3.5 rounded-2xl border transition-all cursor-pointer ${
-                      paymentMethod === "kuraimi"
-                        ? "bg-amber-500/10 border-amber-500/80 ring-1 ring-amber-500/40"
-                        : "bg-slate-950/60 border-slate-800 hover:border-slate-700"
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <input
-                          type="radio"
-                          name="payment_opt"
-                          checked={paymentMethod === "kuraimi"}
-                          onChange={() => setPaymentMethod("kuraimi")}
-                          className="accent-amber-500 cursor-pointer"
-                        />
-                        <div>
-                          <span className="font-bold text-xs text-white">تحويل بنك الكريمي / ون كاش / النجم (محلي)</span>
-                          <span className="text-[10px] text-emerald-400 block mt-0.5">شائع وسريع وبدون عمولات إضافية</span>
-                        </div>
-                      </div>
-                      <span className="text-[10px] bg-slate-800 px-2 py-0.5 rounded-md text-amber-300 font-bold">محلي 🇾🇪</span>
-                    </div>
-
-                    {paymentMethod === "kuraimi" && (
-                      <div className="mt-3 pt-3 border-t border-slate-800/80 text-[11px] text-slate-300 space-y-2">
-                        <div className="bg-slate-900 p-2.5 rounded-xl border border-slate-800 flex items-center justify-between">
-                          <span>رقم حساب الكريمي المعتمد:</span>
-                          <span className="font-mono font-black text-amber-400 text-xs">121448834 (عماد الأكحلي)</span>
-                        </div>
-                        <input
-                          type="text"
-                          value={transferRef}
-                          onChange={(e) => setTransferRef(e.target.value)}
-                          placeholder="أدخل رقم الحوالة أو اسم المحول (اختياري)"
-                          className="w-full bg-slate-900 text-white text-xs px-3 py-2 rounded-xl border border-slate-800 focus:outline-none"
-                        />
-                      </div>
-                    )}
-                  </label>
-
-                  {/* PayPal */}
+                  {/* PayPal & Accepted Cards */}
                   <label
                     className={`flex items-start justify-between p-3.5 rounded-2xl border transition-all cursor-pointer ${
                       paymentMethod === "paypal"
@@ -540,21 +507,23 @@ export function CheckoutModal({
                         className="mt-1 accent-amber-500 cursor-pointer"
                       />
                       <div>
-                        <span className="font-bold text-xs text-white">PayPal (حساب بايبال / بطاقات عالمية)</span>
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-xs text-white">الدفع الإلكتروني عبر PayPal والبطاقات المعتمدة</span>
+                          <span className="text-[10px] bg-blue-900/60 text-blue-300 border border-blue-500/30 px-2 py-0.5 rounded-md font-bold">
+                            PayPal Live 💳
+                          </span>
+                        </div>
                         <p className="text-[11px] text-slate-400 mt-0.5">
-                          دفع فوري وآمن مع حماية المشتري الكاملة عبر بايبال المشفر
+                          دفع فوري وآمن بضمان وحماية المشتري الكاملة عبر PayPal بالبطاقات البنكية المعتمدة (Visa، MasterCard، مدى)
                         </p>
                       </div>
                     </div>
-                    <span className="text-[10px] bg-blue-900/60 text-blue-300 border border-blue-500/30 px-2 py-0.5 rounded-md font-bold">
-                      PayPal Live
-                    </span>
                   </label>
 
-                  {/* Electronic Payment (AliExpress / Cards / Mada) */}
+                  {/* AliExpress Direct Checkout */}
                   <label
                     className={`flex items-start justify-between p-3.5 rounded-2xl border transition-all cursor-pointer ${
-                      paymentMethod === "electronic_payment"
+                      paymentMethod === "aliexpress_direct"
                         ? "bg-amber-500/10 border-amber-500/80 ring-1 ring-amber-500/40"
                         : "bg-slate-950/60 border-slate-800 hover:border-slate-700"
                     }`}
@@ -563,44 +532,22 @@ export function CheckoutModal({
                       <input
                         type="radio"
                         name="payment_opt"
-                        checked={paymentMethod === "electronic_payment"}
-                        onChange={() => setPaymentMethod("electronic_payment")}
+                        checked={paymentMethod === "aliexpress_direct"}
+                        onChange={() => setPaymentMethod("aliexpress_direct")}
                         className="mt-1 accent-amber-500 cursor-pointer"
                       />
                       <div>
-                        <span className="font-bold text-xs text-white">الدفع المباشر عبر بوابة علي إكسبرس (AliExpress WebView / Cards)</span>
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-xs text-white">الدفع والشراء المباشر عبر علي إكسبرس (AliExpress Direct)</span>
+                          <span className="text-[10px] bg-red-950/60 text-red-300 border border-red-500/30 px-2 py-0.5 rounded-md font-bold">
+                            AliExpress Direct 🛍️
+                          </span>
+                        </div>
                         <p className="text-[11px] text-slate-400 mt-0.5">
-                          دفع إلكتروني مباشر عبر البطاقات (مدى، فيزا، ماستركارد)
+                          يفتح لك موقع علي إكسبرس الرسمي مباشرة لتسديد القيمة والشراء من مورد علي إكسبرس فوراً وبشكل مباشر
                         </p>
                       </div>
                     </div>
-                    <span className="text-[10px] bg-red-950/60 text-red-300 border border-red-500/30 px-2 py-0.5 rounded-md font-bold">
-                      AliExpress Direct
-                    </span>
-                  </label>
-
-                  {/* Cash on Delivery */}
-                  <label
-                    className={`flex items-start justify-between p-3.5 rounded-2xl border transition-all cursor-pointer ${
-                      paymentMethod === "cod"
-                        ? "bg-amber-500/10 border-amber-500/80 ring-1 ring-amber-500/40"
-                        : "bg-slate-950/60 border-slate-800 hover:border-slate-700"
-                    }`}
-                  >
-                    <div className="flex items-start gap-3">
-                      <input
-                        type="radio"
-                        name="payment_opt"
-                        checked={paymentMethod === "cod"}
-                        onChange={() => setPaymentMethod("cod")}
-                        className="mt-1 accent-amber-500 cursor-pointer"
-                      />
-                      <div>
-                        <span className="font-bold text-xs text-white">الدفع عند الاستلام (Cash on Delivery)</span>
-                        <p className="text-[11px] text-slate-400 mt-0.5">الدفع نقداً للمندوب عند استلام الشحنة لباب بيتك</p>
-                      </div>
-                    </div>
-                    <span className="text-[10px] bg-slate-800 px-2 py-0.5 rounded-md text-slate-300 font-bold">نقداً 💵</span>
                   </label>
                 </div>
               </div>

@@ -4,6 +4,8 @@ node_modules/
 .DS_Store
 dist/
 **/dist/
+!artifacts/admin-panel/dist/**
+!artifacts/api-server/dist/**
 *.log
 *.aab
 *.apk

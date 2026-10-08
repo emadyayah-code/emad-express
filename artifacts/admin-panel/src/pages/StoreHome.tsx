@@ -892,6 +892,9 @@ function ProductCard({
             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out"
             referrerPolicy="no-referrer"
             loading="lazy"
+            onError={(e) => {
+              (e.currentTarget as HTMLImageElement).src = "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600&auto=format&fit=crop&q=80";
+            }}
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-slate-700 text-xs">

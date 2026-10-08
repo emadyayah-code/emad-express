@@ -9,6 +9,7 @@ import {
   Platform,
   Alert,
   ActivityIndicator,
+  Linking,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Feather, FontAwesome5 } from "@expo/vector-icons";
@@ -50,25 +51,23 @@ export default function CheckoutScreen() {
   const PAYMENT_METHODS = [
     {
       key: "paypal",
-      label: "PayPal (حساب بايبال / بطاقات عالمية)",
+      label: "PayPal والبطاقات المعتمدة (Visa / MasterCard)",
       icon: "shield",
-      desc: "دفع عالمي فوري وآمن بضمان وحماية المشتري عبر حسابك أو بطاقتك في PayPal داخل نافذة الدفع المشفرة",
+      desc: "دفع عالمي فوري وآمن بضمان وحماية المشتري الكاملة عبر PayPal بالبطاقات البنكية المعتمدة",
       badges: [
-        { label: "PayPal Live", bg: "#003087" },
-        { label: "حماية المشتري", bg: "#0079C1" },
+        { label: "PayPal Live 💳", bg: "#003087" },
+        { label: "حماية المشتري 🛡️", bg: "#0079C1" },
         { label: "دفع فوري ⚡", bg: "#059669" },
       ],
     },
     {
       key: "electronic_payment",
-      label: "الدفع المباشر عبر WebView (AliExpress / بوابات المنصة)",
+      label: "الدفع والشراء المباشر عبر علي إكسبرس (AliExpress Direct)",
       icon: "shield",
-      desc: "نافذة دفع إلكتروني آمنة ومباشرة (WebView) تفتح داخل التطبيق لإتمام الطلب مباشرة من المصدر مع حماية كاملة",
+      desc: "فتح صفحة الشراء والدفع مباشرة على موقع علي إكسبرس للتسديد والدفع لمورد علي إكسبرس مباشرة",
       badges: [
-        { label: "AliExpress WebView", bg: "#e11d48" },
-        { label: "مدى Mada", bg: "#007a3d" },
-        { label: "VISA", bg: "#1a1f71" },
-        { label: "Mastercard", bg: "#eb001b" },
+        { label: "AliExpress Direct 🛍️", bg: "#e11d48" },
+        { label: "دفع للمورد مباشرة", bg: "#991b1b" },
       ],
     },
   ];
@@ -89,9 +88,7 @@ export default function CheckoutScreen() {
 
   useEffect(() => {
     if (isYemen) {
-      if (shippingMethod !== "dhl" && shippingMethod !== "economic") {
-        setShippingMethod("dhl");
-      }
+      setShippingMethod("dhl");
     } else {
       if (shippingMethod !== "standard" && shippingMethod !== "premium") {
         setShippingMethod("standard");
@@ -99,26 +96,16 @@ export default function CheckoutScreen() {
     }
   }, [isYemen]);
 
-  // AliExpress Shipping Options Definition
+  // AliExpress Shipping Options Definition: 529 SAR ONLY for Yemen
   const yemenOptions = [
     {
       id: "dhl",
       carrier: "DHL Express",
-      title: "دي إتش إل إكسبريس (DHL Express)",
-      badge: "شحن سريع دولي علي إكسبرس ✈️",
+      title: "دي إتش إل إكسبريس لليمن (DHL Express)",
+      badge: "شحن سريع دولي لليمن ✈️",
       badgeBg: "#d97706",
-      desc: "شحن جوي سريع ومباشر لليمن مطابق لـ AliExpress • تسليم 7-15 يوم عمل",
+      desc: "شحن جوي سريع ومباشر لكافة محافظات اليمن مطابق لـ AliExpress • تسليم 7-15 يوم عمل (خاص باليمن فقط)",
       fee: 529,
-      isFree: false,
-    },
-    {
-      id: "economic",
-      carrier: "AliExpress Economic Freight",
-      title: "شحن اقتصادي مجمّع (Combined Freight)",
-      badge: "موفّر واقتصادي 📦",
-      badgeBg: "#059669",
-      desc: "شحن مجمّع موفر إلى المحافظات اليمنية • تسليم 20-35 يوم عمل",
-      fee: 25,
       isFree: false,
     },
   ];
@@ -173,6 +160,9 @@ export default function CheckoutScreen() {
 
     setLoading(true);
     try {
+      const recipientName = defaultAddress?.recipientName || "عميل عماد إكسبرس";
+      const recipientPhone = defaultAddress?.phone || "";
+
       const orderRes = await api.post(
         "/orders",
         {
@@ -182,11 +172,14 @@ export default function CheckoutScreen() {
             quantity: i.quantity,
             price: i.price,
             total: i.price * i.quantity,
+            source_url: (i as any).source_url || (i as any).sourceUrl || "",
           })),
           shipping_address: address,
           shipping_method: shippingMethod,
           shipping_country: isYemen ? "YE" : (isSaudi ? "SA" : "GLOBAL"),
-          payment_method: payMethod,
+          payment_method: payMethod === "electronic_payment" ? "aliexpress_direct" : payMethod,
+          recipient_name: recipientName,
+          recipient_phone: recipientPhone,
         },
         token
       );
@@ -195,6 +188,15 @@ export default function CheckoutScreen() {
         (orderRes as any)?.data?.id ||
         (orderRes as any)?.id ||
         (orderRes as any)?.data?.data?.id;
+
+      if (payMethod === "electronic_payment") {
+        const itemWithUrl = items.find((i: any) => i.source_url || i.sourceUrl);
+        const aliUrl = (itemWithUrl as any)?.source_url || (itemWithUrl as any)?.sourceUrl || 
+          (items[0]?.name ? `https://www.aliexpress.com/wholesale?SearchText=${encodeURIComponent(items[0].name)}` : "https://www.aliexpress.com");
+        try {
+          await Linking.openURL(aliUrl);
+        } catch {}
+      }
 
       clearCart();
 
