@@ -3667,7 +3667,7 @@ router.post("/admin/dropship/purge-zero-stock", requireAuth, requireRole("admin"
 let autoImportRunning = false;
 let autoImportPageIndex = 1;
 
-export async function runAutoImportCycle(targetCount = 2000): Promise<{ imported: number; skipped: number; totalInDb: number }> {
+export async function runAutoImportCycle(targetCount = 5000): Promise<{ imported: number; skipped: number; totalInDb: number }> {
   if (autoImportRunning) {
     logger.info("Auto-import cycle is already in progress, skipping concurrent run.");
     return { imported: 0, skipped: 0, totalInDb: 0 };
@@ -3698,7 +3698,7 @@ export async function runAutoImportCycle(targetCount = 2000): Promise<{ imported
 
     const margin = 4.0; // 300% profit margin
     const seed = Math.floor(Math.random() * 80) + 1;
-    const maxPagesToScan = Math.max(120, Math.ceil(targetCount / 10));
+    const maxPagesToScan = Math.max(350, Math.ceil(targetCount / 10));
 
     for (let i = 0; i < maxPagesToScan && totalImported < targetCount; i++) {
       const pageToFetch = autoImportPageIndex++;
@@ -3827,18 +3827,18 @@ export async function runAutoImportCycle(targetCount = 2000): Promise<{ imported
 }
 
 export function startAutoImportJob() {
-  const INTERVAL_MS = 5 * 60 * 1000; // Run automatically every 5 minutes
+  const INTERVAL_MS = 12 * 60 * 60 * 1000; // Run automatically every 12 hours continuously
   // First run starts 45 seconds after server boots up
   setTimeout(() => {
-    runAutoImportCycle(2000).catch(err => logger.error({ err }, "Initial auto-import job failed"));
+    runAutoImportCycle(5000).catch(err => logger.error({ err }, "Initial auto-import job failed"));
   }, 45 * 1000);
 
-  // Then recurring runs every 5 minutes
+  // Then recurring runs every 12 hours
   setInterval(() => {
-    runAutoImportCycle(2000).catch(err => logger.error({ err }, "Recurring auto-import job failed"));
+    runAutoImportCycle(5000).catch(err => logger.error({ err }, "Recurring auto-import job failed"));
   }, INTERVAL_MS);
 
-  logger.info("🤖 Auto-import job scheduled: 2,000 products will be fetched and imported every 5 minutes automatically.");
+  logger.info("🤖 Auto-import job scheduled: 5,000 products will be fetched and imported every 12 hours automatically.");
 }
 
 

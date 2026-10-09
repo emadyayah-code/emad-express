@@ -1017,7 +1017,8 @@ function AutoFetchButton({ platform, onResults }: { platform: string; onResults:
           <option value={250}>250 منتج</option>
           <option value={500}>500 منتج</option>
           <option value={1000}>1000 منتج 🚀</option>
-          <option value={2000}>2000 منتج</option>
+          <option value={2000}>2000 منتج 🔥</option>
+          <option value={5000}>5000 منتج ⚡ (تلقائي كل 12 ساعة)</option>
         </select>
 
         <select
@@ -1236,8 +1237,9 @@ function BulkImportSection({ onBrowse, onGoProducts }: { onBrowse: (r: any[]) =>
               { val: 100, label: "100 منتج" },
               { val: 250, label: "250 منتج" },
               { val: 500, label: "500 منتج" },
-              { val: 1000, label: "1000 منتج 🚀", badge: "موصى به" },
+              { val: 1000, label: "1000 منتج 🚀", badge: "سريع" },
               { val: 2000, label: "2000 منتج 🔥" },
+              { val: 5000, label: "5000 منتج ⚡", badge: "كل 12 ساعة" },
             ].map(item => (
               <button
                 key={item.val}

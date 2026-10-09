@@ -97499,7 +97499,7 @@ router2.post("/admin/dropship/purge-zero-stock", requireAuth, requireRole("admin
 });
 var autoImportRunning = false;
 var autoImportPageIndex = 1;
-async function runAutoImportCycle(targetCount = 2e3) {
+async function runAutoImportCycle(targetCount = 5e3) {
   if (autoImportRunning) {
     logger.info("Auto-import cycle is already in progress, skipping concurrent run.");
     return { imported: 0, skipped: 0, totalInDb: 0 };
@@ -97526,7 +97526,7 @@ async function runAutoImportCycle(targetCount = 2e3) {
     );
     const margin = 4;
     const seed = Math.floor(Math.random() * 80) + 1;
-    const maxPagesToScan = Math.max(120, Math.ceil(targetCount / 10));
+    const maxPagesToScan = Math.max(350, Math.ceil(targetCount / 10));
     for (let i = 0; i < maxPagesToScan && totalImported < targetCount; i++) {
       const pageToFetch = autoImportPageIndex++;
       const { kw, catId, actualPage } = getAliSearchParams(pageToFetch, "", void 0, seed);
@@ -97635,14 +97635,14 @@ async function runAutoImportCycle(targetCount = 2e3) {
   }
 }
 function startAutoImportJob() {
-  const INTERVAL_MS = 5 * 60 * 1e3;
+  const INTERVAL_MS = 12 * 60 * 60 * 1e3;
   setTimeout(() => {
-    runAutoImportCycle(2e3).catch((err) => logger.error({ err }, "Initial auto-import job failed"));
+    runAutoImportCycle(5e3).catch((err) => logger.error({ err }, "Initial auto-import job failed"));
   }, 45 * 1e3);
   setInterval(() => {
-    runAutoImportCycle(2e3).catch((err) => logger.error({ err }, "Recurring auto-import job failed"));
+    runAutoImportCycle(5e3).catch((err) => logger.error({ err }, "Recurring auto-import job failed"));
   }, INTERVAL_MS);
-  logger.info("\u{1F916} Auto-import job scheduled: 2,000 products will be fetched and imported every 5 minutes automatically.");
+  logger.info("\u{1F916} Auto-import job scheduled: 5,000 products will be fetched and imported every 12 hours automatically.");
 }
 async function getAmazonCreds2() {
   const accessKey = (await db.select().from(platform_settings).where(eq(platform_settings.key, "amazon_access_key")))[0]?.value;
