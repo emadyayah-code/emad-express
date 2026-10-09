@@ -25,6 +25,13 @@ const pool = new Pool({
   ...(needsSsl ? { ssl: { rejectUnauthorized: false } } : {}),
 });
 
+// Ensure every client operates in read-write mode, overriding cloud provider read-only defaults
+pool.on("connect", (client) => {
+  client.query("SET default_transaction_read_only = off;").catch((err) => {
+    console.error("Failed to set read-write transaction mode on client:", err);
+  });
+});
+
 // Handle pool errors to prevent crashes
 pool.on("error", (err) => {
   console.error("Unexpected database pool error:", err);

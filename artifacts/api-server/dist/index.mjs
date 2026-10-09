@@ -42628,6 +42628,11 @@ var init_src = __esm({
       connectionTimeoutMillis: 1e4,
       ...needsSsl ? { ssl: { rejectUnauthorized: false } } : {}
     });
+    pool.on("connect", (client) => {
+      client.query("SET default_transaction_read_only = off;").catch((err) => {
+        console.error("Failed to set read-write transaction mode on client:", err);
+      });
+    });
     pool.on("error", (err) => {
       console.error("Unexpected database pool error:", err);
     });
