@@ -32764,15 +32764,15 @@ var require_pg_pool = __commonJS({
       });
       return { callback: cb, result };
     }
-    function makeIdleListener(pool3, client) {
+    function makeIdleListener(pool2, client) {
       return function idleListener(err) {
         err.client = client;
         client.removeListener("error", idleListener);
         client.on("error", () => {
-          pool3.log("additional client error after disconnection due to error", err);
+          pool2.log("additional client error after disconnection due to error", err);
         });
-        pool3._remove(client);
-        pool3.emit("error", err, client);
+        pool2._remove(client);
+        pool2.emit("error", err, client);
       };
     }
     var Pool4 = class extends EventEmitter {
@@ -42287,8 +42287,8 @@ var init_schema2 = __esm({
 });
 
 // ../../lib/db/src/migrations.ts
-async function initDbSchema(pool3) {
-  const client = await pool3.connect();
+async function initDbSchema(pool2) {
+  const client = await pool2.connect();
   try {
     await client.query("BEGIN");
     await client.query(`
@@ -82791,10 +82791,10 @@ var require_pool_resource = __commonJS({
     var errors = require_errors3();
     var EventEmitter = __require("events");
     var PoolResource = class extends EventEmitter {
-      constructor(pool3) {
+      constructor(pool2) {
         super();
-        this.pool = pool3;
-        this.options = pool3.options;
+        this.pool = pool2;
+        this.options = pool2.options;
         this.logger = this.pool.logger;
         if (this.options.auth) {
           switch ((this.options.auth.type || "").toString().toUpperCase()) {
@@ -93808,13 +93808,18 @@ async function importAliExpress(job) {
       for (const item of items) {
         if (job.imported + job.skipped + job.failed >= job.maxProducts) break;
         if (job.status !== "running") break;
+        const price = parseFloat(item.target_sale_price) || parseFloat(item.target_original_price) || 0;
+        if (price <= 0 || item.stock === 0 || item.inventory === 0 || item.product_status === "offline") {
+          job.skipped++;
+          continue;
+        }
         await saveProduct(
           job,
           item.product_id,
           "aliexpress",
           item.product_title,
-          parseFloat(item.target_sale_price) || parseFloat(item.target_original_price) || 0,
-          parseFloat(item.target_original_price) || 0,
+          price,
+          parseFloat(item.target_original_price) || price,
           item.target_sale_price_currency,
           item.product_main_image_url,
           item.product_detail_url,
@@ -94037,6 +94042,11 @@ async function seedIfEmpty() {
     ]);
   } else {
     await db.update(users).set({ role: "admin", email_verified: true }).where(eq(users.email, "ealakhly@gmail.com"));
+  }
+  try {
+    await purgeZeroStockAndDeletedProducts();
+  } catch (err) {
+    logger.warn({ err: err.message }, "Initial zero stock purge skipped");
   }
   try {
     const existingCats = await db.select().from(categories).where(isNull(categories.deleted_at));
@@ -95071,7 +95081,11 @@ router2.get("/products", async (req, res, next) => {
       res.setHeader("Cache-Control", "public, max-age=120, stale-while-revalidate=600");
       return res.json(cached);
     }
-    const conds = [eq(products.is_active, true), isNull(products.deleted_at)];
+    const conds = [
+      eq(products.is_active, true),
+      isNull(products.deleted_at),
+      sql`${products.quantity} > 0`
+    ];
     if (category_id) {
       const catId = parseInt(category_id);
       if (!isNaN(catId)) conds.push(eq(products.category_id, catId));
@@ -95116,11 +95130,16 @@ router2.get("/products/:id", validateParams(idParamSchema), async (req, res, nex
     if (!isNaN(pId)) {
       const stockStatus = await verifyAndSyncDropshipProductStock(pId).catch(() => ({ available: true }));
       if (!stockStatus.available) {
-        return res.status(404).json({ success: false, message: "\u0639\u0630\u0631\u0627\u064B\u060C \u0647\u0630\u0627 \u0627\u0644\u0645\u0646\u062A\u062C \u0646\u0641\u062F \u0645\u0646 \u0627\u0644\u0645\u0635\u062F\u0631 \u0648\u0644\u0645 \u064A\u0639\u062F \u0645\u062A\u0648\u0641\u0631\u0627\u064B \u0641\u064A \u0627\u0644\u0645\u062A\u062C\u0631" });
+        return res.status(404).json({ success: false, message: "\u0639\u0630\u0631\u0627\u064B\u060C \u0647\u0630\u0627 \u0627\u0644\u0645\u0646\u062A\u062C \u0646\u0641\u062F \u0645\u0646 \u0627\u0644\u0645\u0635\u062F\u0631 \u0648\u062A\u0645 \u062D\u0630\u0641\u0647 \u0645\u0646 \u0627\u0644\u0645\u062A\u062C\u0631" });
       }
     }
-    const [product] = await db.select().from(products).where(and(eq(products.id, req.params.id), eq(products.is_active, true), isNull(products.deleted_at)));
-    if (!product) return res.status(404).json({ success: false, message: "\u0627\u0644\u0645\u0646\u062A\u062C \u063A\u064A\u0631 \u0645\u0648\u062C\u0648\u062F" });
+    const [product] = await db.select().from(products).where(and(eq(products.id, req.params.id), eq(products.is_active, true), isNull(products.deleted_at), sql`${products.quantity} > 0`));
+    if (!product || product.quantity <= 0) {
+      if (product) {
+        await purgeProductById(product.id);
+      }
+      return res.status(404).json({ success: false, message: "\u0639\u0630\u0631\u0627\u064B\u060C \u0647\u0630\u0627 \u0627\u0644\u0645\u0646\u062A\u062C \u0646\u0641\u062F \u0645\u0646 \u0627\u0644\u0645\u062E\u0632\u0648\u0646 \u0648\u062A\u0645 \u062D\u0630\u0641\u0647 \u0645\u0646 \u0627\u0644\u0645\u062A\u062C\u0631" });
+    }
     const localized = {
       ...product,
       name: requestLang === "en" ? product.name_en || product.name || product.name_ar : product.name_ar || product.name || product.name_en,
@@ -95176,7 +95195,7 @@ router2.get("/home-feed", async (req, res, next) => {
       category_id: products.category_id,
       image: products.image,
       is_active: products.is_active
-    }).from(products).where(and(eq(products.is_active, true), isNull(products.deleted_at))).orderBy(desc(products.id)).limit(600);
+    }).from(products).where(and(eq(products.is_active, true), isNull(products.deleted_at), sql`${products.quantity} > 0`)).orderBy(desc(products.id)).limit(600);
     const prodMap = /* @__PURE__ */ new Map();
     for (const p of allProds) {
       const cid = Number(p.category_id);
@@ -96895,6 +96914,62 @@ router2.get("/admin/dropship/fetch-url", requireAuth, requireRole("admin", "mana
   }
 });
 var dropshipStockCheckCache = /* @__PURE__ */ new Map();
+async function purgeProductById(productId) {
+  try {
+    const client = await pool.connect();
+    try {
+      await client.query("SET default_transaction_read_only = off;");
+      await client.query("DELETE FROM product_translations WHERE product_id = $1;", [productId]);
+      await client.query("DELETE FROM dropship_products WHERE product_id = $1;", [productId]);
+      await client.query("DELETE FROM products WHERE id = $1;", [productId]);
+    } finally {
+      client.release();
+    }
+    clearProductsCache();
+    logger.info({ productId }, "Permanently deleted zero-stock / unavailable product from database");
+  } catch (err) {
+    logger.error({ err: err.message, productId }, "Failed to purge product by id from database");
+    await db.update(products).set({ is_active: false, quantity: 0, deleted_at: /* @__PURE__ */ new Date() }).where(eq(products.id, productId)).catch(() => {
+    });
+  }
+}
+async function purgeZeroStockAndDeletedProducts() {
+  try {
+    const client = await pool.connect();
+    try {
+      await client.query("SET default_transaction_read_only = off;");
+      await client.query(`
+        DELETE FROM product_translations 
+        WHERE product_id IN (
+          SELECT id FROM products 
+          WHERE quantity <= 0 OR is_active = false OR deleted_at IS NOT NULL
+        );
+      `);
+      await client.query(`
+        DELETE FROM dropship_products 
+        WHERE product_id IN (
+          SELECT id FROM products 
+          WHERE quantity <= 0 OR is_active = false OR deleted_at IS NOT NULL
+        );
+      `);
+      const res = await client.query(`
+        DELETE FROM products 
+        WHERE quantity <= 0 OR is_active = false OR deleted_at IS NOT NULL;
+      `);
+      const count = res.rowCount || 0;
+      if (count > 0) {
+        logger.info({ count }, "Purged zero-stock / inactive / deleted products permanently from database");
+        clearProductsCache();
+      }
+      return count;
+    } finally {
+      client.release();
+    }
+  } catch (err) {
+    logger.error({ err: err.message }, "Error purging zero stock products from database");
+    return 0;
+  }
+}
 async function verifyAndSyncDropshipProductStock(productId, options = {}) {
   try {
     if (!options.forceLive) {
@@ -96907,19 +96982,16 @@ async function verifyAndSyncDropshipProductStock(productId, options = {}) {
     if (!dp) {
       const [p] = await db.select().from(products).where(eq(products.id, productId));
       if (!p || p.deleted_at || !p.is_active || p.quantity <= 0) {
-        return { available: false, reason: "\u0627\u0644\u0645\u0646\u062A\u062C \u063A\u064A\u0631 \u0645\u062A\u0648\u0641\u0631 \u0641\u064A \u0627\u0644\u0645\u062E\u0632\u0648\u0646" };
+        if (p) {
+          await purgeProductById(productId);
+        }
+        return { available: false, reason: "\u0627\u0644\u0645\u0646\u062A\u062C \u063A\u064A\u0631 \u0645\u062A\u0648\u0641\u0631 \u0641\u064A \u0627\u0644\u0645\u062E\u0632\u0648\u0646 \u0648\u062A\u0645 \u062D\u0630\u0641\u0647" };
       }
       return { available: true };
     }
     const markOutOfStockAndRemove = async (reason) => {
-      logger.warn({ productId, platform: dp.platform, source_id: dp.source_id, reason }, "Dropship product out of stock / removed. Automatically deleting and hiding from store...");
-      await db.update(products).set({
-        is_active: false,
-        quantity: 0,
-        deleted_at: /* @__PURE__ */ new Date()
-      }).where(eq(products.id, productId));
-      await db.delete(dropship_products).where(eq(dropship_products.id, dp.id));
-      clearProductsCache();
+      logger.warn({ productId, platform: dp.platform, source_id: dp.source_id, reason }, "Dropship product out of stock / 0 stock. Automatically zeroing and permanently deleting from database...");
+      await purgeProductById(productId);
       const res2 = { available: false, reason };
       dropshipStockCheckCache.set(productId, { timestamp: Date.now(), result: res2 });
       return res2;
@@ -96939,8 +97011,9 @@ async function verifyAndSyncDropshipProductStock(productId, options = {}) {
         const targetSalePrice = parseFloat(aliProduct.target_sale_price) || 0;
         const targetOrigPrice = parseFloat(aliProduct.target_original_price) || 0;
         const newSourcePrice = targetSalePrice || targetOrigPrice;
-        if (newSourcePrice <= 0) {
-          return await markOutOfStockAndRemove("\u0646\u0641\u062F\u062A \u0643\u0645\u064A\u0629 \u0627\u0644\u0645\u0646\u062A\u062C \u0645\u0646 AliExpress (\u0627\u0644\u0633\u0639\u0631 \u063A\u064A\u0631 \u0645\u062A\u0648\u0641\u0631 \u0623\u0648 0)");
+        const isOutOfStock = newSourcePrice <= 0 || aliProduct.stock === 0 || aliProduct.stock === "0" || aliProduct.inventory === 0 || aliProduct.inventory === "0" || aliProduct.quantity === 0 || aliProduct.quantity === "0" || aliProduct.product_status === "offline" || aliProduct.product_status === "out_of_stock";
+        if (isOutOfStock) {
+          return await markOutOfStockAndRemove("\u0646\u0641\u062F\u062A \u0643\u0645\u064A\u0629 \u0627\u0644\u0645\u0646\u062A\u062C \u0645\u0646 AliExpress (\u0627\u0644\u0645\u062E\u0632\u0648\u0646 0 \u0623\u0648 \u063A\u064A\u0631 \u0645\u062A\u0648\u0641\u0631)");
         }
         const margin = dp.source_price > 0 ? dp.our_price / dp.source_price : 4;
         const newOurPrice = parseFloat((newSourcePrice * margin).toFixed(2));
@@ -97318,7 +97391,10 @@ async function syncAllDropshipPricesAndStock() {
   try {
     const creds = await getAliExpressCreds2();
     const dps = await db.select().from(dropship_products);
-    if (!dps.length) return { total: 0, synced: 0, deletedOutOfStock: 0 };
+    if (!dps.length) {
+      const purged = await purgeZeroStockAndDeletedProducts();
+      return { total: 0, synced: 0, deletedOutOfStock: purged };
+    }
     let synced = 0;
     let deletedOutOfStock = 0;
     const aliDropships = dps.filter((d) => d.platform === "aliexpress" && d.source_id && d.product_id);
@@ -97331,33 +97407,30 @@ async function syncAllDropshipPricesAndStock() {
         const aliProductsMap = await fetchAliExpressProductsBatch(sourceIds, creds);
         for (const dp of batch) {
           const aliProd = aliProductsMap.get(String(dp.source_id).trim());
-          if (!aliProd) {
-            await db.update(products).set({ is_active: false, quantity: 0, deleted_at: /* @__PURE__ */ new Date() }).where(eq(products.id, dp.product_id));
-            await db.delete(dropship_products).where(eq(dropship_products.id, dp.id));
+          const targetSalePrice = parseFloat(aliProd?.target_sale_price || "") || 0;
+          const targetOrigPrice = parseFloat(aliProd?.target_original_price || "") || 0;
+          const newSourcePrice = targetSalePrice || targetOrigPrice;
+          const isOutOfStock = !aliProd || newSourcePrice <= 0 || aliProd.stock === 0 || aliProd.stock === "0" || aliProd.inventory === 0 || aliProd.inventory === "0" || aliProd.quantity === 0 || aliProd.quantity === "0" || aliProd.product_status === "offline" || aliProd.product_status === "out_of_stock";
+          if (isOutOfStock) {
+            logger.info({ productId: dp.product_id, sourceId: dp.source_id }, "AliExpress product is out of stock / 0 stock. Permanently deleting from database...");
+            if (dp.product_id) {
+              await purgeProductById(dp.product_id);
+            }
             deletedOutOfStock++;
           } else {
-            const targetSalePrice = parseFloat(aliProd.target_sale_price) || 0;
-            const targetOrigPrice = parseFloat(aliProd.target_original_price) || 0;
-            const newSourcePrice = targetSalePrice || targetOrigPrice;
-            if (newSourcePrice <= 0) {
-              await db.update(products).set({ is_active: false, quantity: 0, deleted_at: /* @__PURE__ */ new Date() }).where(eq(products.id, dp.product_id));
-              await db.delete(dropship_products).where(eq(dropship_products.id, dp.id));
-              deletedOutOfStock++;
-            } else {
-              const margin = dp.source_price > 0 ? dp.our_price / dp.source_price : 4;
-              const newOurPrice = parseFloat((newSourcePrice * margin).toFixed(2));
-              await db.update(dropship_products).set({
-                source_price: newSourcePrice,
-                our_price: newOurPrice,
-                supplier_name: aliProd.shop_name || dp.supplier_name
-              }).where(eq(dropship_products.id, dp.id));
-              await db.update(products).set({
-                price: newOurPrice,
-                cost: newSourcePrice,
-                is_active: true
-              }).where(eq(products.id, dp.product_id));
-              synced++;
-            }
+            const margin = dp.source_price > 0 ? dp.our_price / dp.source_price : 4;
+            const newOurPrice = parseFloat((newSourcePrice * margin).toFixed(2));
+            await db.update(dropship_products).set({
+              source_price: newSourcePrice,
+              our_price: newOurPrice,
+              supplier_name: aliProd?.shop_name || dp.supplier_name
+            }).where(eq(dropship_products.id, dp.id));
+            await db.update(products).set({
+              price: newOurPrice,
+              cost: newSourcePrice,
+              is_active: true
+            }).where(eq(products.id, dp.product_id));
+            synced++;
           }
         }
         if (i + BATCH_SIZE < aliDropships.length) {
@@ -97376,8 +97449,10 @@ async function syncAllDropshipPricesAndStock() {
         }
       }
     }
+    const extraPurged = await purgeZeroStockAndDeletedProducts();
+    deletedOutOfStock += extraPurged;
     clearProductsCache();
-    logger.info({ total: dps.length, synced, deletedOutOfStock }, "Background price and stock sync finished. Out-of-stock items removed.");
+    logger.info({ total: dps.length, synced, deletedOutOfStock }, "Background price and stock sync finished. All out-of-stock and zero-stock items permanently deleted from database.");
     return { total: dps.length, synced, deletedOutOfStock };
   } catch (e) {
     logger.error({ err: e.message }, "Background price & stock sync job error");
@@ -97385,10 +97460,36 @@ async function syncAllDropshipPricesAndStock() {
   }
 }
 function startPriceSyncJob() {
-  const INTERVAL_MS = 15 * 60 * 1e3;
-  setTimeout(syncAllDropshipPricesAndStock, 30 * 1e3);
-  setInterval(syncAllDropshipPricesAndStock, INTERVAL_MS);
+  const INTERVAL_MS = 10 * 60 * 1e3;
+  setTimeout(async () => {
+    try {
+      await purgeZeroStockAndDeletedProducts();
+      await syncAllDropshipPricesAndStock();
+    } catch (e) {
+      logger.error({ err: e.message }, "Initial price/stock sync job error");
+    }
+  }, 15 * 1e3);
+  setInterval(async () => {
+    try {
+      await syncAllDropshipPricesAndStock();
+      await purgeZeroStockAndDeletedProducts();
+    } catch (e) {
+      logger.error({ err: e.message }, "Recurring price/stock sync job error");
+    }
+  }, INTERVAL_MS);
 }
+router2.post("/admin/dropship/purge-zero-stock", requireAuth, requireRole("admin", "manager"), async (_req, res, next) => {
+  try {
+    const deletedCount = await purgeZeroStockAndDeletedProducts();
+    return res.json({
+      success: true,
+      message: `\u062A\u0645 \u062A\u0646\u0638\u064A\u0641 \u0648\u062D\u0630\u0641 \u0643\u0627\u0641\u0629 \u0627\u0644\u0645\u0646\u062A\u062C\u0627\u062A \u0627\u0644\u0645\u0635\u0641\u0631\u0629 \u0623\u0648 \u063A\u064A\u0631 \u0627\u0644\u0645\u062A\u0648\u0641\u0631\u0629 \u0645\u0646 \u0642\u0627\u0639\u062F\u0629 \u0627\u0644\u0628\u064A\u0627\u0646\u0627\u062A \u0628\u0646\u062C\u0627\u062D (${deletedCount} \u0645\u0646\u062A\u062C \u062A\u0645 \u062D\u0630\u0641\u0647)!`,
+      deleted_count: deletedCount
+    });
+  } catch (err) {
+    next(err);
+  }
+});
 var autoImportRunning = false;
 var autoImportPageIndex = 1;
 async function runAutoImportCycle(targetCount = 2e3) {

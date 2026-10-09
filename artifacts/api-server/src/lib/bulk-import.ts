@@ -140,13 +140,19 @@ async function importAliExpress(job: BulkImportJob): Promise<void> {
         if (job.imported + job.skipped + job.failed >= job.maxProducts) break;
         if (job.status !== "running") break;
 
+        const price = parseFloat(item.target_sale_price) || parseFloat(item.target_original_price) || 0;
+        if (price <= 0 || (item as any).stock === 0 || (item as any).inventory === 0 || (item as any).product_status === "offline") {
+          job.skipped++;
+          continue;
+        }
+
         await saveProduct(
           job,
           item.product_id,
           "aliexpress",
           item.product_title,
-          parseFloat(item.target_sale_price) || parseFloat(item.target_original_price) || 0,
-          parseFloat(item.target_original_price) || 0,
+          price,
+          parseFloat(item.target_original_price) || price,
           item.target_sale_price_currency,
           item.product_main_image_url,
           item.product_detail_url,
