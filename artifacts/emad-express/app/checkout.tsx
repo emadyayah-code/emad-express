@@ -34,8 +34,39 @@ export default function CheckoutScreen() {
 
   const [address, setAddress] = useState("");
   const [payMethod, setPayMethod] = useState("paypal");
+  const [paySubMode, setPaySubMode] = useState<"card" | "paypal_account">("card");
+  const [cardNumber, setCardNumber] = useState("");
+  const [cardHolder, setCardHolder] = useState("");
+  const [cardExp, setCardExp] = useState("");
+  const [cardCvv, setCardCvv] = useState("");
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+
+  const formatCardNumber = (val: string) => {
+    const digits = val.replace(/\D/g, "").slice(0, 16);
+    const groups = [];
+    for (let i = 0; i < digits.length; i += 4) {
+      groups.push(digits.slice(i, i + 4));
+    }
+    return groups.join(" ");
+  };
+
+  const formatCardExp = (val: string) => {
+    const digits = val.replace(/\D/g, "").slice(0, 4);
+    if (digits.length >= 3) {
+      return `${digits.slice(0, 2)}/${digits.slice(2, 4)}`;
+    }
+    return digits;
+  };
+
+  const getCardBrand = (num: string) => {
+    const clean = num.replace(/\s/g, "");
+    if (clean.startsWith("4")) return "VISA";
+    if (/^(5[1-5]|2[2-7])/.test(clean)) return "MasterCard";
+    if (/^3[47]/.test(clean)) return "AMEX";
+    if (/^(588845|4|6|9)/.test(clean)) return "مدى Mada";
+    return "بطاقة بنكية";
+  };
 
   useEffect(() => {
     if (!address && defaultAddress) {
@@ -151,6 +182,22 @@ export default function CheckoutScreen() {
     if (!address.trim()) {
       Alert.alert("تنبيه", t.checkout?.address_required || "يرجى تحديد عنوان التوصيل أولاً");
       return;
+    }
+
+    if (payMethod === "paypal" && paySubMode === "card") {
+      const cleanNum = cardNumber.replace(/\s/g, "");
+      if (cleanNum.length < 15) {
+        Alert.alert("بيانات البطاقة ناقصة", "يرجى إدخال رقم البطاقة البنكية المكون من 16 رقماً");
+        return;
+      }
+      if (!cardExp.includes("/") || cardExp.length < 4) {
+        Alert.alert("تاريخ الانتهاء", "يرجى إدخال تاريخ انتهاء البطاقة (شهر/سنة مثل 08/28)");
+        return;
+      }
+      if (cardCvv.length < 3) {
+        Alert.alert("رمز الأمان CVV", "يرجى إدخال رمز أمان البطاقة CVV (3 أو 4 أرقام)");
+        return;
+      }
     }
 
     if (items.length === 0) {
@@ -350,7 +397,7 @@ export default function CheckoutScreen() {
                     📍 التوصيل إلى اليمن (AliExpress Yemen Direct)
                   </Text>
                   <Text style={{ color: colors.mutedForeground, fontSize: 11, lineHeight: 16 }}>
-                    يحتسب علي إكسبرس الشحن المباشر لليمن عبر DHL Express بمبلغ 529 ر.س، ويتوفر أيضاً خيار الشحن الاقتصادي المجمّع بـ 25 ر.س.
+                    يحتسب علي إكسبرس الشحن المباشر لليمن حصراً عبر دي إتش إل إكسبريس (DHL Express) بمبلغ 529 ر.س لضمان سرعة وتأمين الشحنة.
                   </Text>
                 </View>
               </View>
@@ -451,6 +498,207 @@ export default function CheckoutScreen() {
                       </View>
                     </View>
                     {m.desc && <Text style={{ color: colors.mutedForeground, fontSize: 12, marginTop: 4, lineHeight: 16 }}>{m.desc}</Text>}
+
+                    {/* Direct Card Entry or PayPal Account Toggle */}
+                    {isSelected && m.key === "paypal" && (
+                      <View style={{ marginTop: 14, paddingTop: 14, borderTopWidth: 1, borderTopColor: colors.border }}>
+                        {/* Submode Switcher */}
+                        <View style={{ flexDirection: "row", backgroundColor: colors.muted, padding: 4, borderRadius: 10, marginBottom: 12 }}>
+                          <TouchableOpacity
+                            onPress={() => setPaySubMode("card")}
+                            style={{
+                              flex: 1,
+                              paddingVertical: 8,
+                              alignItems: "center",
+                              borderRadius: 8,
+                              backgroundColor: paySubMode === "card" ? colors.card : "transparent",
+                              shadowColor: "#000",
+                              shadowOpacity: paySubMode === "card" ? 0.08 : 0,
+                              shadowRadius: 4,
+                              elevation: paySubMode === "card" ? 2 : 0,
+                            }}
+                          >
+                            <Text style={{ fontSize: 12, fontWeight: "700", color: paySubMode === "card" ? colors.foreground : colors.mutedForeground }}>
+                              💳 البطاقة البنكية المباشرة
+                            </Text>
+                          </TouchableOpacity>
+
+                          <TouchableOpacity
+                            onPress={() => setPaySubMode("paypal_account")}
+                            style={{
+                              flex: 1,
+                              paddingVertical: 8,
+                              alignItems: "center",
+                              borderRadius: 8,
+                              backgroundColor: paySubMode === "paypal_account" ? "#003087" : "transparent",
+                            }}
+                          >
+                            <Text style={{ fontSize: 12, fontWeight: "700", color: paySubMode === "paypal_account" ? "#fff" : colors.mutedForeground }}>
+                              حساب بايبال السريع
+                            </Text>
+                          </TouchableOpacity>
+                        </View>
+
+                        {paySubMode === "card" ? (
+                          <View style={{ gap: 10 }}>
+                            {/* Visual Card Preview */}
+                            <View style={{
+                              backgroundColor: "#0f172a",
+                              borderRadius: 14,
+                              padding: 16,
+                              borderWidth: 1,
+                              borderColor: "#f59e0b40",
+                            }}>
+                              <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                                <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                                  <Feather name="shield" size={14} color="#f59e0b" />
+                                  <Text style={{ color: "#f59e0b", fontSize: 11, fontWeight: "800" }}>بطاقة معتمدة عالمياً</Text>
+                                </View>
+                                <View style={{ backgroundColor: "#f59e0b20", paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6, borderWidth: 1, borderColor: "#f59e0b40" }}>
+                                  <Text style={{ color: "#fbbf24", fontSize: 10, fontWeight: "800" }}>{getCardBrand(cardNumber)}</Text>
+                                </View>
+                              </View>
+
+                              <Text style={{ color: "#fef08a", fontSize: 16, fontWeight: "700", letterSpacing: 2, textAlign: "left", marginBottom: 12, fontFamily: Platform.OS === "ios" ? "Courier" : "monospace" }}>
+                                {cardNumber || "•••• •••• •••• ••••"}
+                              </Text>
+
+                              <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-end" }}>
+                                <View>
+                                  <Text style={{ color: "#94a3b8", fontSize: 9 }}>حامل البطاقة</Text>
+                                  <Text style={{ color: "#f8fafc", fontSize: 11, fontWeight: "700", textTransform: "uppercase" }}>
+                                    {cardHolder || defaultAddress?.recipientName || "CARDHOLDER NAME"}
+                                  </Text>
+                                </View>
+                                <View style={{ alignItems: "flex-end" }}>
+                                  <Text style={{ color: "#94a3b8", fontSize: 9 }}>تاريخ الانتهاء</Text>
+                                  <Text style={{ color: "#f8fafc", fontSize: 11, fontWeight: "700", fontFamily: Platform.OS === "ios" ? "Courier" : "monospace" }}>
+                                    {cardExp || "MM/YY"}
+                                  </Text>
+                                </View>
+                              </View>
+                            </View>
+
+                            {/* Card Number Input */}
+                            <View>
+                              <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 4 }}>
+                                <Text style={{ fontSize: 12, fontWeight: "700", color: colors.foreground }}>رقم البطاقة (16 رقماً)</Text>
+                                <Text style={{ fontSize: 11, fontWeight: "700", color: colors.primary }}>{getCardBrand(cardNumber)}</Text>
+                              </View>
+                              <TextInput
+                                value={cardNumber}
+                                onChangeText={(val) => setCardNumber(formatCardNumber(val))}
+                                placeholder="0000 0000 0000 0000"
+                                placeholderTextColor={colors.mutedForeground}
+                                keyboardType="numeric"
+                                maxLength={19}
+                                style={{
+                                  backgroundColor: colors.muted,
+                                  color: colors.foreground,
+                                  borderRadius: 10,
+                                  borderWidth: 1,
+                                  borderColor: colors.border,
+                                  paddingHorizontal: 12,
+                                  paddingVertical: 10,
+                                  fontSize: 14,
+                                  textAlign: "left",
+                                  fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
+                                }}
+                              />
+                            </View>
+
+                            {/* Cardholder Name Input */}
+                            <View>
+                              <Text style={{ fontSize: 12, fontWeight: "700", color: colors.foreground, marginBottom: 4 }}>اسم حامل البطاقة</Text>
+                              <TextInput
+                                value={cardHolder}
+                                onChangeText={setCardHolder}
+                                placeholder="الاسم كما هو مطبوع على البطاقة"
+                                placeholderTextColor={colors.mutedForeground}
+                                autoCapitalize="characters"
+                                style={{
+                                  backgroundColor: colors.muted,
+                                  color: colors.foreground,
+                                  borderRadius: 10,
+                                  borderWidth: 1,
+                                  borderColor: colors.border,
+                                  paddingHorizontal: 12,
+                                  paddingVertical: 10,
+                                  fontSize: 13,
+                                  textAlign: isRTL ? "right" : "left",
+                                }}
+                              />
+                            </View>
+
+                            {/* Exp and CVV Grid */}
+                            <View style={{ flexDirection: "row", gap: 10 }}>
+                              <View style={{ flex: 1 }}>
+                                <Text style={{ fontSize: 12, fontWeight: "700", color: colors.foreground, marginBottom: 4 }}>الانتهاء (شهر / سنة)</Text>
+                                <TextInput
+                                  value={cardExp}
+                                  onChangeText={(val) => setCardExp(formatCardExp(val))}
+                                  placeholder="MM/YY"
+                                  placeholderTextColor={colors.mutedForeground}
+                                  keyboardType="numeric"
+                                  maxLength={5}
+                                  style={{
+                                    backgroundColor: colors.muted,
+                                    color: colors.foreground,
+                                    borderRadius: 10,
+                                    borderWidth: 1,
+                                    borderColor: colors.border,
+                                    paddingHorizontal: 12,
+                                    paddingVertical: 10,
+                                    fontSize: 13,
+                                    textAlign: "center",
+                                    fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
+                                  }}
+                                />
+                              </View>
+
+                              <View style={{ flex: 1 }}>
+                                <Text style={{ fontSize: 12, fontWeight: "700", color: colors.foreground, marginBottom: 4 }}>رمز الأمان (CVV)</Text>
+                                <TextInput
+                                  value={cardCvv}
+                                  onChangeText={(val) => setCardCvv(val.replace(/\D/g, "").slice(0, 4))}
+                                  placeholder="•••"
+                                  placeholderTextColor={colors.mutedForeground}
+                                  keyboardType="numeric"
+                                  secureTextEntry
+                                  maxLength={4}
+                                  style={{
+                                    backgroundColor: colors.muted,
+                                    color: colors.foreground,
+                                    borderRadius: 10,
+                                    borderWidth: 1,
+                                    borderColor: colors.border,
+                                    paddingHorizontal: 12,
+                                    paddingVertical: 10,
+                                    fontSize: 13,
+                                    textAlign: "center",
+                                    fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
+                                  }}
+                                />
+                              </View>
+                            </View>
+
+                            {/* Security Notice */}
+                            <View style={{ flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "rgba(5, 150, 105, 0.08)", padding: 8, borderRadius: 8, borderWidth: 1, borderColor: "rgba(5, 150, 105, 0.2)" }}>
+                              <Feather name="check-circle" size={13} color="#059669" />
+                              <Text style={{ fontSize: 10, color: "#059669", fontWeight: "700", flex: 1 }}>
+                                تشفير بنكي 256-bit وحماية المشتري المعتمدة من PayPal عالمياً
+                              </Text>
+                            </View>
+                          </View>
+                        ) : (
+                          <View style={{ backgroundColor: colors.muted, padding: 12, borderRadius: 10, alignItems: "center" }}>
+                            <Text style={{ fontSize: 12, color: colors.foreground, textAlign: "center", lineHeight: 18 }}>
+                              سيتم فتح نافذة PayPal الرسمية فور تأكيد الطلب لتسجيل الدخول والسداد السريع بحسابك.
+                            </Text>
+                          </View>
+                        )}
+                      </View>
+                    )}
                   </View>
                 </TouchableOpacity>
               );
