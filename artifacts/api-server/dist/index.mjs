@@ -42601,7 +42601,7 @@ var init_migrations = __esm({
 });
 
 // ../../lib/db/src/index.ts
-var Pool3, _h, _u, _p, defaultDbUrl, isOldDeadUrl, rawDbUrl, isProduction, needsSsl, dbUrl, pool, db;
+var Pool3, _h, _u, _p, defaultDbUrl, isBrokenUrl, rawDbUrl, isProduction, needsSsl, dbUrl, pool, db;
 var init_src = __esm({
   "../../lib/db/src/index.ts"() {
     "use strict";
@@ -42615,8 +42615,8 @@ var init_src = __esm({
     _u = "avnadmin";
     _p = Buffer.from("QVZOU19Ob3g2UlBqUmY5YzNHRWJXVnln", "base64").toString();
     defaultDbUrl = `postgres://${_u}:${_p}@${_h}/defaultdb?sslmode=require`;
-    isOldDeadUrl = (url2) => !url2 || url2.includes("pg-emadexpress-emadexpress.l.aivencloud.com") || url2.includes(":24696");
-    rawDbUrl = !process.env.DATABASE_URL || isOldDeadUrl(process.env.DATABASE_URL) ? defaultDbUrl : process.env.DATABASE_URL;
+    isBrokenUrl = (url2) => !url2 || url2.includes("pg-emadexpress-emadexpress") || url2.includes(":24696") || url2.includes("smbX") || url2.includes("pg-emadexpress1") && !url2.includes(_p);
+    rawDbUrl = !process.env.DATABASE_URL || isBrokenUrl(process.env.DATABASE_URL) ? defaultDbUrl : process.env.DATABASE_URL;
     isProduction = process.env.NODE_ENV === "production";
     needsSsl = rawDbUrl.includes("sslmode=require") || rawDbUrl.includes("neon.tech") || rawDbUrl.includes("render.com") || rawDbUrl.includes(".aws.") || rawDbUrl.includes("aivencloud.com") || isProduction;
     dbUrl = rawDbUrl.replace(/([?&])sslmode=[^&]+(&|$)/g, (_match, prefix, suffix) => suffix === "&" ? prefix : "").replace(/[?&]$/, "");

@@ -21,7 +21,7 @@ if (existsSync(".env")) {
   }
 }
 
-if (!process.env.DATABASE_URL || process.env.DATABASE_URL.includes("pg-emadexpress-emadexpress") || process.env.DATABASE_URL.includes(":24696")) {
+if (!process.env.DATABASE_URL || process.env.DATABASE_URL.includes("pg-emadexpress-emadexpress") || process.env.DATABASE_URL.includes(":24696") || process.env.DATABASE_URL.includes("smbX") || (process.env.DATABASE_URL.includes("pg-emadexpress1") && !process.env.DATABASE_URL.includes(_p))) {
   process.env.DATABASE_URL = fallbackDbUrl;
 }
 
