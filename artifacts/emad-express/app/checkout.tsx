@@ -10,6 +10,8 @@ import {
   Alert,
   ActivityIndicator,
   Linking,
+  Modal,
+  FlatList,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Feather, FontAwesome5 } from "@expo/vector-icons";
@@ -21,6 +23,7 @@ import { useLanguage } from "@/context/LanguageContext";
 import { useCurrency } from "@/context/CurrencyContext";
 import { useAddress } from "@/context/AddressContext";
 import { api } from "@/lib/api";
+import { ALL_COUNTRIES, Country } from "@/lib/countries";
 
 export default function CheckoutScreen() {
   const colors = useColors();
@@ -33,6 +36,19 @@ export default function CheckoutScreen() {
   const { addresses, defaultAddress } = useAddress();
 
   const [address, setAddress] = useState("");
+  const [selectedCountry, setSelectedCountry] = useState<Country>(ALL_COUNTRIES[0]);
+  const [countryModalVisible, setCountryModalVisible] = useState(false);
+  const [searchCountry, setSearchCountry] = useState("");
+
+  const filteredCountries = searchCountry
+    ? ALL_COUNTRIES.filter(
+        (c) =>
+          c.nameAr.includes(searchCountry) ||
+          c.nameEn.toLowerCase().includes(searchCountry.toLowerCase()) ||
+          c.dialCode.includes(searchCountry)
+      )
+    : ALL_COUNTRIES;
+
   const [payMethod, setPayMethod] = useState("paypal");
   const [paySubMode, setPaySubMode] = useState<"card" | "paypal_account">("card");
   const [cardNumber, setCardNumber] = useState("");
@@ -223,7 +239,7 @@ export default function CheckoutScreen() {
           })),
           shipping_address: address,
           shipping_method: shippingMethod,
-          shipping_country: isYemen ? "YE" : (isSaudi ? "SA" : "GLOBAL"),
+          shipping_country: selectedCountry.code || (isYemen ? "YE" : (isSaudi ? "SA" : "GLOBAL")),
           payment_method: payMethod === "electronic_payment" ? "aliexpress_direct" : payMethod,
           recipient_name: recipientName,
           recipient_phone: recipientPhone,
@@ -332,7 +348,36 @@ export default function CheckoutScreen() {
                 <Feather name="plus-circle" size={14} color="#e11d48" />
                 <Text style={{ color: "#e11d48", fontSize: 13, fontWeight: "700" }}>+ إضافة / إدارة العناوين</Text>
               </TouchableOpacity>
-            </View>
+            {/* Country Selector Chip with Flag */}
+            <TouchableOpacity
+              onPress={() => {
+                setSearchCountry("");
+                setCountryModalVisible(true);
+              }}
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "space-between",
+                backgroundColor: colors.muted,
+                borderColor: colors.border,
+                borderWidth: 1,
+                borderRadius: 12,
+                paddingHorizontal: 12,
+                paddingVertical: 10,
+                marginBottom: 10,
+              }}
+            >
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                <Text style={{ fontSize: 20 }}>{selectedCountry.flag}</Text>
+                <Text style={{ color: colors.foreground, fontSize: 13, fontWeight: "700" }}>
+                  {language === "en" ? selectedCountry.nameEn : selectedCountry.nameAr} ({selectedCountry.code})
+                </Text>
+              </View>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                <Text style={{ color: colors.primary, fontSize: 12, fontWeight: "700" }}>تغيير دولة الشحن 🌍</Text>
+                <Feather name={isRTL ? "chevron-left" : "chevron-right"} size={16} color={colors.primary} />
+              </View>
+            </TouchableOpacity>
 
             {addresses.length > 0 && (
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingBottom: 10 }}>
@@ -740,6 +785,67 @@ export default function CheckoutScreen() {
           )}
         </TouchableOpacity>
       </View>
+      {/* All Countries Selection Modal */}
+      <Modal
+        visible={countryModalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setCountryModalVisible(false)}
+      >
+        <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.75)", justifyContent: "flex-end" }}>
+          <View style={{ backgroundColor: colors.card, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, maxHeight: "80%" }}>
+            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+              <Text style={{ color: colors.foreground, fontSize: 17, fontWeight: "800" }}>اختر دولة الشحن 🌍</Text>
+              <TouchableOpacity onPress={() => setCountryModalVisible(false)}>
+                <Feather name="x" size={22} color={colors.foreground} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: colors.muted, borderRadius: 12, paddingHorizontal: 12, marginBottom: 12, borderWidth: 1, borderColor: colors.border }}>
+              <Feather name="search" size={16} color={colors.mutedForeground} />
+              <TextInput
+                value={searchCountry}
+                onChangeText={setSearchCountry}
+                placeholder="ابحث بالاسم أو الرمز..."
+                placeholderTextColor={colors.mutedForeground}
+                style={{ flex: 1, color: colors.foreground, paddingVertical: 10, fontSize: 13, textAlign: isRTL ? "right" : "left" }}
+              />
+            </View>
+
+            <FlatList
+              data={filteredCountries}
+              keyExtractor={(item) => item.code}
+              keyboardShouldPersistTaps="handled"
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  onPress={() => {
+                    setSelectedCountry(item);
+                    setCountryModalVisible(false);
+                  }}
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    paddingVertical: 12,
+                    borderBottomWidth: 1,
+                    borderBottomColor: colors.border,
+                  }}
+                >
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+                    <Text style={{ fontSize: 22 }}>{item.flag}</Text>
+                    <Text style={{ color: colors.foreground, fontSize: 14, fontWeight: "600" }}>
+                      {language === "en" ? item.nameEn : item.nameAr}
+                    </Text>
+                  </View>
+                  <Text style={{ color: colors.mutedForeground, fontSize: 12, fontWeight: "600" }}>
+                    {item.code}
+                  </Text>
+                </TouchableOpacity>
+              )}
+            />
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }

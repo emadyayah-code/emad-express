@@ -3,17 +3,7 @@ import { createPortal } from "react-dom";
 import { useCustomerAuth } from "@/context/CustomerAuthContext";
 import { X, User, Mail, Lock, Phone, CheckCircle2, AlertCircle, Sparkles, Smartphone } from "lucide-react";
 
-const COUNTRY_CODES = [
-  { code: "+967", name: "اليمن", flag: "🇾🇪" },
-  { code: "+966", name: "السعودية", flag: "🇸🇦" },
-  { code: "+971", name: "الإمارات", flag: "🇦🇪" },
-  { code: "+968", name: "عمان", flag: "🇴🇲" },
-  { code: "+965", name: "الكويت", flag: "🇰🇼" },
-  { code: "+974", name: "قطر", flag: "🇶🇦" },
-  { code: "+973", name: "البحرين", flag: "🇧🇭" },
-  { code: "+20", name: "مصر", flag: "🇪🇬" },
-  { code: "+962", name: "الأردن", flag: "🇯🇴" },
-];
+import { ALL_COUNTRIES } from "@/lib/countries";
 
 export function CustomerAuthModal() {
   const {
@@ -255,11 +245,11 @@ export function CustomerAuthModal() {
                   <select
                     value={regCountryCode}
                     onChange={(e) => setRegCountryCode(e.target.value)}
-                    className="bg-slate-950 text-amber-400 font-bold text-xs px-2.5 py-2.5 rounded-xl border border-slate-700 focus:border-amber-400 focus:outline-none"
+                    className="bg-slate-950 text-amber-400 font-bold text-xs px-2.5 py-2.5 rounded-xl border border-slate-700 focus:border-amber-400 focus:outline-none max-w-[150px]"
                   >
-                    {COUNTRY_CODES.map((c) => (
-                      <option key={c.code} value={c.code}>
-                        {c.flag} {c.code}
+                    {ALL_COUNTRIES.map((c) => (
+                      <option key={`${c.code}-${c.dialCode}`} value={c.dialCode}>
+                        {c.flag} {c.nameAr} ({c.dialCode})
                       </option>
                     ))}
                   </select>

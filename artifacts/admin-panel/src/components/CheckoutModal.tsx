@@ -9,6 +9,8 @@ import {
   ExternalLink, ChevronRight, ArrowLeft 
 } from "lucide-react";
 
+import { ALL_COUNTRIES } from "@/lib/countries";
+
 export function CheckoutModal({
   isOpen,
   onClose,
@@ -23,7 +25,7 @@ export function CheckoutModal({
   const [recipientName, setRecipientName] = useState(customer?.name || "");
   const [recipientPhone, setRecipientPhone] = useState(customer?.phone || "");
   const [recipientEmail, setRecipientEmail] = useState(customer?.email || "");
-  const [country, setCountry] = useState<"YE" | "SA" | "GLOBAL">("YE");
+  const [country, setCountry] = useState<string>("YE");
   const [city, setCity] = useState("صنعاء");
   const [addressDetails, setAddressDetails] = useState("");
   const [quickPassword, setQuickPassword] = useState("");
@@ -170,7 +172,8 @@ export function CheckoutModal({
         }
       }
 
-      const fullShippingAddress = `${recipientName} (${recipientPhone}) - ${country === "YE" ? "اليمن" : country === "SA" ? "السعودية" : "دولي"}، ${city}، ${addressDetails}`;
+      const selectedCountryObj = ALL_COUNTRIES.find(c => c.code === country) || { nameAr: "اليمن", flag: "🇾🇪" };
+      const fullShippingAddress = `${recipientName} (${recipientPhone}) - ${selectedCountryObj.flag} ${selectedCountryObj.nameAr}، ${city}، ${addressDetails}`;
 
       const orderPayload = {
         items: items.map((i) => ({
@@ -425,12 +428,14 @@ export function CheckoutModal({
                     <label className="block text-[11px] font-bold text-slate-400 mb-1">دولة الشحن</label>
                     <select
                       value={country}
-                      onChange={(e) => setCountry(e.target.value as any)}
+                      onChange={(e) => setCountry(e.target.value)}
                       className="w-full bg-slate-950 text-amber-400 font-bold text-xs px-3.5 py-2.5 rounded-xl border border-slate-800 focus:border-amber-400 focus:outline-none"
                     >
-                      <option value="YE">🇾🇪 اليمن (Yemen)</option>
-                      <option value="SA">🇸🇦 السعودية (Saudi Arabia)</option>
-                      <option value="GLOBAL">🌐 دولة أخرى (International)</option>
+                      {ALL_COUNTRIES.map((c) => (
+                        <option key={c.code} value={c.code}>
+                          {c.flag} {c.nameAr} ({c.nameEn})
+                        </option>
+                      ))}
                     </select>
                   </div>
 

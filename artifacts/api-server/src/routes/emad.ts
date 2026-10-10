@@ -1329,7 +1329,7 @@ router.get("/home-feed", async (req, res, next) => {
       const cid = Number(p.category_id);
       if (!prodMap.has(cid)) prodMap.set(cid, []);
       const list = prodMap.get(cid)!;
-      if (list.length < 10) {
+      if (list.length < 5) {
         list.push({
           ...p,
           name: requestLang === "en" ? (p.name_en || (p as any).name || p.name_ar) : (p.name_ar || (p as any).name || p.name_en),

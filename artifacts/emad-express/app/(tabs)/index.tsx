@@ -43,11 +43,14 @@ export default function HomeScreen() {
   const products = Array.isArray(productsData) ? productsData : (productsData?.data || productsData?.products || []);
   const categories = Array.isArray(categoriesData) ? categoriesData : (categoriesData?.data || []);
 
-  // Group products by all categories dynamically
+  // Group products by all categories dynamically (Exactly 5 products per category)
   const categoriesWithProducts = React.useMemo(() => {
     const serverSections = homeFeedData?.sections;
     if (Array.isArray(serverSections) && serverSections.length > 0) {
-      return serverSections;
+      return serverSections.map((s: any) => ({
+        ...s,
+        products: (s.products || []).slice(0, 5),
+      }));
     }
     if (!categories.length || !products.length) return [];
     const prodMap = new Map<number, any[]>();
@@ -55,12 +58,12 @@ export default function HomeScreen() {
       const cid = Number(p.category_id);
       if (!prodMap.has(cid)) prodMap.set(cid, []);
       const list = prodMap.get(cid)!;
-      if (list.length < 10) list.push(p);
+      if (list.length < 5) list.push(p);
     }
     return categories
       .map((cat: any) => ({
         ...cat,
-        products: prodMap.get(Number(cat.id)) || [],
+        products: (prodMap.get(Number(cat.id)) || []).slice(0, 5),
       }))
       .filter((c: any) => c.products.length > 0);
   }, [categories, products, homeFeedData]);

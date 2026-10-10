@@ -128,7 +128,10 @@ export default function StoreHome() {
   const categoriesWithProducts = React.useMemo(() => {
     const serverSections = homeFeed?.sections;
     if (Array.isArray(serverSections) && serverSections.length > 0) {
-      return serverSections;
+      return serverSections.map((s: any) => ({
+        ...s,
+        products: (s.products || []).slice(0, 5),
+      }));
     }
     if (!categoriesList.length || !productsList.length) return [];
     const prodMap = new Map<number, any[]>();
@@ -136,12 +139,12 @@ export default function StoreHome() {
       const cid = Number(p.category_id);
       if (!prodMap.has(cid)) prodMap.set(cid, []);
       const list = prodMap.get(cid)!;
-      if (list.length < 10) list.push(p);
+      if (list.length < 5) list.push(p);
     }
     return categoriesList
       .map((cat: any) => ({
         ...cat,
-        products: prodMap.get(Number(cat.id)) || [],
+        products: (prodMap.get(Number(cat.id)) || []).slice(0, 5),
       }))
       .filter((c: any) => c.products.length > 0);
   }, [categoriesList, productsList, homeFeed]);
