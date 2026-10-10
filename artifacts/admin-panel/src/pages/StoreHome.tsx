@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { StoreNavbar, StoreFooter } from "@/components/StoreNavbar";
 import { useCart } from "@/context/CartContext";
 import { api } from "@/lib/api";
@@ -51,6 +51,7 @@ const HERO_SLIDES = [
 ];
 
 export default function StoreHome() {
+  const [, setLocation] = useLocation();
   const searchParams = new URLSearchParams(window.location.search);
   const [selectedCategory, setSelectedCategory] = useState<string>(searchParams.get("category") || "");
   const [searchQuery, setSearchQuery] = useState<string>(searchParams.get("search") || "");
@@ -269,20 +270,15 @@ export default function StoreHome() {
                   <button
                     key={cat.id}
                     onClick={() => {
-                      setSelectedCategory(String(cat.id));
-                      setSearchQuery("");
+                      setLocation(`/category/${cat.id}`);
                     }}
-                    className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-semibold transition-all cursor-pointer ${
-                      selectedCategory === String(cat.id)
-                        ? "bg-gradient-to-r from-amber-500 to-amber-600 text-black font-black shadow-lg shadow-amber-500/20 translate-x-1"
-                        : "text-slate-300 hover:bg-slate-800/80 hover:text-white"
-                    }`}
+                    className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-semibold transition-all cursor-pointer text-slate-300 hover:bg-slate-800/80 hover:text-amber-400 group"
                   >
                     <span className="flex items-center gap-2.5 truncate">
-                      <span className="text-base shrink-0">{cat.icon || "📦"}</span>
+                      <span className="text-base shrink-0 group-hover:scale-110 transition-transform">{cat.icon || "📦"}</span>
                       <span className="truncate">{cat.name_ar || cat.name || cat.name_en}</span>
                     </span>
-                    <ChevronLeft size={14} className={selectedCategory === String(cat.id) ? "text-black" : "text-slate-500"} />
+                    <ChevronLeft size={14} className="text-slate-500 group-hover:text-amber-400 group-hover:-translate-x-1 transition-all" />
                   </button>
                 ))
               )}
@@ -453,16 +449,9 @@ export default function StoreHome() {
             <button
               key={`pill-${cat.id}`}
               onClick={() => {
-                setSelectedCategory(String(cat.id));
-                setSearchQuery("");
-                const catalogEl = document.getElementById("products-catalog");
-                catalogEl?.scrollIntoView({ behavior: "smooth" });
+                setLocation(`/category/${cat.id}`);
               }}
-              className={`px-4 py-2 rounded-2xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${
-                selectedCategory === String(cat.id)
-                  ? "bg-amber-500 text-black shadow-lg shadow-amber-500/20"
-                  : "bg-slate-900/90 text-slate-300 border border-slate-800 hover:border-slate-700 hover:text-white"
-              }`}
+              className="px-4 py-2 rounded-2xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5 shrink-0 bg-slate-900/90 text-slate-300 border border-slate-800 hover:border-amber-500/50 hover:text-white"
             >
               <span>{cat.icon || "📦"}</span>
               <span>{cat.name_ar || cat.name || cat.name_en}</span>
@@ -617,22 +606,23 @@ export default function StoreHome() {
           {categoriesWithProducts.map((sec: any) => (
             <div key={`shelf-${sec.id}`} className="space-y-4">
               <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                <div className="flex items-center gap-2.5">
-                  <span className="text-2xl">{sec.icon || "📦"}</span>
-                  <h2 className="text-xl font-black text-white">{sec.name_ar || sec.name || sec.name_en}</h2>
+                <Link
+                  href={`/category/${sec.id}`}
+                  className="flex items-center gap-2.5 group cursor-pointer"
+                >
+                  <span className="text-2xl group-hover:scale-110 transition-transform">{sec.icon || "📦"}</span>
+                  <h2 className="text-xl font-black text-white group-hover:text-amber-400 transition-colors">{sec.name_ar || sec.name || sec.name_en}</h2>
                   <span className="text-xs font-bold text-amber-400/90 bg-amber-400/10 px-2.5 py-0.5 rounded-full border border-amber-400/20">
                     رائج ومطلوب
                   </span>
-                </div>
+                </Link>
                 <button
                   onClick={() => {
-                    setSelectedCategory(String(sec.id));
-                    const catalogEl = document.getElementById("products-catalog");
-                    catalogEl?.scrollIntoView({ behavior: "smooth" });
+                    setLocation(`/category/${sec.id}`);
                   }}
                   className="text-xs font-bold text-amber-400 hover:text-amber-300 flex items-center gap-1 cursor-pointer hover:underline"
                 >
-                  <span>عرض الكل ({sec.products?.length || 0})</span>
+                  <span>عرض منتجات القسم بالكامل</span>
                   <ChevronLeft size={14} />
                 </button>
               </div>

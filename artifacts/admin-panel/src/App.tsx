@@ -23,6 +23,7 @@ import AffiliateSettings from "@/pages/AffiliateSettings";
 import PartnerAds from "@/pages/PartnerAds";
 import Privacy from "@/pages/Privacy";
 import StoreHome from "@/pages/StoreHome";
+import CategoryPage from "@/pages/CategoryPage";
 import { CartProvider } from "@/context/CartContext";
 import { CustomerAuthProvider } from "@/context/CustomerAuthContext";
 import { Layout } from "@/components/Sidebar";
@@ -127,9 +128,12 @@ function AdminArea() {
 function AppRoutes() {
   return (
     <Switch>
-      {/* Public Storefront Home (AliExpress-style) */}
+      {/* Public Storefront Home */}
       <Route path="/" component={StoreHome} />
       <Route path="/store" component={StoreHome} />
+
+      {/* Public Dedicated Category Page */}
+      <Route path="/category/:id" component={CategoryPage} />
 
       {/* Public Privacy Policy */}
       <Route path="/privacy-policy" component={Privacy} />
