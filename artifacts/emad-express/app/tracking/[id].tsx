@@ -94,9 +94,9 @@ export default function TrackingScreen() {
           <Text className="text-gray-600">{language === "ar" ? "المجموع: " : "Total: "}{formatPrice(order?.total || 0)}</Text>
           <Text className="text-gray-600 mt-1">
             {language === "ar" ? "المورد: " : "Supplier: "}
-            {order?.fulfillment_platform === "aliexpress" ? "AliExpress" :
+            {order?.fulfillment_platform === "aliexpress" || order?.fulfillment_platform === "emadexpress" ? (language === "ar" ? "عماد اكسبرس" : "emadexpress") :
              order?.fulfillment_platform === "amazon" ? "Amazon" :
-             order?.fulfillment_platform === "alibaba" ? "Alibaba" : "Unknown"}
+             order?.fulfillment_platform === "alibaba" ? "Alibaba" : (language === "ar" ? "عماد اكسبرس" : "emadexpress")}
           </Text>
         </View>
 

@@ -109,12 +109,12 @@ export default function CheckoutScreen() {
     },
     {
       key: "electronic_payment",
-      label: "الدفع والشراء المباشر عبر علي إكسبرس (AliExpress Direct)",
+      label: "الدفع والشراء المباشر عبر عماد اكسبرس (emadexpress Direct)",
       icon: "shield",
-      desc: "فتح صفحة الشراء والدفع مباشرة على موقع علي إكسبرس للتسديد والدفع لمورد علي إكسبرس مباشرة",
+      desc: "فتح صفحة الشراء والدفع مباشرة عبر منصة عماد اكسبرس لتسديد القيمة وتأكيد طلبك بأمان",
       badges: [
-        { label: "AliExpress Direct 🛍️", bg: "#e11d48" },
-        { label: "دفع للمورد مباشرة", bg: "#991b1b" },
+        { label: "emadexpress Direct 🛍️", bg: "#e11d48" },
+        { label: "دفع وتأكيد فوري", bg: "#991b1b" },
       ],
     },
   ];
@@ -143,7 +143,7 @@ export default function CheckoutScreen() {
     }
   }, [isYemen]);
 
-  // AliExpress Shipping Options Definition: 529 SAR ONLY for Yemen
+  // emadexpress Shipping Options Definition: 529 SAR ONLY for Yemen
   const yemenOptions = [
     {
       id: "dhl",
@@ -151,7 +151,7 @@ export default function CheckoutScreen() {
       title: "دي إتش إل إكسبريس لليمن (DHL Express)",
       badge: "شحن سريع دولي لليمن ✈️",
       badgeBg: "#d97706",
-      desc: "شحن جوي سريع ومباشر لكافة محافظات اليمن مطابق لـ AliExpress • تسليم 7-15 يوم عمل (خاص باليمن فقط)",
+      desc: "شحن جوي سريع ومباشر لكافة محافظات اليمن عبر عماد اكسبرس • تسليم 7-15 يوم عمل (خاص باليمن فقط)",
       fee: 529,
       isFree: false,
     },
@@ -160,8 +160,8 @@ export default function CheckoutScreen() {
   const globalOptions = [
     {
       id: "standard",
-      carrier: "AliExpress Standard Shipping",
-      title: total >= 100 ? "شحن مجاني علي إكسبرس (AliExpress Choice)" : "شحن قياسي علي إكسبرس (AliExpress Standard)",
+      carrier: "emadexpress Standard Shipping",
+      title: total >= 100 ? "شحن مجاني عماد اكسبرس (emadexpress Choice)" : "شحن قياسي عماد اكسبرس (emadexpress Standard)",
       badge: total >= 100 ? "Choice مجاني 🎉" : "توصيل قياسي",
       badgeBg: total >= 100 ? "#059669" : "#2563eb",
       desc: total >= 100
@@ -172,8 +172,8 @@ export default function CheckoutScreen() {
     },
     {
       id: "premium",
-      carrier: "AliExpress Premium Shipping",
-      title: "شحن سريع بريميوم (AliExpress Premium)",
+      carrier: "emadexpress Premium Shipping",
+      title: "شحن سريع بريميوم (emadexpress Premium)",
       badge: "أولوية فائقة ⚡",
       badgeBg: "#7c3aed",
       desc: "شحن جوي سريع بأعلى أولوية وتسليم للباب • تسليم 5-9 أيام عمل",
@@ -422,15 +422,15 @@ export default function CheckoutScreen() {
             />
           </View>
 
-          {/* Shipping Methods Selection (AliExpress Shipping) */}
+          {/* Shipping Methods Selection (emadexpress Shipping) */}
           <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
               <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
                 <Feather name="truck" size={18} color={colors.primary} />
-                <Text style={[styles.cardTitle, { color: colors.foreground, marginBottom: 0 }]}>طريقة الشحن (AliExpress Shipping)</Text>
+                <Text style={[styles.cardTitle, { color: colors.foreground, marginBottom: 0 }]}>طريقة الشحن (emadexpress Shipping)</Text>
               </View>
               <View style={[styles.miniBadge, { backgroundColor: "#f59e0b" }]}>
-                <Text style={styles.miniBadgeText}>مطابق لعلي إكسبرس ⚡</Text>
+                <Text style={styles.miniBadgeText}>شحن عماد اكسبرس ⚡</Text>
               </View>
             </View>
 
@@ -439,10 +439,10 @@ export default function CheckoutScreen() {
                 <Feather name="map-pin" size={16} color="#d97706" />
                 <View style={{ flex: 1 }}>
                   <Text style={{ color: "#d97706", fontWeight: "700", fontSize: 12, marginBottom: 2 }}>
-                    📍 التوصيل إلى اليمن (AliExpress Yemen Direct)
+                    📍 التوصيل إلى اليمن (emadexpress Yemen Direct)
                   </Text>
                   <Text style={{ color: colors.mutedForeground, fontSize: 11, lineHeight: 16 }}>
-                    يحتسب علي إكسبرس الشحن المباشر لليمن حصراً عبر دي إتش إل إكسبريس (DHL Express) بمبلغ 529 ر.س لضمان سرعة وتأمين الشحنة.
+                    يتم الشحن المباشر لليمن عبر دي إتش إل إكسبريس (DHL Express) بمبلغ 529 ر.س لضمان سرعة وتأمين الشحنة.
                   </Text>
                 </View>
               </View>
@@ -451,10 +451,10 @@ export default function CheckoutScreen() {
                 <Feather name="gift" size={16} color={total >= 100 ? "#059669" : "#2563eb"} />
                 <View style={{ flex: 1 }}>
                   <Text style={{ color: total >= 100 ? "#059669" : "#2563eb", fontWeight: "700", fontSize: 12, marginBottom: 2 }}>
-                    {total >= 100 ? "🎉 مؤهل للشحن المجاني (AliExpress Choice)" : `💡 أضف منتجات بقيمة ${format(100 - total)} إضافية للحصول على شحن مجاني!`}
+                    {total >= 100 ? "🎉 مؤهل للشحن المجاني (emadexpress Choice)" : `💡 أضف منتجات بقيمة ${format(100 - total)} إضافية للحصول على شحن مجاني!`}
                   </Text>
                   <Text style={{ color: colors.mutedForeground, fontSize: 11, lineHeight: 16 }}>
-                    خدمة شحن علي إكسبرس القياسية مجانية لجميع الطلبات من 100 ر.س فأكثر.
+                    خدمة شحن عماد اكسبرس القياسية مجانية لجميع الطلبات من 100 ر.س فأكثر.
                   </Text>
                 </View>
               </View>

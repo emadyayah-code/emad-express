@@ -23,7 +23,7 @@ const payMap: Record<string, string> = {
 };
 
 const PLATFORM_NAMES: Record<string, string> = {
-  aliexpress: "علي إكسبرس 🇨🇳",
+  aliexpress: "عماد اكسبرس (emadexpress) 🚀",
   amazon: "أمازون 🛒",
   alibaba: "علي بابا 🏪",
 };
@@ -232,7 +232,7 @@ export default function Orders() {
                 <label className="text-sm font-medium text-gray-700 mb-2 block">اختر منصة الشحن</label>
                 <div className="grid grid-cols-3 gap-2">
                   {[
-                    { id: "aliexpress", name: "علي إكسبرس", flag: "🇨🇳" },
+                    { id: "aliexpress", name: "عماد اكسبرس", flag: "🚀" },
                     { id: "amazon", name: "أمازون", flag: "🛒" },
                     { id: "alibaba", name: "علي بابا", flag: "🏪" },
                   ].map(plt => (

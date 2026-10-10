@@ -4,7 +4,7 @@ import { api } from "@/lib/api";
 import { DollarSign, TrendingUp, AlertCircle, CheckCircle, Clock, CreditCard, ArrowDownLeft, Wallet } from "lucide-react";
 
 const PLATFORM_INFO: Record<string, { name: string; flag: string; color: string; bg: string }> = {
-  aliexpress: { name: "علي إكسبرس", flag: "🇨🇳", color: "text-red-700", bg: "bg-red-50 border-red-200" },
+  aliexpress: { name: "عماد اكسبرس", flag: "🚀", color: "text-red-700", bg: "bg-red-50 border-red-200" },
   amazon:     { name: "أمازون",      flag: "🛒", color: "text-orange-700", bg: "bg-orange-50 border-orange-200" },
   alibaba:    { name: "علي بابا",    flag: "🏪", color: "text-amber-700", bg: "bg-amber-50 border-amber-200" },
   other:      { name: "مباشر",       flag: "🏪", color: "text-blue-700",  bg: "bg-blue-50 border-blue-200" },

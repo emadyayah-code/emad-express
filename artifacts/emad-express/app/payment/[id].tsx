@@ -37,8 +37,8 @@ export default function PaymentScreen() {
   const [payLoading, setPayLoading] = useState(false);
   const [paymentUrl, setPaymentUrl] = useState("");
   const [step, setStep] = useState<"loading" | "webview" | "success" | "error">("loading");
-  const [platform, setPlatform] = useState("aliexpress");
-  const [shippingBy, setShippingBy] = useState("AliExpress");
+  const [platform, setPlatform] = useState("emadexpress");
+  const [shippingBy, setShippingBy] = useState("عماد اكسبرس");
   const [canGoBack, setCanGoBack] = useState(false);
 
   const topPad = Platform.OS === "web" ? 60 : insets.top;
@@ -84,8 +84,8 @@ export default function PaymentScreen() {
 
       if (url) {
         setPaymentUrl(url);
-        setPlatform(data?.platform || (orderData?.payment_method === "paypal" ? "paypal" : "aliexpress"));
-        setShippingBy(data?.shipping_by || (orderData?.payment_method === "paypal" ? "PayPal" : "AliExpress"));
+        setPlatform(data?.platform || (orderData?.payment_method === "paypal" ? "paypal" : "emadexpress"));
+        setShippingBy(data?.shipping_by || (orderData?.payment_method === "paypal" ? "PayPal" : "عماد اكسبرس"));
         setStep("webview");
       } else {
         console.warn("Payment response did not contain payment_url:", payRes);

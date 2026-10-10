@@ -3745,16 +3745,16 @@ export async function runAutoImportCycle(targetCount = 5000): Promise<{ imported
         const autoCatId = await matchCategoryId(p.product_title, null, p.first_level_category_name);
 
         productRecords.push({
-          name_ar: String(p.product_title || `AliExpress Product ${srcId}`).slice(0, 450),
-          name_en: String(p.product_title || `AliExpress Product ${srcId}`).slice(0, 450),
+          name_ar: String(p.product_title || `منتج عماد اكسبرس ${srcId}`).slice(0, 450),
+          name_en: String(p.product_title || `Emad Express Product ${srcId}`).slice(0, 450),
           sku: skuUnique,
           price: salePrice,
           cost: sourcePrice,
           quantity: 500 + ((parseInt(srcId.slice(-4)) || 100) % 1500),
           min_quantity: 5,
           category_id: autoCatId,
-          description_ar: `${p.product_title} - منتج أصلي عالي الجودة متوفر للشحن السريع والتسليم الفوري.`,
-          description_en: `${p.product_title} - Premium quality genuine product with fast direct delivery.`,
+          description_ar: `${p.product_title} - منتج أصلي عالي الجودة متوفر للشحن السريع والتسليم الفوري عبر عماد اكسبرس.`,
+          description_en: `${p.product_title} - Premium quality genuine product with fast direct delivery via Emad Express.`,
           image: img,
           is_active: true,
         });
@@ -3764,7 +3764,7 @@ export async function runAutoImportCycle(targetCount = 5000): Promise<{ imported
           source_url: p.product_detail_url || `https://www.aliexpress.com/item/${srcId}.html`,
           source_price: sourcePrice,
           our_price: salePrice,
-          supplier_name: p.shop_name || "AliExpress Verified Seller",
+          supplier_name: p.shop_name || "عماد اكسبرس (مورد موثق)",
         });
       }
 

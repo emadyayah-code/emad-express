@@ -15,7 +15,7 @@ const HERO_SLIDES = [
   {
     id: 1,
     badge: "🔥 أقوى عروض التخفيضات الكبرى العالمية",
-    title: "تخفيضات علي إكسبرس الكبرى بخصومات تصل حتى 70%!",
+    title: "تخفيضات عماد اكسبرس الكبرى بخصومات تصل حتى 70%!",
     desc: "استيراد مباشر وفوري من المصانع العالمية مع ضمان الجودة، فحص المخزون الفوري وشحن سريع ومباشر لباب منزلك.",
     bg: "from-amber-600 via-amber-500 to-yellow-500",
     textColor: "text-black",
@@ -486,7 +486,7 @@ export default function StoreHome() {
                     خصم حتى 70%
                   </span>
                 </div>
-                <p className="text-xs text-slate-400 mt-0.5">صفقات محدودة الوقت يتم تجديدها كل ساعة مباشرة من علي إكسبرس</p>
+                <p className="text-xs text-slate-400 mt-0.5">صفقات محدودة الوقت يتم تجديدها كل ساعة مباشرة من عماد اكسبرس</p>
               </div>
             </div>
 
@@ -788,7 +788,7 @@ export default function StoreHome() {
                 </div>
 
                 <p className="text-xs text-slate-400 leading-relaxed">
-                  {quickViewProduct.description_ar || quickViewProduct.description || "منتج عالي الجودة مستورد مباشرة من أقوى مصانع علي إكسبرس مع فحص المخزون الفوري والضمان الشامل."}
+                  {quickViewProduct.description_ar || quickViewProduct.description || "منتج عالي الجودة مستورد وموثق من عماد اكسبرس مع فحص المخزون الفوري والضمان الشامل."}
                 </p>
 
                 {/* Stock Indicator */}

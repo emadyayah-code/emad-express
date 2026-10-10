@@ -90,13 +90,13 @@ export function CheckoutModal({
 
   if (!isOpen) return null;
 
-  // AliExpress Shipping Options: 529 SAR DHL Express ONLY for Yemen, Choice/Standard for Saudi & Global
+  // emadexpress Shipping Options: 529 SAR DHL Express ONLY for Yemen, Choice/Standard for Saudi & Global
   const yemenShippingOptions = [
     {
       id: "dhl",
       title: "دي إتش إل إكسبريس لليمن (DHL Express)",
       badge: "شحن سريع جوي لليمن ✈️",
-      desc: "شحن جوي سريع ومباشر إلى كافة المحافظات اليمنية مطابق لـ AliExpress • تسليم 7-15 يوم عمل (خاص باليمن فقط)",
+      desc: "شحن جوي سريع ومباشر إلى كافة المحافظات اليمنية عبر عماد اكسبرس • تسليم 7-15 يوم عمل (خاص باليمن فقط)",
       fee: 529,
     },
   ];
@@ -104,7 +104,7 @@ export function CheckoutModal({
   const globalShippingOptions = [
     {
       id: "standard",
-      title: subtotal >= 100 ? "شحن مجاني علي إكسبرس (AliExpress Choice)" : "شحن قياسي علي إكسبرس (AliExpress Standard)",
+      title: subtotal >= 100 ? "شحن مجاني عماد اكسبرس (emadexpress Choice)" : "شحن قياسي عماد اكسبرس (emadexpress Standard)",
       badge: subtotal >= 100 ? "Choice مجاني 🎉" : "توصيل قياسي",
       desc: subtotal >= 100
         ? "شحن مجاني رسمي لطلبك بقيمة 100+ ر.س • تسليم 10-18 يوم عمل"
@@ -113,7 +113,7 @@ export function CheckoutModal({
     },
     {
       id: "premium",
-      title: "شحن سريع بريميوم (AliExpress Premium)",
+      title: "شحن سريع بريميوم (emadexpress Premium)",
       badge: "أولوية فائقة ⚡",
       desc: "شحن جوي سريع بأعلى أولوية وتسليم للباب • تسليم 5-9 أيام عمل",
       fee: 35,
@@ -333,7 +333,7 @@ export function CheckoutModal({
                   >
                     <span>
                       {orderSuccess.paymentMethod === "aliexpress_direct"
-                        ? "فتح وإتمام الدفع على موقع علي إكسبرس فوراً"
+                        ? "فتح وإتمام الدفع الآمن عبر عماد اكسبرس (emadexpress)"
                         : "فتح بوابة الدفع عبر PayPal والبطاقات المعتمدة"}
                     </span>
                     <ExternalLink size={16} />
@@ -495,7 +495,7 @@ export function CheckoutModal({
               <div className="space-y-3">
                 <h4 className="text-xs font-black text-amber-400 flex items-center gap-1.5 border-b border-slate-800 pb-2">
                   <Truck size={15} />
-                  <span>2. طريقة الشحن المعتمدة (AliExpress Shipping)</span>
+                  <span>2. طريقة الشحن المعتمدة (emadexpress Shipping)</span>
                 </h4>
 
                 <div className="space-y-2">
@@ -538,7 +538,7 @@ export function CheckoutModal({
               <div className="space-y-3">
                 <h4 className="text-xs font-black text-amber-400 flex items-center gap-1.5 border-b border-slate-800 pb-2">
                   <CreditCard size={15} />
-                  <span>3. طريقة الدفع المعتمدة (PayPal / AliExpress Direct)</span>
+                  <span>3. طريقة الدفع المعتمدة (PayPal / emadexpress Direct)</span>
                 </h4>
 
                 <div className="space-y-2">
@@ -710,7 +710,7 @@ export function CheckoutModal({
                     )}
                   </div>
 
-                  {/* AliExpress Direct Checkout */}
+                  {/* emadexpress Direct Checkout */}
                   <label
                     className={`flex items-start justify-between p-3.5 rounded-2xl border transition-all cursor-pointer ${
                       paymentMethod === "aliexpress_direct"
@@ -728,13 +728,13 @@ export function CheckoutModal({
                       />
                       <div>
                         <div className="flex items-center gap-2">
-                          <span className="font-bold text-xs text-white">الدفع والشراء المباشر عبر علي إكسبرس (AliExpress Direct)</span>
+                          <span className="font-bold text-xs text-white">الدفع والشراء المباشر عبر عماد اكسبرس (emadexpress Direct)</span>
                           <span className="text-[10px] bg-red-950/60 text-red-300 border border-red-500/30 px-2 py-0.5 rounded-md font-bold">
-                            AliExpress Direct 🛍️
+                            emadexpress Direct 🛍️
                           </span>
                         </div>
                         <p className="text-[11px] text-slate-400 mt-0.5">
-                          يفتح لك موقع علي إكسبرس الرسمي مباشرة لتسديد القيمة والشراء من مورد علي إكسبرس فوراً وبشكل مباشر
+                          الدفع والتسديد المباشر والآمن عبر منصة عماد اكسبرس لتأكيد الشحن فوراً
                         </p>
                       </div>
                     </div>
