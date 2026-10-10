@@ -348,6 +348,8 @@ export default function CheckoutScreen() {
                 <Feather name="plus-circle" size={14} color="#e11d48" />
                 <Text style={{ color: "#e11d48", fontSize: 13, fontWeight: "700" }}>+ إضافة / إدارة العناوين</Text>
               </TouchableOpacity>
+            </View>
+
             {/* Country Selector Chip with Flag */}
             <TouchableOpacity
               onPress={() => {
