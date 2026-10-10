@@ -1,5 +1,6 @@
 import React from "react";
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Platform } from "react-native";
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform } from "react-native";
+import { Image as ExpoImage } from "expo-image";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
 import { Feather } from "@expo/vector-icons";
@@ -64,7 +65,7 @@ export default function ProductDetailScreen() {
       <ScrollView showsVerticalScrollIndicator={false}>
         <View style={{ position: "relative" }}>
           {product.image ? (
-            <Image source={{ uri: product.image }} style={[styles.heroImage, { marginTop: topPad }]} resizeMode="cover" />
+            <ExpoImage source={{ uri: product.image }} style={[styles.heroImage, { marginTop: topPad }]} contentFit="cover" transition={150} cachePolicy="memory-disk" priority="high" />
           ) : (
             <View style={[styles.heroImage, { backgroundColor: colors.muted, alignItems: "center", justifyContent: "center", marginTop: topPad }]}>
               <Feather name="package" size={60} color={colors.mutedForeground} />

@@ -1,5 +1,6 @@
 import React from "react";
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Image, Platform } from "react-native";
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Platform } from "react-native";
+import { Image as ExpoImage } from "expo-image";
 import { useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -17,7 +18,8 @@ export default function CartScreen() {
   const { format } = useCurrency();
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
-  const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
+  const TAB_BAR_HEIGHT = Platform.OS === "web" ? 84 : 70;
+  const bottomPad = (insets.bottom || 0) + TAB_BAR_HEIGHT;
 
   if (items.length === 0) {
     return (
@@ -53,7 +55,13 @@ export default function CartScreen() {
         renderItem={({ item }) => (
           <View style={[styles.item, { backgroundColor: colors.card, borderColor: colors.border }]}>
             {item.image ? (
-              <Image source={{ uri: item.image }} style={styles.itemImage} resizeMode="cover" />
+              <ExpoImage
+                source={{ uri: item.image }}
+                style={styles.itemImage}
+                contentFit="cover"
+                transition={150}
+                cachePolicy="memory-disk"
+              />
             ) : (
               <View style={[styles.itemImage, { backgroundColor: colors.muted, alignItems: "center", justifyContent: "center" }]}>
                 <Feather name="package" size={24} color={colors.mutedForeground} />
@@ -77,15 +85,20 @@ export default function CartScreen() {
             </TouchableOpacity>
           </View>
         )}
-        ListFooterComponent={<View style={{ height: 120 + bottomPad }} />}
+        ListFooterComponent={<View style={{ height: 160 + bottomPad }} />}
       />
       <View style={[styles.footer, { backgroundColor: colors.card, borderColor: colors.border, paddingBottom: bottomPad + 16 }]}>
-        <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 14 }}>
-          <Text style={[styles.totalLabel, { color: colors.mutedForeground }]}>{t.cart.total}</Text>
-          <Text style={[styles.totalValue, { color: colors.foreground }]}>{format(total, language)}</Text>
+        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+          <Text style={[styles.totalLabel, { color: colors.mutedForeground, fontSize: 15, fontWeight: "600" }]}>{t.cart.total}</Text>
+          <Text style={[styles.totalValue, { color: colors.primary, fontSize: 20, fontWeight: "800" }]}>{format(total, language)}</Text>
         </View>
-        <TouchableOpacity style={[styles.checkoutBtn, { backgroundColor: colors.primary }]} onPress={() => router.push("/checkout")}>
-          <Text style={[styles.checkoutText, { color: "#000" }]}>{t.cart.checkout}</Text>
+        <TouchableOpacity
+          style={[styles.checkoutBtn, { backgroundColor: colors.primary }]}
+          onPress={() => router.push("/checkout")}
+          activeOpacity={0.85}
+        >
+          <Feather name="lock" size={18} color="#000" />
+          <Text style={[styles.checkoutText, { color: "#000", fontWeight: "800", fontSize: 16 }]}>{t.cart.checkout || "إتمام الطلب / الدفع"}</Text>
           <Feather name={isRTL ? "arrow-left" : "arrow-right"} size={18} color="#000" />
         </TouchableOpacity>
       </View>

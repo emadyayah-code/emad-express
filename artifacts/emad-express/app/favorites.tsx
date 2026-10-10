@@ -1,5 +1,6 @@
-﻿import React from "react";
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Image, Platform } from "react-native";
+import React from "react";
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Platform } from "react-native";
+import { Image as ExpoImage } from "expo-image";
 import { useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -61,7 +62,7 @@ export default function FavoritesScreen() {
               >
                 <View style={{ position: "relative" }}>
                   {item.image ? (
-                    <Image source={{ uri: item.image }} style={styles.productImage} resizeMode="cover" />
+                    <ExpoImage source={{ uri: item.image }} style={styles.productImage} contentFit="cover" transition={150} cachePolicy="memory-disk" />
                   ) : (
                     <View style={[styles.productImage, { backgroundColor: colors.muted, alignItems: "center", justifyContent: "center" }]}>
                       <Feather name="package" size={32} color={colors.mutedForeground} />
