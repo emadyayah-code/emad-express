@@ -417,7 +417,7 @@ export function CheckoutModal({
                       value={recipientPhone}
                       onChange={(e) => setRecipientPhone(e.target.value)}
                       required
-                      placeholder="+967 772223645"
+                      placeholder="أدخل رقم الهاتف للتوصيل..."
                       className="w-full bg-slate-950 text-white text-xs px-3.5 py-2.5 rounded-xl border border-slate-800 focus:border-amber-400 focus:outline-none"
                     />
                   </div>

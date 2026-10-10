@@ -418,7 +418,7 @@ export function StoreFooter() {
                 rel="noreferrer"
                 className="text-emerald-400 hover:text-emerald-300 font-bold inline-flex items-center gap-1.5 transition-colors"
               >
-                <span>💬 خدمة العملاء عبر واتساب: 772223645</span>
+                <span>💬 خدمة العملاء عبر واتساب</span>
               </a>
             </li>
             <li><Link href="/privacy-policy" className="hover:text-amber-400 transition-colors">🔒 سياسة الخصوصية والشروط</Link></li>

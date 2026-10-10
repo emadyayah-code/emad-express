@@ -259,7 +259,7 @@ export function CustomerAuthModal() {
                       value={regPhone}
                       onChange={(e) => setRegPhone(e.target.value)}
                       required
-                      placeholder="772223645"
+                      placeholder="رقم الهاتف..."
                       className="w-full bg-slate-950 text-white text-xs pr-10 pl-4 py-2.5 rounded-xl border border-slate-700 focus:border-amber-400 focus:outline-none focus:ring-1 focus:ring-amber-400"
                     />
                     <Phone size={16} className="absolute right-3.5 top-3 text-slate-500" />
