@@ -64,7 +64,7 @@ export function CustomerAuthModal() {
 
     try {
       await register(regName, regEmail, fullPhone, regPassword);
-      setSuccessMsg("تم إنشاء حسابك الموحد بنجاح! يمكنك الآن تسجيل الدخول في الموقع والتطبيق.");
+      setSuccessMsg("تم إنشاء حسابك بنجاح! يمكنك الآن تسجيل الدخول والمتابعة.");
     } catch (err: any) {
       setErrorMsg(err.message || "فشل إنشاء الحساب");
     }
@@ -95,13 +95,7 @@ export function CustomerAuthModal() {
             className="w-14 h-14 rounded-2xl mx-auto mb-2.5 object-cover ring-2 ring-amber-500/50 shadow-lg shadow-amber-500/20"
           />
           <h3 className="text-lg font-black text-white">متجر عماد إكسبرس العالمي</h3>
-          <p className="text-xs text-amber-300/80 mt-0.5">حساب موحد للتسوق عبر الموقع وتطبيق الهاتف</p>
-
-          {/* Unified Account Banner */}
-          <div className="mt-3 bg-amber-500/10 border border-amber-500/30 rounded-xl p-2.5 flex items-center justify-center gap-2 text-[11px] text-amber-300 font-bold">
-            <Smartphone size={14} className="text-amber-400 shrink-0" />
-            <span>تسجيلك هنا يتيح لك الدخول في تطبيق الهاتف والموقع بنفس الحساب</span>
-          </div>
+          <p className="text-xs text-slate-400 mt-0.5">تسجيل الدخول وإدارة حسابك للتسوق بأمان</p>
         </div>
 
         {/* Tabs Switcher */}

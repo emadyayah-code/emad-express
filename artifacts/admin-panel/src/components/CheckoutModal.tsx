@@ -478,7 +478,7 @@ export function CheckoutModal({
                       />
                     </div>
                     <div>
-                      <label className="block text-[11px] font-bold text-slate-400 mb-1">كلمة مرور لإنشاء حساب موحد في التطبيق والموقع</label>
+                      <label className="block text-[11px] font-bold text-slate-400 mb-1">كلمة المرور (اختياري لحفظ بياناتك ومتابعة طلباتك)</label>
                       <input
                         type="password"
                         value={quickPassword}

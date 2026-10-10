@@ -128,7 +128,7 @@ export function StoreNavbar({ onSearch }: { onSearch?: (q: string) => void }) {
               </div>
               <div className="flex flex-col text-right">
                 <span className="text-xs font-bold text-white max-w-[100px] truncate">{customer.name}</span>
-                <span className="text-[9px] text-emerald-400 font-semibold">حساب موحد</span>
+                <span className="text-[9px] text-emerald-400 font-semibold">حسابي</span>
               </div>
               <button
                 onClick={logout}
@@ -442,13 +442,6 @@ export function StoreFooter() {
               <span className="text-[10px] text-slate-400">تتبع الشحنة برقم التتبع فور الشحن</span>
             </div>
           </div>
-
-          <button
-            onClick={openRegisterModal}
-            className="mt-3 w-full bg-slate-900 hover:bg-slate-800 border border-amber-500/30 text-amber-300 font-bold text-xs py-2 rounded-xl transition-all cursor-pointer"
-          >
-            📱 حساب موحد للموقع وتطبيق الهاتف
-          </button>
         </div>
       </div>
 
