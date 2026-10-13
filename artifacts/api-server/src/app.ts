@@ -26,7 +26,8 @@ if (env.TRUST_PROXY) {
 app.use(requestId);
 
 // Security headers
-app.use(helmet({
+const helmetFn: any = (helmet as any)?.default || helmet;
+app.use(helmetFn({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
@@ -66,8 +67,9 @@ app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 app.use(sanitizeInput);
 
 // HTTP logging
+const pinoHttpFn: any = (pinoHttp as any)?.default || pinoHttp;
 app.use(
-  pinoHttp({
+  pinoHttpFn({
     logger,
     genReqId: (req) => (req as any).id || "unknown",
     serializers: {

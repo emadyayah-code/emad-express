@@ -97563,16 +97563,16 @@ async function runAutoImportCycle(targetCount = 5e3) {
         const skuUnique = `ALI-${srcId}-${Date.now().toString(36).slice(-4)}`;
         const autoCatId = await matchCategoryId(p.product_title, null, p.first_level_category_name);
         productRecords.push({
-          name_ar: String(p.product_title || `AliExpress Product ${srcId}`).slice(0, 450),
-          name_en: String(p.product_title || `AliExpress Product ${srcId}`).slice(0, 450),
+          name_ar: String(p.product_title || `\u0645\u0646\u062A\u062C \u0639\u0645\u0627\u062F \u0627\u0643\u0633\u0628\u0631\u0633 ${srcId}`).slice(0, 450),
+          name_en: String(p.product_title || `Emad Express Product ${srcId}`).slice(0, 450),
           sku: skuUnique,
           price: salePrice,
           cost: sourcePrice,
           quantity: 500 + (parseInt(srcId.slice(-4)) || 100) % 1500,
           min_quantity: 5,
           category_id: autoCatId,
-          description_ar: `${p.product_title} - \u0645\u0646\u062A\u062C \u0623\u0635\u0644\u064A \u0639\u0627\u0644\u064A \u0627\u0644\u062C\u0648\u062F\u0629 \u0645\u062A\u0648\u0641\u0631 \u0644\u0644\u0634\u062D\u0646 \u0627\u0644\u0633\u0631\u064A\u0639 \u0648\u0627\u0644\u062A\u0633\u0644\u064A\u0645 \u0627\u0644\u0641\u0648\u0631\u064A.`,
-          description_en: `${p.product_title} - Premium quality genuine product with fast direct delivery.`,
+          description_ar: `${p.product_title} - \u0645\u0646\u062A\u062C \u0623\u0635\u0644\u064A \u0639\u0627\u0644\u064A \u0627\u0644\u062C\u0648\u062F\u0629 \u0645\u062A\u0648\u0641\u0631 \u0644\u0644\u0634\u062D\u0646 \u0627\u0644\u0633\u0631\u064A\u0639 \u0648\u0627\u0644\u062A\u0633\u0644\u064A\u0645 \u0627\u0644\u0641\u0648\u0631\u064A \u0639\u0628\u0631 \u0639\u0645\u0627\u062F \u0627\u0643\u0633\u0628\u0631\u0633.`,
+          description_en: `${p.product_title} - Premium quality genuine product with fast direct delivery via Emad Express.`,
           image: img,
           is_active: true
         });
@@ -97581,7 +97581,7 @@ async function runAutoImportCycle(targetCount = 5e3) {
           source_url: p.product_detail_url || `https://www.aliexpress.com/item/${srcId}.html`,
           source_price: sourcePrice,
           our_price: salePrice,
-          supplier_name: p.shop_name || "AliExpress Verified Seller"
+          supplier_name: p.shop_name || "\u0639\u0645\u0627\u062F \u0627\u0643\u0633\u0628\u0631\u0633 (\u0645\u0648\u0631\u062F \u0645\u0648\u062B\u0642)"
         });
       }
       if (productRecords.length > 0) {
@@ -99311,7 +99311,8 @@ if (env.TRUST_PROXY) {
   app.set("trust proxy", true);
 }
 app.use(requestId);
-app.use(helmet({
+var helmetFn = helmet?.default || helmet;
+app.use(helmetFn({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
@@ -99341,8 +99342,9 @@ app.use(timeoutMiddleware(3e4));
 app.use(import_express5.default.json({ limit: "10mb" }));
 app.use(import_express5.default.urlencoded({ extended: true, limit: "10mb" }));
 app.use(sanitizeInput);
+var pinoHttpFn = import_pino_http.default?.default || import_pino_http.default;
 app.use(
-  (0, import_pino_http.default)({
+  pinoHttpFn({
     logger,
     genReqId: (req) => req.id || "unknown",
     serializers: {
