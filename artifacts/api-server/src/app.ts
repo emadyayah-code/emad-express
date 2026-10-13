@@ -71,7 +71,7 @@ const pinoHttpFn: any = (pinoHttp as any)?.default || pinoHttp;
 app.use(
   pinoHttpFn({
     logger,
-    genReqId: (req) => (req as any).id || "unknown",
+    genReqId: (req: any) => req?.id || "unknown",
     serializers: {
       req(req: any) {
         return {

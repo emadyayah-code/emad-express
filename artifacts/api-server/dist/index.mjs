@@ -99346,7 +99346,7 @@ var pinoHttpFn = import_pino_http.default?.default || import_pino_http.default;
 app.use(
   pinoHttpFn({
     logger,
-    genReqId: (req) => req.id || "unknown",
+    genReqId: (req) => req?.id || "unknown",
     serializers: {
       req(req) {
         return {
