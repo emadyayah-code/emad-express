@@ -1,6 +1,8 @@
 import rateLimit from "express-rate-limit";
 import { env } from "../lib/env";
 
+const rateLimitFn: any = (rateLimit as any)?.default || rateLimit;
+
 const getClientIp = (req: any) => {
   return (
     (req.headers["cf-connecting-ip"] as string) ||
@@ -10,7 +12,7 @@ const getClientIp = (req: any) => {
   );
 };
 
-export const globalRateLimiter = rateLimit({
+export const globalRateLimiter = rateLimitFn({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: Math.max(5000, Number(env.RATE_LIMIT_MAX) || 5000), // Generous limit for high-volume store traffic
   standardHeaders: true,
@@ -26,7 +28,7 @@ export const globalRateLimiter = rateLimit({
   },
 });
 
-export const authRateLimiter = rateLimit({
+export const authRateLimiter = rateLimitFn({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 50, // 50 attempts per 15 minutes
   standardHeaders: true,
@@ -36,7 +38,7 @@ export const authRateLimiter = rateLimit({
   keyGenerator: getClientIp,
 });
 
-export const uploadRateLimiter = rateLimit({
+export const uploadRateLimiter = rateLimitFn({
   windowMs: 60 * 60 * 1000, // 1 hour
   max: 100, // 100 uploads per hour
   standardHeaders: true,

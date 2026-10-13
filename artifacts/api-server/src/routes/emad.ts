@@ -35,19 +35,22 @@ mkdirSync(UPLOADS_DIR, { recursive: true });
 const ALLOWED_EXTENSIONS = [".jpg", ".jpeg", ".png", ".gif", ".webp"];
 const ALLOWED_MIMETYPES = ["image/jpeg", "image/png", "image/gif", "image/webp"];
 
-const storage = multer.diskStorage({
-  destination: (_req, _file, cb) => cb(null, UPLOADS_DIR),
-  filename: (_req, file, cb) => {
+const multerFn: any = (multer as any)?.default || multer;
+const sanitizeHtmlFn: any = (sanitizeHtml as any)?.default || sanitizeHtml;
+
+const storage = (multerFn.diskStorage || (multer as any).diskStorage)({
+  destination: (_req: any, _file: any, cb: any) => cb(null, UPLOADS_DIR),
+  filename: (_req: any, file: any, cb: any) => {
     const unique = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
     const ext = extname(file.originalname).toLowerCase();
     cb(null, `img-${unique}${ext}`);
   },
 });
 
-const upload = multer({
+const upload = multerFn({
   storage,
   limits: { fileSize: env.MAX_FILE_SIZE_MB * 1024 * 1024 },
-  fileFilter: (_req, file, cb) => {
+  fileFilter: (_req: any, file: any, cb: any) => {
     const ext = extname(file.originalname).toLowerCase();
     if (!ALLOWED_EXTENSIONS.includes(ext)) {
       return cb(new Error("امتداد الملف غير مسموح به. استخدم: jpg, png, gif, webp"));
@@ -63,7 +66,7 @@ const router = Router();
 
 function sanitizeText(text: string | undefined | null, maxLength: number = 5000): string {
   if (!text) return "";
-  return sanitizeHtml(text, {
+  return sanitizeHtmlFn(text, {
     allowedTags: [],
     allowedAttributes: {},
     textFilter: (t) => t.slice(0, maxLength),

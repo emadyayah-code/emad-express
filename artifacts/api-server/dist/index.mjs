@@ -87367,10 +87367,11 @@ var rateLimit = (passedOptions) => {
 var lib_default = rateLimit;
 
 // src/middlewares/rateLimiter.ts
+var rateLimitFn = lib_default?.default || lib_default;
 var getClientIp = (req) => {
   return req.headers["cf-connecting-ip"] || req.headers["x-forwarded-for"]?.split(",")[0]?.trim() || req.ip || "unknown";
 };
-var globalRateLimiter = lib_default({
+var globalRateLimiter = rateLimitFn({
   windowMs: 15 * 60 * 1e3,
   // 15 minutes
   max: Math.max(5e3, Number(env.RATE_LIMIT_MAX) || 5e3),
@@ -87386,7 +87387,7 @@ var globalRateLimiter = lib_default({
     return false;
   }
 });
-var authRateLimiter = lib_default({
+var authRateLimiter = rateLimitFn({
   windowMs: 15 * 60 * 1e3,
   // 15 minutes
   max: 50,
@@ -87397,7 +87398,7 @@ var authRateLimiter = lib_default({
   skipSuccessfulRequests: true,
   keyGenerator: getClientIp
 });
-var uploadRateLimiter = lib_default({
+var uploadRateLimiter = rateLimitFn({
   windowMs: 60 * 60 * 1e3,
   // 1 hour
   max: 100,
@@ -93993,7 +93994,9 @@ var UPLOADS_DIR = env.UPLOADS_DIR;
 mkdirSync(UPLOADS_DIR, { recursive: true });
 var ALLOWED_EXTENSIONS = [".jpg", ".jpeg", ".png", ".gif", ".webp"];
 var ALLOWED_MIMETYPES = ["image/jpeg", "image/png", "image/gif", "image/webp"];
-var storage = import_multer.default.diskStorage({
+var multerFn = import_multer.default?.default || import_multer.default;
+var sanitizeHtmlFn = import_sanitize_html.default?.default || import_sanitize_html.default;
+var storage = (multerFn.diskStorage || import_multer.default.diskStorage)({
   destination: (_req, _file, cb) => cb(null, UPLOADS_DIR),
   filename: (_req, file, cb) => {
     const unique = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
@@ -94001,7 +94004,7 @@ var storage = import_multer.default.diskStorage({
     cb(null, `img-${unique}${ext}`);
   }
 });
-var upload = (0, import_multer.default)({
+var upload = multerFn({
   storage,
   limits: { fileSize: env.MAX_FILE_SIZE_MB * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
@@ -94018,7 +94021,7 @@ var upload = (0, import_multer.default)({
 var router2 = (0, import_express2.Router)();
 function sanitizeText(text2, maxLength = 5e3) {
   if (!text2) return "";
-  return (0, import_sanitize_html.default)(text2, {
+  return sanitizeHtmlFn(text2, {
     allowedTags: [],
     allowedAttributes: {},
     textFilter: (t) => t.slice(0, maxLength)
