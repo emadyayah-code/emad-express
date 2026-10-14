@@ -99286,11 +99286,12 @@ function errorHandler(err, _req, res, _next) {
     logger.error({ err: err.message, stack: err.stack }, "Server error");
   }
   if (err instanceof ZodError) {
-    return res.status(400).json({
+    res.status(400).json({
       success: false,
       message: "\u0628\u064A\u0627\u0646\u0627\u062A \u063A\u064A\u0631 \u0635\u0627\u0644\u062D\u0629",
       errors: err.errors.map((e) => ({ path: e.path.join("."), message: e.message }))
     });
+    return;
   }
   let userMessage = err.message || "\u062D\u062F\u062B \u062E\u0637\u0623 \u0645\u0627";
   if (userMessage.includes("Failed query:") || userMessage.includes('select "') || userMessage.includes("insert into") || userMessage.includes('update "') || userMessage.includes("delete from") || userMessage.includes('relation "') || userMessage.includes('column "') || userMessage.includes("Database unreachable") || userMessage.includes("ECONNREFUSED") || userMessage.includes("ENOTFOUND")) {

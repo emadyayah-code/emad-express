@@ -14,7 +14,7 @@ export function createError(message: string, statusCode: number = 500, code?: st
   return err;
 }
 
-export function errorHandler(err: ApiError, _req: Request, res: Response, _next: NextFunction) {
+export function errorHandler(err: ApiError, _req: Request, res: Response, _next: NextFunction): void {
   const statusCode = err.statusCode || 500;
   const isDev = process.env.NODE_ENV === "development";
 
@@ -23,11 +23,12 @@ export function errorHandler(err: ApiError, _req: Request, res: Response, _next:
   }
 
   if (err instanceof ZodError) {
-    return res.status(400).json({
+    res.status(400).json({
       success: false,
       message: "بيانات غير صالحة",
       errors: err.errors.map(e => ({ path: e.path.join("."), message: e.message })),
     });
+    return;
   }
 
   let userMessage = err.message || "حدث خطأ ما";

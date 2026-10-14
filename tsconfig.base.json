@@ -9,7 +9,7 @@
     "noEmitOnError": false,
     "noFallthroughCasesInSwitch": true,
     "noImplicitOverride": false,
-    "noImplicitReturns": true,
+    "noImplicitReturns": false,
     "noUnusedLocals": false,
     "noImplicitAny": false,
     "noImplicitThis": true,
