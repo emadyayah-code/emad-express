@@ -29,7 +29,7 @@ if (!isServerless) {
     process.exit(1);
   });
 } else {
-  // In Serverless/Vercel: initialize schema on cold start in background
+  // In Serverless/Vercel: initialize schema on cold start
   initDbSchema(pool)
     .then(() => seedIfEmpty())
     .catch((err) => {

@@ -30,11 +30,7 @@ import { startBulkImport, stopBulkImport, getJobStatus, getAllJobs, getActiveJob
 import { matchCategoryId } from "../lib/category-matcher";
 
 const UPLOADS_DIR = env.UPLOADS_DIR;
-try {
-  mkdirSync(UPLOADS_DIR, { recursive: true });
-} catch {
-  // Read-only filesystem in serverless environments (e.g. Vercel)
-}
+mkdirSync(UPLOADS_DIR, { recursive: true });
 
 const ALLOWED_EXTENSIONS = [".jpg", ".jpeg", ".png", ".gif", ".webp"];
 const ALLOWED_MIMETYPES = ["image/jpeg", "image/png", "image/gif", "image/webp"];

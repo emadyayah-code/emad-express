@@ -94064,10 +94064,7 @@ function getActiveJob() {
 
 // src/routes/emad.ts
 var UPLOADS_DIR = env.UPLOADS_DIR;
-try {
-  mkdirSync(UPLOADS_DIR, { recursive: true });
-} catch {
-}
+mkdirSync(UPLOADS_DIR, { recursive: true });
 var ALLOWED_EXTENSIONS = [".jpg", ".jpeg", ".png", ".gif", ".webp"];
 var ALLOWED_MIMETYPES = ["image/jpeg", "image/png", "image/gif", "image/webp"];
 var multerFn = import_multer.default?.default || import_multer.default;

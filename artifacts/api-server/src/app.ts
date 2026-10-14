@@ -16,7 +16,7 @@ const UPLOADS_DIR = env.UPLOADS_DIR;
 try {
   mkdirSync(UPLOADS_DIR, { recursive: true });
 } catch {
-  // Read-only filesystem in serverless environments (e.g. Vercel)
+  // Read-only filesystem in serverless environments
 }
 
 const app: Express = express();
