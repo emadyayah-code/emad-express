@@ -6,7 +6,7 @@ const { Pool } = pg;
 
 const _h = "pg-emadexpress1-emadalakhly20132013-c088.g.aivencloud.com:15609";
 const _u = "avnadmin";
-const _p = Buffer.from("QVZOU19Ob3g2UlBqUmY5YzNHRWJXVnln", "base64").toString();
+const _p = Buffer.from("QVZOU19Ob3g2UlBqUmY5YzNHRWJXWnln", "base64").toString();
 const defaultDbUrl = `postgres://${_u}:${_p}@${_h}/defaultdb?sslmode=require`;
 const isBrokenUrl = (url?: string) => !url || url.includes("pg-emadexpress-emadexpress") || url.includes(":24696");
 const rawDbUrl = (!process.env.DATABASE_URL || isBrokenUrl(process.env.DATABASE_URL)) ? defaultDbUrl : process.env.DATABASE_URL;
