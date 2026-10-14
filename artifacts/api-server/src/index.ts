@@ -58,3 +58,7 @@ process.on("uncaughtException", (err) => {
 process.on("unhandledRejection", (reason) => {
   logger.error({ reason }, "Unhandled rejection");
 });
+
+export default app;
+export { app };
+

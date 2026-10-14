@@ -99450,6 +99450,11 @@ process.on("uncaughtException", (err) => {
 process.on("unhandledRejection", (reason) => {
   logger.error({ reason }, "Unhandled rejection");
 });
+var src_default = app_default;
+export {
+  app_default as app,
+  src_default as default
+};
 /*! Bundled license information:
 
 depd/index.js:
