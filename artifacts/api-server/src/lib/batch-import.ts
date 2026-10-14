@@ -73,14 +73,16 @@ async function saveProduct(
     const sku = `${platform.toUpperCase().slice(0, 3)}-${String(sourceId).slice(-12)}`;
 
     const [newProduct] = await db.insert(products).values({
-      name: name.slice(0, 200),
+      name_ar: name.slice(0, 200),
+      name_en: name.slice(0, 200),
       sku: sku.slice(0, 100),
       price: ourPrice,
       cost: sourcePrice,
       quantity: 999,
       min_quantity: 0,
       category_id: categoryId || null,
-      description: `منتج مستورد من ${platform} - ${supplierName}`.slice(0, 500),
+      description_ar: `منتج مستورد من ${platform} - ${supplierName}`.slice(0, 500),
+      description_en: `Imported product from ${platform} - ${supplierName}`.slice(0, 500),
       image: image.slice(0, 2000),
       is_active: true,
     }).returning();

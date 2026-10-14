@@ -46,11 +46,11 @@ export async function createStripePaymentIntent(
     });
 
     if (!response.ok) {
-      const err = await response.json();
+      const err: any = await response.json();
       throw new Error(err.error?.message || "Stripe error");
     }
 
-    const data = await response.json();
+    const data: any = await response.json();
     return {
       id: data.id,
       amount: data.amount / 100,
@@ -75,7 +75,7 @@ export async function confirmStripePayment(
       signal: AbortSignal.timeout(10000),
     });
 
-    const data = await response.json();
+    const data: any = await response.json();
     const succeeded = data.status === "succeeded";
     return {
       success: succeeded,
@@ -113,7 +113,7 @@ export async function createPayPalOrder(
       signal: AbortSignal.timeout(10000),
     });
 
-    const tokenData = await tokenRes.json();
+    const tokenData: any = await tokenRes.json();
     const accessToken = tokenData.access_token;
     if (!accessToken) {
       logger.error({ tokenData }, "PayPal token request failed");
@@ -147,7 +147,7 @@ export async function createPayPalOrder(
       signal: AbortSignal.timeout(15000),
     });
 
-    const orderData = await orderRes.json();
+    const orderData: any = await orderRes.json();
     const approvalLink = orderData.links?.find((l: any) => l.rel === "approve")?.href;
 
     return { id: orderData.id, approval_url: approvalLink };
@@ -175,7 +175,7 @@ export async function capturePayPalOrder(
       signal: AbortSignal.timeout(10000),
     });
 
-    const tokenData = await tokenRes.json();
+    const tokenData: any = await tokenRes.json();
     const accessToken = tokenData.access_token;
     if (!accessToken) {
       throw new Error(tokenData.error_description || "فشل الحصول على توكن PayPal لتأكيد الدفع");
@@ -190,7 +190,7 @@ export async function capturePayPalOrder(
       signal: AbortSignal.timeout(15000),
     });
 
-    const data = await captureRes.json();
+    const data: any = await captureRes.json();
     const succeeded = data.status === "COMPLETED";
     const capture = data.purchase_units?.[0]?.payments?.captures?.[0];
 
@@ -368,11 +368,11 @@ export async function createStripeConnectAccount(
     });
 
     if (!response.ok) {
-      const err = await response.json();
+      const err: any = await response.json();
       throw new Error(err.error?.message || "Stripe Connect account creation failed");
     }
 
-    const data = await response.json();
+    const data: any = await response.json();
 
     // Create onboarding link
     const linkRes = await fetch("https://api.stripe.com/v1/account_links", {
@@ -390,7 +390,7 @@ export async function createStripeConnectAccount(
       signal: AbortSignal.timeout(15000),
     });
 
-    const linkData = await linkRes.json();
+    const linkData: any = await linkRes.json();
 
     return {
       id: data.id,
@@ -419,7 +419,7 @@ export async function getStripeConnectAccount(
 
     if (!response.ok) return null;
 
-    const data = await response.json();
+    const data: any = await response.json();
     return {
       id: data.id,
       onboarding_url: "",
@@ -473,11 +473,11 @@ export async function createSplitPaymentIntent(
     });
 
     if (!response.ok) {
-      const err = await response.json();
+      const err: any = await response.json();
       throw new Error(err.error?.message || "Split payment creation failed");
     }
 
-    const data = await response.json();
+    const data: any = await response.json();
     return {
       success: true,
       payment_intent_id: data.id,

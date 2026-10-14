@@ -12,11 +12,13 @@ export interface BulkImportJob {
   keywords: string;
   category?: string;
   maxProducts: number;
+  totalTarget: number;
   marginPercent: number;
   status: "pending" | "running" | "completed" | "failed" | "stopped";
   imported: number;
   skipped: number;
   failed: number;
+  processed: number;
   totalPages: number;
   currentPage: number;
   errors: string[];
@@ -79,6 +81,7 @@ async function saveProduct(
     const [existing] = await db.select().from(dropship_products).where(eq(dropship_products.source_id, sourceId));
     if (existing) {
       job.skipped++;
+      job.processed = job.imported + job.skipped + job.failed;
       return "skipped";
     }
 
@@ -112,10 +115,12 @@ async function saveProduct(
     }).returning();
 
     job.imported++;
+    job.processed = job.imported + job.skipped + job.failed;
     return "imported";
   } catch (err: any) {
     logger.error({ err: err.message, sourceId, platform }, "Bulk import save failed");
     job.failed++;
+    job.processed = job.imported + job.skipped + job.failed;
     job.errors.push(`Failed to save ${sourceId}: ${err.message}`);
     return "failed";
   }
@@ -195,14 +200,14 @@ async function importAmazon(job: BulkImportJob): Promise<void> {
 
         await saveProduct(
           job,
-          item.asin,
+          item.id || item.asin,
           "amazon",
           item.title,
           item.price,
           item.listPrice || item.price,
           item.currency,
           item.imageUrl,
-          item.detailPageUrl,
+          item.detailUrl || item.detailPageUrl,
           item.brand || "Amazon",
           0,
           item.category,
@@ -230,10 +235,10 @@ async function importAlibaba(job: BulkImportJob): Promise<void> {
 
   while (job.imported + job.skipped + job.failed < job.maxProducts && job.status === "running") {
     try {
-      const { products: items, totalResults } = await searchAlibabaProducts(job.keywords, creds, page, pageSize);
+      const items = await searchAlibabaProducts(job.keywords, creds, page, pageSize);
       if (!items.length) break;
 
-      job.totalPages = Math.ceil((totalResults || items.length) / pageSize);
+      job.totalPages = Math.ceil(items.length / pageSize) || 1;
       job.currentPage = page;
 
       for (const item of items) {
@@ -244,12 +249,12 @@ async function importAlibaba(job: BulkImportJob): Promise<void> {
           job,
           item.productId,
           "alibaba",
-          item.productTitle,
-          item.salePrice,
-          item.originalPrice || item.salePrice,
-          item.currency,
-          item.productImage,
-          item.productUrl,
+          item.productTitle || item.subject || "",
+          item.salePrice || parseFloat(item.price) || 0,
+          item.originalPrice || item.salePrice || parseFloat(item.price) || 0,
+          item.currency || "USD",
+          item.productImage || item.imageUrl || "",
+          item.productUrl || item.detailUrl || "",
           item.supplierName || "Alibaba",
           0,
           item.categoryName,
@@ -273,22 +278,27 @@ export async function startBulkImport(
   keywords: string,
   maxProducts: number,
   marginPercent: number = 300,
+  _categoryId?: number | null,
+  _credentials?: any,
 ): Promise<string> {
   if (activeJobId && jobs.get(activeJobId)?.status === "running") {
     throw new Error("There is already an active import job. Please wait or stop it first.");
   }
 
   const jobId = generateJobId();
+  const targetCount = Math.min(maxProducts, 10000);
   const job: BulkImportJob = {
     id: jobId,
     platform,
     keywords,
-    maxProducts: Math.min(maxProducts, 10000),
+    maxProducts: targetCount,
+    totalTarget: targetCount,
     marginPercent,
     status: "running",
     imported: 0,
     skipped: 0,
     failed: 0,
+    processed: 0,
     totalPages: 0,
     currentPage: 0,
     errors: [],

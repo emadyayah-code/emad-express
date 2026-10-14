@@ -137,7 +137,7 @@ export async function fetchAliExpressProductsBatch(
       ...(creds.trackingId ? { tracking_id: creds.trackingId } : {}),
     }, creds);
 
-    const res = await fetch(url, {
+    const res: any = await fetch(url, {
       headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" },
       signal: AbortSignal.timeout(20000),
     }).then(r => r.json()).catch(() => null);
@@ -197,7 +197,7 @@ export async function searchAliExpressProducts(
       return [];
     }
 
-    const data = await response.json();
+    const data: any = await response.json();
     if (data?.error_response) {
       logger.error({ error_response: data.error_response, url }, "AliExpress returned error_response");
     }

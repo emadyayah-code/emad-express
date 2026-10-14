@@ -19,7 +19,7 @@ import {
   idParamSchema,
 } from "../validation/schemas";
 import { searchAliExpressProducts, fetchAliExpressProduct, fetchAliExpressProductsBatch, type AliExpressCredentials } from "../lib/aliexpress";
-import { searchAmazonItems, fetchAmazonItems, type AmazonCredentials } from "../lib/amazon";
+import { searchAmazonItems, fetchAmazonItems, searchAmazonProducts, getAmazonProduct, type AmazonCredentials } from "../lib/amazon";
 import { searchAlibabaProducts, getAlibabaProduct, type AlibabaCredentials } from "../lib/alibaba";
 import { convertCurrency, formatCurrency, seedCurrencies, getExchangeRates } from "../lib/currency";
 import { translateProduct, translateProducts, getProductTranslation, setProductTranslation, getCategoryTranslation, SUPPORTED_LANGUAGES, DEFAULT_LANGUAGE, type SupportedLanguage } from "../lib/i18n";
@@ -506,7 +506,7 @@ router.post("/auth/logout", requireAuth, async (req, res) => {
 router.get("/auth/me", requireAuth, async (req, res, next) => {
   try {
     const session = (req as any).session;
-    const [user] = await db.select({ id: users.id, name: users.name, email: users.email, role: users.role, phone: users.phone }).from(users).where(eq(users.id, session.userId));
+    const [user] = await db.select({ id: users.id, name: users.name, email: users.email, role: users.role, phone: users.phone, deleted_at: users.deleted_at }).from(users).where(eq(users.id, session.userId));
     if (!user || user.deleted_at) return res.status(404).json({ success: false, message: "المستخدم غير موجود" });
     res.json({ success: true, user });
   } catch (err) { next(err); }
@@ -607,7 +607,7 @@ router.get("/admin/dashboard", requireAuth, requireRole("admin", "manager", "sal
     const [{ productsCount = 0 } = {}] = await db.select({ productsCount: sql<number>`COUNT(*)` }).from(products).where(and(eq(products.is_active, true), isNull(products.deleted_at)));
     const recentOrders = await db.select().from(orders).orderBy(desc(orders.id)).limit(5);
     const topProducts = await db.select().from(products).where(and(eq(products.is_active, true), isNull(products.deleted_at))).orderBy(desc(products.price)).limit(5);
-    return res.json({ success: true, total_sales: Number(totalSales), total_orders: Number(ordersCount), total_customers: Number(customersCount), total_products: Number(productsCount), top_products: topProducts.map(p => ({ name: p.name, sold_count: Math.floor(Math.random() * 30) + 5, revenue: `${(p.price * 20).toLocaleString()} ريال` })), recent_orders: recentOrders.map(o => ({ order_number: o.order_number, customer_name: o.customer_name, total: o.total, status: o.status })) });
+    return res.json({ success: true, total_sales: Number(totalSales), total_orders: Number(ordersCount), total_customers: Number(customersCount), total_products: Number(productsCount), top_products: topProducts.map(p => ({ name: p.name_ar || p.name_en || (p as any).name || "منتج", sold_count: Math.floor(Math.random() * 30) + 5, revenue: `${(p.price * 20).toLocaleString()} ريال` })), recent_orders: recentOrders.map(o => ({ order_number: o.order_number, customer_name: o.customer_name, total: o.total, status: o.status })) });
   } catch (err) { next(err); }
 });
 
@@ -617,7 +617,7 @@ router.get("/admin/products", requireAuth, requireRole("admin", "manager", "sale
     const { page = "1", per_page = "50", search = "", category_id, status } = req.query as Record<string, string>;
     const p = Math.max(1, parseInt(page) || 1);
     const pp = Math.min(1000, Math.max(1, parseInt(per_page) || 50));
-    const conds = [isNull(products.deleted_at)];
+    const conds: any[] = [isNull(products.deleted_at)];
     if (search) conds.push(or(like(products.name_ar, `%${escapeLike(search)}%`), like(products.name_en, `%${escapeLike(search)}%`), like(products.sku, `%${escapeLike(search)}%`)));
     if (category_id) conds.push(eq(products.category_id, parseInt(category_id)));
     if (status === "active") conds.push(eq(products.is_active, true));
@@ -650,8 +650,18 @@ router.post("/admin/products", requireAuth, requireRole("admin", "manager"), val
   try {
     const b = req.body;
     const [newProduct] = await db.insert(products).values({
-      name: b.name, sku: b.sku, price: b.price, cost: b.cost, quantity: b.quantity, min_quantity: b.min_quantity,
-      category_id: b.category_id, description: sanitizeText(b.description), image: b.image, is_active: b.is_active,
+      name_ar: b.name_ar || b.name,
+      name_en: b.name_en || b.name,
+      sku: b.sku,
+      price: b.price,
+      cost: b.cost,
+      quantity: b.quantity,
+      min_quantity: b.min_quantity,
+      category_id: b.category_id,
+      description_ar: sanitizeText(b.description_ar || b.description || ""),
+      description_en: sanitizeText(b.description_en || b.description || ""),
+      image: b.image,
+      is_active: b.is_active,
     }).returning();
     return res.json({ success: true, data: newProduct });
   } catch (err: any) {
@@ -662,17 +672,27 @@ router.post("/admin/products", requireAuth, requireRole("admin", "manager"), val
 
 router.put("/admin/products/:id", requireAuth, requireRole("admin", "manager"), validateParams(idParamSchema), async (req, res, next) => {
   try {
-    const id = req.params.id;
+    const id = Number(req.params.id);
     const b = req.body;
     const update: any = {};
-    if (b.name !== undefined) update.name = b.name;
+    if (b.name !== undefined) {
+      update.name_ar = b.name;
+      update.name_en = b.name;
+    }
+    if (b.name_ar !== undefined) update.name_ar = b.name_ar;
+    if (b.name_en !== undefined) update.name_en = b.name_en;
     if (b.sku !== undefined) update.sku = b.sku;
     if (b.price !== undefined) update.price = b.price;
     if (b.cost !== undefined) update.cost = b.cost;
     if (b.quantity !== undefined) update.quantity = b.quantity;
     if (b.min_quantity !== undefined) update.min_quantity = b.min_quantity;
     if (b.category_id !== undefined) update.category_id = b.category_id;
-    if (b.description !== undefined) update.description = sanitizeText(b.description);
+    if (b.description !== undefined) {
+      update.description_ar = sanitizeText(b.description);
+      update.description_en = sanitizeText(b.description);
+    }
+    if (b.description_ar !== undefined) update.description_ar = sanitizeText(b.description_ar);
+    if (b.description_en !== undefined) update.description_en = sanitizeText(b.description_en);
     if (b.image !== undefined) update.image = b.image;
     if (b.is_active !== undefined) update.is_active = b.is_active;
     const [updated] = await db.update(products).set(update).where(and(eq(products.id, id), isNull(products.deleted_at))).returning();
@@ -686,8 +706,9 @@ router.put("/admin/products/:id", requireAuth, requireRole("admin", "manager"), 
 
 router.delete("/admin/products/:id", requireAuth, requireRole("admin", "manager"), validateParams(idParamSchema), async (req, res, next) => {
   try {
-    await db.delete(dropship_products).where(eq(dropship_products.product_id, req.params.id));
-    await db.delete(products).where(eq(products.id, req.params.id));
+    const id = Number(req.params.id);
+    await db.delete(dropship_products).where(eq(dropship_products.product_id, id));
+    await db.delete(products).where(eq(products.id, id));
     return res.json({ success: true, message: "تم حذف المنتج بالكامل من قاعدة البيانات" });
   } catch (err) { next(err); }
 });
@@ -718,7 +739,7 @@ router.post("/admin/categories", requireAuth, requireRole("admin", "manager"), v
 
 router.put("/admin/categories/:id", requireAuth, requireRole("admin", "manager"), validateParams(idParamSchema), async (req, res, next) => {
   try {
-    const id = req.params.id;
+    const id = Number(req.params.id);
     const b = req.body;
     const [c] = await db.update(categories).set({
       name_ar: b.name_ar || b.name,
@@ -736,7 +757,7 @@ router.put("/admin/categories/:id", requireAuth, requireRole("admin", "manager")
 
 router.delete("/admin/categories/:id", requireAuth, requireRole("admin", "manager"), validateParams(idParamSchema), async (req, res, next) => {
   try {
-    const id = req.params.id;
+    const id = Number(req.params.id);
     const [used] = await db.select().from(products).where(and(eq(products.category_id, id), isNull(products.deleted_at))).limit(1);
     if (used) return res.status(400).json({ success: false, message: "لا يمكن حذف الفئة لوجود منتجات تابعة لها" });
     await db.update(categories).set({ deleted_at: new Date() }).where(eq(categories.id, id));
@@ -784,7 +805,7 @@ router.get("/admin/orders", requireAuth, requireRole("admin", "manager", "sales"
     const { page = "1", per_page = "20", order_number = "", customer = "", status } = req.query as Record<string, string>;
     const p = Math.max(1, parseInt(page) || 1);
     const pp = Math.min(100, Math.max(1, parseInt(per_page) || 20));
-    const conds = [];
+    const conds: any[] = [];
     if (order_number) conds.push(like(orders.order_number, `%${escapeLike(order_number)}%`));
     if (customer) conds.push(like(orders.customer_name, `%${escapeLike(customer)}%`));
     if (status) conds.push(eq(orders.status, status));
@@ -797,7 +818,7 @@ router.get("/admin/orders", requireAuth, requireRole("admin", "manager", "sales"
 
 router.get("/admin/orders/:id", requireAuth, requireRole("admin", "manager", "sales", "support"), validateParams(idParamSchema), async (req, res, next) => {
   try {
-    const [order] = await db.select().from(orders).where(eq(orders.id, req.params.id));
+    const [order] = await db.select().from(orders).where(eq(orders.id, Number(req.params.id)));
     if (!order) return res.status(404).json({ success: false, message: "الطلب غير موجود" });
     return res.json({ success: true, data: order });
   } catch (err) { next(err); }
@@ -807,7 +828,7 @@ router.put("/admin/orders/:id/status", requireAuth, requireRole("admin", "manage
   try {
     const status = (req.body as any).status;
     if (!status || typeof status !== "string" || status.length > 50) return res.status(400).json({ success: false, message: "حالة غير صالحة" });
-    const [order] = await db.update(orders).set({ status }).where(eq(orders.id, req.params.id)).returning();
+    const [order] = await db.update(orders).set({ status }).where(eq(orders.id, Number(req.params.id))).returning();
     if (!order) return res.status(404).json({ success: false, message: "الطلب غير موجود" });
     return res.json({ success: true, data: order });
   } catch (err) { next(err); }
@@ -895,7 +916,7 @@ router.get("/admin/users", requireAuth, requireRole("admin", "manager"), async (
 
 router.get("/admin/users/:id", requireAuth, requireRole("admin", "manager"), validateParams(idParamSchema), async (req, res, next) => {
   try {
-    const id = req.params.id;
+    const id = Number(req.params.id);
     const [user] = await db.select().from(users).where(and(eq(users.id, id), isNull(users.deleted_at)));
     if (!user) return res.status(404).json({ success: false, message: "المستخدم غير موجود" });
 
@@ -950,7 +971,7 @@ router.post("/admin/users", requireAuth, requireRole("admin"), async (req, res, 
 
 router.put("/admin/users/:id", requireAuth, requireRole("admin", "manager"), validateParams(idParamSchema), async (req, res, next) => {
   try {
-    const id = req.params.id;
+    const id = Number(req.params.id);
     const { name, phone, role, email_verified, address, city } = req.body;
     const updates: any = {};
     if (name) updates.name = name;
@@ -976,7 +997,7 @@ router.put("/admin/users/:id", requireAuth, requireRole("admin", "manager"), val
 
 router.post("/admin/users/:id/reset-password", requireAuth, requireRole("admin"), validateParams(idParamSchema), async (req, res, next) => {
   try {
-    const id = req.params.id;
+    const id = Number(req.params.id);
     const { password } = req.body;
     if (!password || password.length < 6) {
       return res.status(400).json({ success: false, message: "كلمة المرور يجب أن تكون 6 أحرف على الأقل" });
@@ -989,7 +1010,7 @@ router.post("/admin/users/:id/reset-password", requireAuth, requireRole("admin")
 
 router.delete("/admin/users/:id", requireAuth, requireRole("admin"), validateParams(idParamSchema), async (req, res, next) => {
   try {
-    const id = req.params.id;
+    const id = Number(req.params.id);
     const session = (req as any).session;
     if (session.userId === id) {
       return res.status(400).json({ success: false, message: "لا يمكنك حذف حسابك الحالي" });
@@ -1015,7 +1036,7 @@ router.get("/admin/customers", requireAuth, requireRole("admin", "manager", "sal
 
 router.get("/admin/customers/:id", requireAuth, requireRole("admin", "manager", "sales", "support"), validateParams(idParamSchema), async (req, res, next) => {
   try {
-    const id = req.params.id;
+    const id = Number(req.params.id);
     const [customer] = await db.select().from(customers).where(eq(customers.id, id));
     if (!customer) return res.status(404).json({ success: false, message: "العميل غير موجود" });
     const recent = await db.select().from(orders).where(eq(orders.customer_id, id)).orderBy(desc(orders.id)).limit(5);
@@ -1050,7 +1071,7 @@ router.post("/admin/vendors", requireAuth, requireRole("admin", "manager"), vali
 
 router.post("/admin/vendors/:id/approve", requireAuth, requireRole("admin", "manager"), validateParams(idParamSchema), async (req, res, next) => {
   try {
-    const [v] = await db.update(vendors).set({ is_approved: true }).where(and(eq(vendors.id, req.params.id), isNull(vendors.deleted_at))).returning();
+    const [v] = await db.update(vendors).set({ is_approved: true }).where(and(eq(vendors.id, Number(req.params.id)), isNull(vendors.deleted_at))).returning();
     if (!v) return res.status(404).json({ success: false, message: "البائع غير موجود" });
     return res.json({ success: true, data: v });
   } catch (err) { next(err); }
@@ -1250,7 +1271,7 @@ router.get("/products/:id", validateParams(idParamSchema), async (req, res, next
         return res.status(404).json({ success: false, message: "عذراً، هذا المنتج نفد من المصدر وتم حذفه من المتجر" });
       }
     }
-    const [product] = await db.select().from(products).where(and(eq(products.id, req.params.id), eq(products.is_active, true), isNull(products.deleted_at), sql`${products.quantity} > 0`));
+    const [product] = await db.select().from(products).where(and(eq(products.id, pId), eq(products.is_active, true), isNull(products.deleted_at), sql`${products.quantity} > 0`));
     if (!product || product.quantity <= 0) {
       if (product) {
         await purgeProductById(product.id);
@@ -1467,7 +1488,7 @@ router.post("/orders", validateBody(orderSchema), async (req, res, next) => {
         }
 
         // Live check against dropship supplier (AliExpress, Amazon, or external URL)
-        const stockStatus = await verifyAndSyncDropshipProductStock(item.product_id, { forceLive: true }).catch(() => ({ available: true }));
+        const stockStatus: any = await verifyAndSyncDropshipProductStock(item.product_id, { forceLive: true }).catch(() => ({ available: true }));
         if (!stockStatus.available) {
           return res.status(400).json({
             success: false,
@@ -1544,7 +1565,7 @@ router.post("/orders", validateBody(orderSchema), async (req, res, next) => {
 router.get("/orders/:id", requireAuth, validateParams(idParamSchema), async (req, res, next) => {
   try {
     const session = (req as any).session;
-    const [order] = await db.select().from(orders).where(eq(orders.id, req.params.id));
+    const [order] = await db.select().from(orders).where(eq(orders.id, Number(req.params.id)));
     if (!order) return res.status(404).json({ success: false, message: "الطلب غير موجود" });
     if (session.role !== "admin" && order.customer_id !== session.customerId) return res.status(403).json({ success: false, message: "غير مصرح" });
     return res.json({ success: true, data: order });
@@ -1561,7 +1582,7 @@ router.post("/orders/:id/returns", requireAuth, validateParams(idParamSchema), a
       return res.status(403).json({ success: false, message: "يجب تسجيل الدخول كعميل لتقديم طلب إرجاع" });
     }
 
-    const [order] = await db.select().from(orders).where(eq(orders.id, req.params.id));
+    const [order] = await db.select().from(orders).where(eq(orders.id, Number(req.params.id)));
     if (!order) return res.status(404).json({ success: false, message: "الطلب غير موجود" });
     
     if (session.role !== "admin" && order.customer_id !== session.customerId) {
@@ -1669,7 +1690,7 @@ router.get("/returns", requireAuth, async (req, res, next) => {
 router.get("/returns/:id", requireAuth, validateParams(idParamSchema), async (req, res, next) => {
   try {
     const session = (req as any).session;
-    const [ret] = await db.select().from(returns_refunds).where(eq(returns_refunds.id, req.params.id));
+    const [ret] = await db.select().from(returns_refunds).where(eq(returns_refunds.id, Number(req.params.id)));
     if (!ret) return res.status(404).json({ success: false, message: "طلب الإرجاع غير موجود" });
 
     if (session.role !== "admin" && ret.customer_id !== session.customerId) {
@@ -1688,7 +1709,7 @@ router.get("/admin/returns", requireAuth, requireRole("admin", "manager", "suppo
     const p = Math.max(1, parseInt(page) || 1);
     const pp = Math.min(100, Math.max(1, parseInt(per_page) || 20));
 
-    const conds = [];
+    const conds: any[] = [];
     if (status) conds.push(eq(returns_refunds.status, status));
     if (search) {
       conds.push(
@@ -1717,7 +1738,8 @@ router.put("/admin/returns/:id/status", requireAuth, requireRole("admin", "manag
       return res.status(400).json({ success: false, message: "حالة غير صالحة" });
     }
 
-    const [existing] = await db.select().from(returns_refunds).where(eq(returns_refunds.id, req.params.id));
+    const id = Number(req.params.id);
+    const [existing] = await db.select().from(returns_refunds).where(eq(returns_refunds.id, id));
     if (!existing) return res.status(404).json({ success: false, message: "طلب الإرجاع غير موجود" });
 
     const upd: any = {
@@ -1730,7 +1752,7 @@ router.put("/admin/returns/:id/status", requireAuth, requireRole("admin", "manag
       upd.resolved_at = new Date();
     }
 
-    const [updatedReturn] = await db.update(returns_refunds).set(upd).where(eq(returns_refunds.id, req.params.id)).returning();
+    const [updatedReturn] = await db.update(returns_refunds).set(upd).where(eq(returns_refunds.id, id)).returning();
 
     // If marked as refunded, optionally update the order's payment_status to 'refunded'
     if (status === "refunded") {
@@ -2617,7 +2639,7 @@ router.post("/admin/dropship/bulk-import-1000", requireAuth, requireRole("admin"
 
     for (let i = 0; i < liveFetched.length; i += chunkSize) {
       const chunk = liveFetched.slice(i, i + chunkSize);
-      const productRecords = [];
+      const productRecords: any[] = [];
       const metaRecords: any[] = [];
 
       for (const item of chunk) {
@@ -2731,7 +2753,7 @@ router.post("/admin/dropship/import-batch", requireAuth, requireRole("admin", "m
     const chunkSize = 50;
     for (let i = 0; i < items.length; i += chunkSize) {
       const chunk = items.slice(i, i + chunkSize);
-      const productRecords = [];
+      const productRecords: any[] = [];
       const metaRecords: any[] = [];
       for (const item of chunk) {
         const srcId = String(item.source_id || item.product_id).trim();
@@ -2817,7 +2839,7 @@ router.get("/admin/dropship/search", requireAuth, requireRole("admin", "manager"
       ]);
       const all = [...p1, ...p2, ...p3, ...p4];
       const seen = new Set();
-      const results = [];
+      const results: any[] = [];
       for (const p of all) {
         const id = String(p.product_id);
         if (id && !seen.has(id)) {
@@ -3340,7 +3362,7 @@ router.get("/admin/my-commission", requireAuth, requireRole("admin", "manager", 
       const orderPlatforms = new Set<string>();
       const items = (order.items as any[]) || [];
       for (const item of items) {
-        const product = allProducts.find(p => p.name === item.product_name);
+        const product = allProducts.find(p => (p.name_ar === item.product_name || p.name_en === item.product_name || (p as any).name === item.product_name));
         const dp = product ? allDropships.find(d => d.product_id === product.id) : null;
         const itemCost = (product?.cost || 0) * (item.quantity || 1);
         const itemRevenue = item.total || (item.price * item.quantity);
@@ -3427,7 +3449,7 @@ router.put("/admin/affiliates/:id", requireAuth, requireRole("admin", "manager")
     if (b.commission_rate !== undefined) update.commission_rate = b.commission_rate;
     if (b.is_active !== undefined) update.is_active = b.is_active;
     if (b.balance !== undefined) update.balance = b.balance;
-    const [a] = await db.update(affiliates).set(update).where(and(eq(affiliates.id, req.params.id), isNull(affiliates.deleted_at))).returning();
+    const [a] = await db.update(affiliates).set(update).where(and(eq(affiliates.id, Number(req.params.id)), isNull(affiliates.deleted_at))).returning();
     if (!a) return res.status(404).json({ success: false, message: "المسوّق غير موجود" });
     return res.json({ success: true, data: a });
   } catch (err) { next(err); }
@@ -3435,21 +3457,21 @@ router.put("/admin/affiliates/:id", requireAuth, requireRole("admin", "manager")
 
 router.delete("/admin/affiliates/:id", requireAuth, requireRole("admin", "manager"), validateParams(idParamSchema), async (req, res, next) => {
   try {
-    await db.update(affiliates).set({ deleted_at: new Date() }).where(eq(affiliates.id, req.params.id));
+    await db.update(affiliates).set({ deleted_at: new Date() }).where(eq(affiliates.id, Number(req.params.id)));
     return res.json({ success: true, message: "تم الحذف" });
   } catch (err) { next(err); }
 });
 
 router.get("/admin/affiliates/:id/conversions", requireAuth, requireRole("admin", "manager", "sales"), validateParams(idParamSchema), async (req, res, next) => {
   try {
-    const data = await db.select().from(affiliate_conversions).where(eq(affiliate_conversions.affiliate_id, req.params.id)).orderBy(desc(affiliate_conversions.id));
+    const data = await db.select().from(affiliate_conversions).where(eq(affiliate_conversions.affiliate_id, Number(req.params.id))).orderBy(desc(affiliate_conversions.id));
     return res.json({ success: true, data });
   } catch (err) { next(err); }
 });
 
 router.get("/affiliates/:code", async (req, res, next) => {
   try {
-    const [aff] = await db.select().from(affiliates).where(and(eq(affiliates.code, req.params.code), eq(affiliates.is_active, true), isNull(affiliates.deleted_at)));
+    const [aff] = await db.select().from(affiliates).where(and(eq(affiliates.code, String(req.params.code)), eq(affiliates.is_active, true), isNull(affiliates.deleted_at)));
     if (!aff) return res.status(404).json({ success: false, message: "رابط الإحالة غير صحيح" });
     await db.update(affiliates).set({ total_clicks: sql`${affiliates.total_clicks} + 1` }).where(eq(affiliates.id, aff.id));
     return res.json({ success: true, data: { name: aff.name, code: aff.code, commission_rate: aff.commission_rate } });
@@ -3463,7 +3485,7 @@ router.get("/admin/dropship/products", requireAuth, requireRole("admin", "manage
   try {
     const dps = await db.select().from(dropship_products).orderBy(desc(dropship_products.id));
     const result = await Promise.all(dps.map(async (dp) => {
-      let product = null;
+      let product: any = null;
       if (dp.product_id) { const [p] = await db.select().from(products).where(and(eq(products.id, dp.product_id), isNull(products.deleted_at))); product = p || null; }
       return { ...dp, product };
     }));
@@ -3990,7 +4012,7 @@ router.post("/admin/dropship/bulk-import", requireAuth, requireRole("admin", "ma
       credentials.alibaba = creds;
     }
 
-    const jobId = await startBulkImport(platform, keywords, totalTarget, margin_percent || 300, category_id || null, credentials);
+    const jobId = await startBulkImport(platform as any, keywords, totalTarget, margin_percent || 300, category_id || null, credentials);
 
     return res.status(202).json({
       success: true,
@@ -4003,7 +4025,7 @@ router.post("/admin/dropship/bulk-import", requireAuth, requireRole("admin", "ma
 
 router.get("/admin/dropship/bulk-import/status/:jobId", requireAuth, requireRole("admin", "manager"), async (req, res, next) => {
   try {
-    const job = getJobStatus(req.params.jobId);
+    const job = getJobStatus(String(req.params.jobId));
     if (!job) return res.status(404).json({ success: false, message: "المهمة غير موجودة" });
     return res.json({
       success: true,
@@ -4145,14 +4167,16 @@ router.post("/admin/dropship/aliexpress-import", requireAuth, requireRole("admin
     if (existing) return res.status(409).json({ success: false, message: "هذا المنتج مستورد مسبقاً", data: existing });
 
     const [newProduct] = await db.insert(products).values({
-      name: product.product_title,
+      name_ar: product.product_title,
+      name_en: product.product_title,
       sku: `ALI-${source_id}`,
       price: ourPrice,
       cost: sourcePrice,
       quantity: 999,
       min_quantity: 0,
       category_id: null,
-      description: `منتج من علي إكسبرس - ${product.shop_name} - تصنيف: ${product.first_level_category_name}`,
+      description_ar: `منتج من علي إكسبرس - ${product.shop_name} - تصنيف: ${product.first_level_category_name}`,
+      description_en: `Product from AliExpress - ${product.shop_name} - Category: ${product.first_level_category_name}`,
       image: product.product_main_image_url,
       is_active: true,
     }).returning();
@@ -4257,7 +4281,7 @@ router.get("/admin/dropship/amazon/:asin", requireAuth, requireRole("admin", "ma
     const creds = await getAmazonCreds();
     if (!creds) return res.status(400).json({ success: false, message: "أضف Access Key و Secret Key و Partner Tag لأمازون أولاً في الإعدادات" });
 
-    const product = await getAmazonProduct(req.params.asin, creds);
+    const product = await getAmazonProduct(String(req.params.asin), creds);
     if (!product) return res.status(404).json({ success: false, message: "المنتج غير موجود في أمازون أو رقم ASIN غير صحيح" });
 
     return res.json({
@@ -4329,14 +4353,16 @@ router.post("/admin/dropship/amazon-import", requireAuth, requireRole("admin", "
     const ourPrice = parseFloat((product.price * (1 + margin_percent / 100)).toFixed(2));
 
     const [newProduct] = await db.insert(products).values({
-      name: product.title.slice(0, 200),
+      name_ar: product.title.slice(0, 200),
+      name_en: product.title.slice(0, 200),
       sku: `AMZ-${product.asin}`,
       price: ourPrice,
       cost: product.price,
       quantity: 999,
       min_quantity: 0,
       category_id: null,
-      description: `منتج من أمازون - ${product.brand || "Amazon"} - التصنيف: ${product.category || "General"}`,
+      description_ar: `منتج من أمازون - ${product.brand || "Amazon"} - التصنيف: ${product.category || "General"}`,
+      description_en: `Product from Amazon - ${product.brand || "Amazon"} - Category: ${product.category || "General"}`,
       image: product.imageUrl,
       is_active: true,
     }).returning();
@@ -4365,7 +4391,7 @@ router.get("/admin/dropship/alibaba/:productId", requireAuth, requireRole("admin
     const creds = await getAlibabaCreds();
     if (!creds) return res.status(400).json({ success: false, message: "أضف App Key و App Secret لعلي بابا أولاً في الإعدادات" });
 
-    const product = await getAlibabaProduct(req.params.productId, creds);
+    const product = await getAlibabaProduct(String(req.params.productId), creds);
     if (!product) return res.status(404).json({ success: false, message: "المنتج غير موجود في علي بابا أو رقم المنتج غير صحيح" });
 
     return res.json({
@@ -4398,7 +4424,8 @@ router.get("/admin/dropship/alibaba-search", requireAuth, requireRole("admin", "
     const creds = await getAlibabaCreds();
     if (!creds) return res.status(400).json({ success: false, message: "أضف App Key و App Secret لعلي بابا أولاً في الإعدادات" });
 
-    const { products: items, totalResults } = await searchAlibabaProducts(q, creds, parseInt(page) || 1, parseInt(page_size) || 20);
+    const searchRes = await searchAlibabaProducts(q, creds, parseInt(page) || 1, parseInt(page_size) || 20);
+    const items = Array.isArray(searchRes) ? searchRes : ((searchRes as any).products || []);
     return res.json({
       success: true,
       data: items.map(p => ({
@@ -4417,7 +4444,7 @@ router.get("/admin/dropship/alibaba-search", requireAuth, requireRole("admin", "
         total_orders: p.totalOrders,
         platform: "alibaba",
       })),
-      total: totalResults || items.length,
+      total: items.length,
     });
   } catch (err) { next(err); }
 });
@@ -4436,18 +4463,22 @@ router.post("/admin/dropship/alibaba-import", requireAuth, requireRole("admin", 
     const [existing] = await db.select().from(dropship_products).where(eq(dropship_products.source_id, source_id));
     if (existing) return res.status(409).json({ success: false, message: "هذا المنتج مستورد مسبقاً", data: existing });
 
-    const ourPrice = parseFloat((product.salePrice * (1 + margin_percent / 100)).toFixed(2));
+    const salePrice = product.salePrice || parseFloat(product.price) || 0;
+    const ourPrice = parseFloat((salePrice * (1 + margin_percent / 100)).toFixed(2));
+    const title = product.productTitle || product.subject || "Alibaba Product";
 
     const [newProduct] = await db.insert(products).values({
-      name: product.productTitle.slice(0, 200),
+      name_ar: title.slice(0, 200),
+      name_en: title.slice(0, 200),
       sku: `ALB-${product.productId.slice(-12)}`,
       price: ourPrice,
-      cost: product.salePrice,
+      cost: salePrice,
       quantity: 999,
-      min_quantity: product.minOrderQuantity || 0,
+      min_quantity: parseInt(product.minOrderQuantity) || 0,
       category_id: null,
-      description: `منتج من علي بابا - ${product.supplierName} - التصنيف: ${product.categoryName || "General"}`,
-      image: product.productImage,
+      description_ar: `منتج من علي بابا - ${product.supplierName} - التصنيف: ${product.categoryName || "General"}`,
+      description_en: `Product from Alibaba - ${product.supplierName} - Category: ${product.categoryName || "General"}`,
+      image: product.productImage || product.imageUrl || "",
       is_active: true,
     }).returning();
 
@@ -4503,7 +4534,7 @@ router.put("/admin/currencies/:id", requireAuth, requireRole("admin", "manager")
       update.is_default = is_default;
       if (is_default) await db.update(currencies).set({ is_default: false });
     }
-    await db.update(currencies).set(update).where(eq(currencies.id, req.params.id));
+    await db.update(currencies).set(update).where(eq(currencies.id, Number(req.params.id)));
     return res.json({ success: true, message: "تم التحديث" });
   } catch (err) { next(err); }
 });
@@ -4513,7 +4544,7 @@ router.get("/products/:id/translate/:lang", validateParams(idParamSchema), async
   try {
     const lang = req.params.lang as SupportedLanguage;
     if (!SUPPORTED_LANGUAGES.includes(lang)) return res.status(400).json({ success: false, message: "اللغة غير مدعومة" });
-    const trans = await getProductTranslation(req.params.id, lang);
+    const trans = await getProductTranslation(Number(req.params.id), lang);
     if (!trans) return res.status(404).json({ success: false, message: "المنتج غير موجود" });
     return res.json({ success: true, data: trans });
   } catch (err) { next(err); }
@@ -4525,7 +4556,7 @@ router.put("/admin/products/:id/translate/:lang", requireAuth, requireRole("admi
     if (!SUPPORTED_LANGUAGES.includes(lang)) return res.status(400).json({ success: false, message: "اللغة غير مدعومة" });
     const { name, description } = req.body;
     if (!name) return res.status(400).json({ success: false, message: "الاسم مطلوب" });
-    await setProductTranslation(req.params.id, lang, name, description || "");
+    await setProductTranslation(Number(req.params.id), lang, name, description || "");
     return res.json({ success: true, message: "تم حفظ الترجمة" });
   } catch (err) { next(err); }
 });
@@ -4564,7 +4595,7 @@ router.put("/admin/payment-gateways/:id", requireAuth, requireRole("admin", "man
       if (is_default) await db.update(payment_gateways).set({ is_default: false });
     }
     if (config) update.config = config;
-    await db.update(payment_gateways).set(update).where(eq(payment_gateways.id, req.params.id));
+    await db.update(payment_gateways).set(update).where(eq(payment_gateways.id, Number(req.params.id)));
     return res.json({ success: true, message: "تم التحديث" });
   } catch (err) { next(err); }
 });
@@ -4587,15 +4618,15 @@ router.get("/admin/shipping-carriers", requireAuth, requireRole("admin", "manage
 router.post("/admin/orders/:id/shipment", requireAuth, requireRole("admin", "manager"), validateParams(idParamSchema), async (req, res, next) => {
   try {
     const { carrier_id, tracking_number, cost, currency } = req.body;
-    const shipment = await createShipment(req.params.id, carrier_id, tracking_number, cost || 0, currency || "SAR");
-    await db.update(orders).set({ fulfillment_status: "shipped", supplier_tracking: tracking_number }).where(eq(orders.id, req.params.id));
+    const shipment = await createShipment(Number(req.params.id), carrier_id, tracking_number, cost || 0, currency || "SAR");
+    await db.update(orders).set({ fulfillment_status: "shipped", supplier_tracking: tracking_number }).where(eq(orders.id, Number(req.params.id)));
     return res.json({ success: true, data: shipment });
   } catch (err) { next(err); }
 });
 
 router.get("/orders/:id/shipments", requireAuth, validateParams(idParamSchema), async (req, res, next) => {
   try {
-    const data = await getOrderShipments(req.params.id);
+    const data = await getOrderShipments(Number(req.params.id));
     return res.json({ success: true, data });
   } catch (err) { next(err); }
 });
@@ -4604,7 +4635,7 @@ router.get("/orders/:id/shipments", requireAuth, validateParams(idParamSchema), 
 router.post("/orders/:id/pay", requireAuth, validateParams(idParamSchema), async (req, res, next) => {
   try {
     const session = (req as any).session;
-    const [order] = await db.select().from(orders).where(eq(orders.id, req.params.id));
+    const [order] = await db.select().from(orders).where(eq(orders.id, Number(req.params.id)));
     if (!order) return res.status(404).json({ success: false, message: "الطلب غير موجود" });
     if (session.role !== "admin" && order.customer_id !== session.customerId) return res.status(403).json({ success: false, message: "غير مصرح" });
     if (order.payment_status === "paid") return res.status(400).json({ success: false, message: "الطلب مدفوع بالفعل" });
@@ -4618,7 +4649,7 @@ router.post("/orders/:id/pay", requireAuth, validateParams(idParamSchema), async
         payment_gateway: gateway,
         payment_transaction_id: result.transaction_id,
         status: "processing",
-      }).where(eq(orders.id, req.params.id));
+      }).where(eq(orders.id, Number(req.params.id)));
     }
 
     return res.json({ success: result.success, data: result });
@@ -4639,7 +4670,7 @@ router.post("/orders/:id/pay/stripe-confirm", requireAuth, validateParams(idPara
         payment_gateway: "stripe",
         payment_transaction_id: result.transaction_id,
         status: "processing",
-      }).where(eq(orders.id, req.params.id));
+      }).where(eq(orders.id, Number(req.params.id)));
     }
 
     return res.json(result);
@@ -4649,7 +4680,7 @@ router.post("/orders/:id/pay/stripe-confirm", requireAuth, validateParams(idPara
 router.post("/orders/:id/pay/paypal-create", validateParams(idParamSchema), async (req, res, next) => {
   try {
     const session = getSession(req);
-    const [order] = await db.select().from(orders).where(eq(orders.id, req.params.id));
+    const [order] = await db.select().from(orders).where(eq(orders.id, Number(req.params.id)));
     if (!order) return res.status(404).json({ success: false, message: "الطلب غير موجود" });
     if (session && session.role !== "admin" && order.customer_id && order.customer_id !== session.customerId) {
       return res.status(403).json({ success: false, message: "غير مصرح" });
@@ -4701,7 +4732,7 @@ router.post("/orders/:id/pay/paypal-capture", validateParams(idParamSchema), asy
         payment_gateway: "paypal",
         payment_transaction_id: result.transaction_id,
         status: "processing",
-      }).where(eq(orders.id, req.params.id));
+      }).where(eq(orders.id, Number(req.params.id)));
     }
 
     return res.json(result);
@@ -4736,13 +4767,13 @@ router.put("/auth/currency", requireAuth, async (req, res, next) => {
 // Fulfill order via AliExpress (internal payment)
 router.post("/admin/orders/:id/fulfill/aliexpress", requireAuth, requireRole("admin", "manager"), validateParams(idParamSchema), async (req, res, next) => {
   try {
-    const [order] = await db.select().from(orders).where(eq(orders.id, req.params.id));
+    const [order] = await db.select().from(orders).where(eq(orders.id, Number(req.params.id)));
     if (!order) return res.status(404).json({ success: false, message: "الطلب غير موجود" });
 
     const settings = await db.select().from(platform_settings);
     const cfg: Record<string, string> = {}; settings.forEach(s => cfg[s.key] = s.value);
 
-    const result = await fulfillAliExpressOrder(req.params.id, cfg["aliexpress_app_key"], cfg["aliexpress_app_key_secret"]);
+    const result = await fulfillAliExpressOrder(Number(req.params.id), cfg["aliexpress_app_key"], cfg["aliexpress_app_key_secret"]);
 
     if (result.success && result.platform_order_id) {
       await db.update(orders).set({
@@ -4750,7 +4781,7 @@ router.post("/admin/orders/:id/fulfill/aliexpress", requireAuth, requireRole("ad
         fulfillment_platform: "aliexpress",
         platform_order_id: result.platform_order_id,
         supplier_tracking: result.tracking_number || "",
-      }).where(eq(orders.id, req.params.id));
+      }).where(eq(orders.id, Number(req.params.id)));
     }
 
     return res.json({ success: result.success, data: result });
@@ -4760,20 +4791,20 @@ router.post("/admin/orders/:id/fulfill/aliexpress", requireAuth, requireRole("ad
 // Fulfill order via Amazon (internal payment)
 router.post("/admin/orders/:id/fulfill/amazon", requireAuth, requireRole("admin", "manager"), validateParams(idParamSchema), async (req, res, next) => {
   try {
-    const [order] = await db.select().from(orders).where(eq(orders.id, req.params.id));
+    const [order] = await db.select().from(orders).where(eq(orders.id, Number(req.params.id)));
     if (!order) return res.status(404).json({ success: false, message: "الطلب غير موجود" });
 
     const settings = await db.select().from(platform_settings);
     const cfg: Record<string, string> = {}; settings.forEach(s => cfg[s.key] = s.value);
 
-    const result = await fulfillAmazonOrder(req.params.id, cfg["amazon_access_key"], cfg["amazon_secret_key"], cfg["amazon_partner_tag"]);
+    const result = await fulfillAmazonOrder(Number(req.params.id), cfg["amazon_access_key"], cfg["amazon_secret_key"], cfg["amazon_partner_tag"]);
 
     if (result.success && result.platform_order_id) {
       await db.update(orders).set({
         fulfillment_status: "processing",
         fulfillment_platform: "amazon",
         platform_order_id: result.platform_order_id,
-      }).where(eq(orders.id, req.params.id));
+      }).where(eq(orders.id, Number(req.params.id)));
     }
 
     return res.json({ success: result.success, data: result });
@@ -4783,20 +4814,20 @@ router.post("/admin/orders/:id/fulfill/amazon", requireAuth, requireRole("admin"
 // Fulfill order via Alibaba (internal payment)
 router.post("/admin/orders/:id/fulfill/alibaba", requireAuth, requireRole("admin", "manager"), validateParams(idParamSchema), async (req, res, next) => {
   try {
-    const [order] = await db.select().from(orders).where(eq(orders.id, req.params.id));
+    const [order] = await db.select().from(orders).where(eq(orders.id, Number(req.params.id)));
     if (!order) return res.status(404).json({ success: false, message: "الطلب غير موجود" });
 
     const settings = await db.select().from(platform_settings);
     const cfg: Record<string, string> = {}; settings.forEach(s => cfg[s.key] = s.value);
 
-    const result = await fulfillAlibabaOrder(req.params.id, cfg["alibaba_app_key"], cfg["alibaba_app_key_secret"]);
+    const result = await fulfillAlibabaOrder(Number(req.params.id), cfg["alibaba_app_key"], cfg["alibaba_app_key_secret"]);
 
     if (result.success && result.platform_order_id) {
       await db.update(orders).set({
         fulfillment_status: "processing",
         fulfillment_platform: "alibaba",
         platform_order_id: result.platform_order_id,
-      }).where(eq(orders.id, req.params.id));
+      }).where(eq(orders.id, Number(req.params.id)));
     }
 
     return res.json({ success: result.success, data: result });
@@ -4806,13 +4837,13 @@ router.post("/admin/orders/:id/fulfill/alibaba", requireAuth, requireRole("admin
 // Auto-detect and fulfill
 router.post("/admin/orders/:id/auto-fulfill", requireAuth, requireRole("admin", "manager"), validateParams(idParamSchema), async (req, res, next) => {
   try {
-    const result = await autoFulfillOrder(req.params.id);
+    const result = await autoFulfillOrder(Number(req.params.id));
     if (result.success && result.platform_order_id) {
       await db.update(orders).set({
         fulfillment_status: "processing",
         platform_order_id: result.platform_order_id,
         supplier_tracking: result.tracking_number || "",
-      }).where(eq(orders.id, req.params.id));
+      }).where(eq(orders.id, Number(req.params.id)));
     }
     return res.json({ success: result.success, data: result });
   } catch (err) { next(err); }
@@ -4822,11 +4853,11 @@ router.post("/admin/orders/:id/auto-fulfill", requireAuth, requireRole("admin", 
 router.get("/orders/:id/fulfillment", requireAuth, validateParams(idParamSchema), async (req, res, next) => {
   try {
     const session = (req as any).session;
-    const [order] = await db.select().from(orders).where(eq(orders.id, req.params.id));
+    const [order] = await db.select().from(orders).where(eq(orders.id, Number(req.params.id)));
     if (!order) return res.status(404).json({ success: false, message: "الطلب غير موجود" });
     if (session.role !== "admin" && order.customer_id !== session.customerId) return res.status(403).json({ success: false, message: "غير مصرح" });
 
-    const tracking = await getFulfillmentTracking(req.params.id);
+    const tracking = await getFulfillmentTracking(Number(req.params.id));
     return res.json({ success: true, data: tracking });
   } catch (err) { next(err); }
 });
@@ -4840,7 +4871,7 @@ router.get("/orders/:id/fulfillment", requireAuth, validateParams(idParamSchema)
 router.post("/orders/:id/pay/internal", requireAuth, validateParams(idParamSchema), async (req, res, next) => {
   try {
     const session = (req as any).session;
-    const [order] = await db.select().from(orders).where(eq(orders.id, req.params.id));
+    const [order] = await db.select().from(orders).where(eq(orders.id, Number(req.params.id)));
     if (!order) return res.status(404).json({ success: false, message: "الطلب غير موجود" });
     if (session.role !== "admin" && order.customer_id !== session.customerId) return res.status(403).json({ success: false, message: "غير مصرح" });
     if (order.payment_status === "paid") return res.status(400).json({ success: false, message: "الطلب مدفوع بالفعل" });
@@ -4921,7 +4952,7 @@ router.post("/orders/:id/pay/internal", requireAuth, validateParams(idParamSchem
     }
 
     // ========== GLOBAL PLATFORM: Affiliate WebView ==========
-    let fulfillmentResult = null;
+    let fulfillmentResult: any = null;
 
     if (platform === "amazon") {
       fulfillmentResult = await fulfillAmazonOrder(order.id);
@@ -4963,7 +4994,7 @@ router.post("/orders/:id/pay/internal", requireAuth, validateParams(idParamSchem
 router.post("/orders/:id/pay/confirm", requireAuth, validateParams(idParamSchema), async (req, res, next) => {
   try {
     const { platform_order_id, tracking_number, carrier } = req.body;
-    const [order] = await db.select().from(orders).where(eq(orders.id, req.params.id));
+    const [order] = await db.select().from(orders).where(eq(orders.id, Number(req.params.id)));
     if (!order) return res.status(404).json({ success: false, message: "الطلب غير موجود" });
 
     await db.update(orders).set({
@@ -4972,7 +5003,7 @@ router.post("/orders/:id/pay/confirm", requireAuth, validateParams(idParamSchema
       platform_order_id: platform_order_id || order.platform_order_id,
       supplier_tracking: tracking_number || "",
       fulfillment_status: "processing",
-    }).where(eq(orders.id, req.params.id));
+    }).where(eq(orders.id, Number(req.params.id)));
 
     // Create shipment record if tracking provided
     if (tracking_number && carrier) {
@@ -4993,7 +5024,7 @@ router.post("/orders/:id/pay/confirm", requireAuth, validateParams(idParamSchema
 // Create Stripe Connect account for a vendor
 router.post("/admin/vendors/:id/stripe-connect", requireAuth, requireRole("admin", "manager"), validateParams(idParamSchema), async (req, res, next) => {
   try {
-    const [vendor] = await db.select().from(vendors).where(eq(vendors.id, req.params.id));
+    const [vendor] = await db.select().from(vendors).where(eq(vendors.id, Number(req.params.id)));
     if (!vendor) return res.status(404).json({ success: false, message: "البائع غير موجود" });
 
     const [gateway] = await db.select().from(payment_gateways).where(eq(payment_gateways.provider, "stripe"));
@@ -5035,7 +5066,7 @@ router.post("/admin/vendors/:id/stripe-connect", requireAuth, requireRole("admin
 // Get vendor Stripe Connect status
 router.get("/admin/vendors/:id/stripe-connect", requireAuth, requireRole("admin", "manager"), validateParams(idParamSchema), async (req, res, next) => {
   try {
-    const [account] = await db.select().from(vendor_stripe_accounts).where(eq(vendor_stripe_accounts.vendor_id, req.params.id));
+    const [account] = await db.select().from(vendor_stripe_accounts).where(eq(vendor_stripe_accounts.vendor_id, Number(req.params.id)));
     if (!account) return res.status(404).json({ success: false, message: "لا يوجد حساب Stripe Connect لهذا البائع" });
 
     const [gateway] = await db.select().from(payment_gateways).where(eq(payment_gateways.provider, "stripe"));
@@ -5063,7 +5094,7 @@ router.get("/admin/vendors/:id/stripe-connect", requireAuth, requireRole("admin"
 router.post("/orders/:id/pay/split", requireAuth, validateParams(idParamSchema), async (req, res, next) => {
   try {
     const session = (req as any).session;
-    const [order] = await db.select().from(orders).where(eq(orders.id, req.params.id));
+    const [order] = await db.select().from(orders).where(eq(orders.id, Number(req.params.id)));
     if (!order) return res.status(404).json({ success: false, message: "الطلب غير موجود" });
     if (session.role !== "admin" && order.customer_id !== session.customerId) return res.status(403).json({ success: false, message: "غير مصرح" });
     if (order.payment_status === "paid") return res.status(400).json({ success: false, message: "الطلب مدفوع بالفعل" });
@@ -5135,7 +5166,7 @@ router.post("/orders/:id/pay/split-confirm", requireAuth, validateParams(idParam
         payment_status: "paid",
         status: "processing",
         payment_transaction_id: result.transaction_id,
-      }).where(eq(orders.id, req.params.id));
+      }).where(eq(orders.id, Number(req.params.id)));
     }
 
     return res.json(result);
