@@ -2,8 +2,8 @@ node_modules/
 **/node_modules/
 .env
 .DS_Store
-lib/**/dist/
 artifacts/emad-express/dist/
 *.log
 *.aab
 *.apk
+*.tsbuildinfo

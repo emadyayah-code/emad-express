@@ -4,7 +4,7 @@ import { isNull } from "drizzle-orm";
 let categoryCache: { id: number; name_ar: string; name_en: string }[] | null = null;
 let lastCacheTime = 0;
 
-export async function getCategories() {
+export async function getCategories(): Promise<{ id: number; name_ar: string; name_en: string }[]> {
   const now = Date.now();
   if (categoryCache && now - lastCacheTime < 60000) {
     return categoryCache;
@@ -12,7 +12,7 @@ export async function getCategories() {
   const cats = await db.select().from(categories).where(isNull(categories.deleted_at));
   categoryCache = cats.map(c => ({ id: c.id, name_ar: c.name_ar, name_en: c.name_en }));
   lastCacheTime = now;
-  return categoryCache;
+  return categoryCache || [];
 }
 
 export const ALI_OFFICIAL_CAT_MAP: Record<string, string> = {
