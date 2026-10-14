@@ -66514,7 +66514,7 @@ var require_source_map = __commonJS({
 var require_previous_map = __commonJS({
   "../../node_modules/.pnpm/postcss@8.5.8/node_modules/postcss/lib/previous-map.js"(exports, module) {
     "use strict";
-    var { existsSync, readFileSync } = __require("fs");
+    var { existsSync: existsSync2, readFileSync } = __require("fs");
     var { dirname, join: join2 } = __require("path");
     var { SourceMapConsumer, SourceMapGenerator } = require_source_map();
     function fromBase64(str2) {
@@ -66577,7 +66577,7 @@ var require_previous_map = __commonJS({
       }
       loadFile(path) {
         this.root = dirname(path);
-        if (existsSync(path)) {
+        if (existsSync2(path)) {
           this.mapFile = path;
           return readFileSync(path, "utf-8").toString().trim();
         }
@@ -86196,7 +86196,7 @@ var helmet = Object.assign(
 
 // src/app.ts
 var import_pino_http = __toESM(require_logger(), 1);
-import { mkdirSync as mkdirSync2 } from "fs";
+import { mkdirSync as mkdirSync2, existsSync } from "fs";
 import { resolve } from "path";
 
 // src/routes/index.ts
@@ -94064,7 +94064,10 @@ function getActiveJob() {
 
 // src/routes/emad.ts
 var UPLOADS_DIR = env.UPLOADS_DIR;
-mkdirSync(UPLOADS_DIR, { recursive: true });
+try {
+  mkdirSync(UPLOADS_DIR, { recursive: true });
+} catch {
+}
 var ALLOWED_EXTENSIONS = [".jpg", ".jpeg", ".png", ".gif", ".webp"];
 var ALLOWED_MIMETYPES = ["image/jpeg", "image/png", "image/gif", "image/webp"];
 var multerFn = import_multer.default?.default || import_multer.default;
@@ -99405,7 +99408,10 @@ function notFoundHandler(_req, res) {
 
 // src/app.ts
 var UPLOADS_DIR2 = env.UPLOADS_DIR;
-mkdirSync2(UPLOADS_DIR2, { recursive: true });
+try {
+  mkdirSync2(UPLOADS_DIR2, { recursive: true });
+} catch {
+}
 var app = (0, import_express5.default)();
 if (env.TRUST_PROXY) {
   app.set("trust proxy", true);
@@ -99475,26 +99481,38 @@ app.use("/uploads", import_express5.default.static(UPLOADS_DIR2, {
 app.use(privacy_default);
 app.use("/api", globalRateLimiter, routes_default);
 var adminPanelDir = resolve(process.cwd(), env.ADMIN_PANEL_DIR);
-app.use(
-  import_express5.default.static(adminPanelDir, {
-    setHeaders: (res, path) => {
-      if (path.endsWith(".html")) {
-        res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
-        res.setHeader("Pragma", "no-cache");
-        res.setHeader("Expires", "0");
-      } else if (path.includes("/assets/") || path.includes("\\assets\\")) {
-        res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+if (existsSync(adminPanelDir)) {
+  app.use(
+    import_express5.default.static(adminPanelDir, {
+      setHeaders: (res, path) => {
+        if (path.endsWith(".html")) {
+          res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+          res.setHeader("Pragma", "no-cache");
+          res.setHeader("Expires", "0");
+        } else if (path.includes("/assets/") || path.includes("\\assets\\")) {
+          res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+        }
       }
-    }
-  })
-);
+    })
+  );
+}
 app.use((req, res, next) => {
   if (req.method !== "GET") return next();
   if (req.path.startsWith("/api") || req.path.startsWith("/uploads")) return next();
-  res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
-  res.setHeader("Pragma", "no-cache");
-  res.setHeader("Expires", "0");
-  res.sendFile(resolve(adminPanelDir, "index.html"));
+  const indexHtml = resolve(adminPanelDir, "index.html");
+  if (existsSync(indexHtml)) {
+    res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+    res.setHeader("Pragma", "no-cache");
+    res.setHeader("Expires", "0");
+    return res.sendFile(indexHtml);
+  }
+  return res.json({
+    success: true,
+    service: "emad-express-api",
+    status: "online",
+    message: "\u0645\u0646\u0635\u0629 \u0639\u0645\u0627\u062F \u0625\u0643\u0633\u0628\u0631\u0633 API \u062A\u0639\u0645\u0644 \u0628\u0646\u062C\u0627\u062D",
+    docs: "/api/health"
+  });
 });
 app.use(notFoundHandler);
 app.use(errorHandler);
@@ -99504,35 +99522,47 @@ var app_default = app;
 init_logger2();
 init_src();
 var port2 = env.PORT;
-var server = app_default.listen(port2, "0.0.0.0", async () => {
-  logger.info({ port: port2, nodeEnv: env.NODE_ENV }, "Server listening");
-  try {
-    logger.info("Initializing database schema...");
-    await initDbSchema(pool);
-    logger.info("Database schema initialized. Seeding initial data...");
-    await seedIfEmpty();
-    startPriceSyncJob();
-    startAutoImportJob();
-  } catch (e) {
-    logger.error({ err: e }, "Database initialization/seed failed");
-  }
-});
-server.on("error", (err) => {
-  logger.error({ err }, "Error listening on port");
-  process.exit(1);
-});
-function shutdown(signal) {
-  logger.info({ signal }, "Shutting down gracefully...");
-  server.close(async () => {
+var isServerless = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
+var server = null;
+if (!isServerless) {
+  server = app_default.listen(port2, "0.0.0.0", async () => {
+    logger.info({ port: port2, nodeEnv: env.NODE_ENV }, "Server listening");
     try {
-      await pool.end();
-      logger.info("Database pool closed");
-      process.exit(0);
-    } catch (err) {
-      logger.error({ err }, "Error during shutdown");
-      process.exit(1);
+      logger.info("Initializing database schema...");
+      await initDbSchema(pool);
+      logger.info("Database schema initialized. Seeding initial data...");
+      await seedIfEmpty();
+      startPriceSyncJob();
+      startAutoImportJob();
+    } catch (e) {
+      logger.error({ err: e }, "Database initialization/seed failed");
     }
   });
+  server.on("error", (err) => {
+    logger.error({ err }, "Error listening on port");
+    process.exit(1);
+  });
+} else {
+  initDbSchema(pool).then(() => seedIfEmpty()).catch((err) => {
+    logger.error({ err }, "Database schema init failed on serverless start");
+  });
+}
+function shutdown(signal) {
+  logger.info({ signal }, "Shutting down gracefully...");
+  if (server) {
+    server.close(async () => {
+      try {
+        await pool.end();
+        logger.info("Database pool closed");
+        process.exit(0);
+      } catch (err) {
+        logger.error({ err }, "Error during shutdown");
+        process.exit(1);
+      }
+    });
+  } else {
+    pool.end().finally(() => process.exit(0));
+  }
   setTimeout(() => {
     logger.error("Forced shutdown after timeout");
     process.exit(1);

@@ -2,7 +2,7 @@ import express, { type Express } from "express";
 import cors from "cors";
 import helmet from "helmet";
 import pinoHttp from "pino-http";
-import { mkdirSync } from "fs";
+import { mkdirSync, existsSync } from "fs";
 import { join, resolve } from "path";
 import router from "./routes";
 import privacyRouter from "./routes/privacy";
@@ -13,7 +13,11 @@ import { requestId, timeoutMiddleware, sanitizeInput } from "./middlewares/secur
 import { errorHandler, notFoundHandler } from "./middlewares/errorHandler";
 
 const UPLOADS_DIR = env.UPLOADS_DIR;
-mkdirSync(UPLOADS_DIR, { recursive: true });
+try {
+  mkdirSync(UPLOADS_DIR, { recursive: true });
+} catch {
+  // Read-only filesystem in serverless environments (e.g. Vercel)
+}
 
 const app: Express = express();
 
@@ -106,29 +110,41 @@ app.use(privacyRouter);
 // API routes (with generous API rate limiting)
 app.use("/api", globalRateLimiter, router);
 
-// Serve admin panel & frontend directly on root domain
+// Serve admin panel & frontend directly on root domain if present
 const adminPanelDir = resolve(process.cwd(), env.ADMIN_PANEL_DIR);
-app.use(
-  express.static(adminPanelDir, {
-    setHeaders: (res, path) => {
-      if (path.endsWith(".html")) {
-        res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
-        res.setHeader("Pragma", "no-cache");
-        res.setHeader("Expires", "0");
-      } else if (path.includes("/assets/") || path.includes("\\assets\\")) {
-        res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
-      }
-    },
-  })
-);
+if (existsSync(adminPanelDir)) {
+  app.use(
+    express.static(adminPanelDir, {
+      setHeaders: (res, path) => {
+        if (path.endsWith(".html")) {
+          res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+          res.setHeader("Pragma", "no-cache");
+          res.setHeader("Expires", "0");
+        } else if (path.includes("/assets/") || path.includes("\\assets\\")) {
+          res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+        }
+      },
+    })
+  );
+}
 
 app.use((req, res, next) => {
   if (req.method !== "GET") return next();
   if (req.path.startsWith("/api") || req.path.startsWith("/uploads")) return next();
-  res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
-  res.setHeader("Pragma", "no-cache");
-  res.setHeader("Expires", "0");
-  res.sendFile(resolve(adminPanelDir, "index.html"));
+  const indexHtml = resolve(adminPanelDir, "index.html");
+  if (existsSync(indexHtml)) {
+    res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+    res.setHeader("Pragma", "no-cache");
+    res.setHeader("Expires", "0");
+    return res.sendFile(indexHtml);
+  }
+  return res.json({
+    success: true,
+    service: "emad-express-api",
+    status: "online",
+    message: "منصة عماد إكسبرس API تعمل بنجاح",
+    docs: "/api/health"
+  });
 });
 
 // 404 handler

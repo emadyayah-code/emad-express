@@ -5,39 +5,55 @@ import { pool, initDbSchema } from "@workspace/db";
 import { seedIfEmpty, startPriceSyncJob, startAutoImportJob } from "./routes/emad";
 
 const port = env.PORT;
+const isServerless = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
 
-const server = app.listen(port, "0.0.0.0", async () => {
-  logger.info({ port, nodeEnv: env.NODE_ENV }, "Server listening");
-  try {
-    logger.info("Initializing database schema...");
-    await initDbSchema(pool);
-    logger.info("Database schema initialized. Seeding initial data...");
-    await seedIfEmpty();
-    startPriceSyncJob();
-    startAutoImportJob();
-  } catch (e) {
-    logger.error({ err: e }, "Database initialization/seed failed");
-  }
-});
+let server: any = null;
 
-server.on("error", (err) => {
-  logger.error({ err }, "Error listening on port");
-  process.exit(1);
-});
+if (!isServerless) {
+  server = app.listen(port, "0.0.0.0", async () => {
+    logger.info({ port, nodeEnv: env.NODE_ENV }, "Server listening");
+    try {
+      logger.info("Initializing database schema...");
+      await initDbSchema(pool);
+      logger.info("Database schema initialized. Seeding initial data...");
+      await seedIfEmpty();
+      startPriceSyncJob();
+      startAutoImportJob();
+    } catch (e) {
+      logger.error({ err: e }, "Database initialization/seed failed");
+    }
+  });
+
+  server.on("error", (err: any) => {
+    logger.error({ err }, "Error listening on port");
+    process.exit(1);
+  });
+} else {
+  // In Serverless/Vercel: initialize schema on cold start in background
+  initDbSchema(pool)
+    .then(() => seedIfEmpty())
+    .catch((err) => {
+      logger.error({ err }, "Database schema init failed on serverless start");
+    });
+}
 
 // Graceful shutdown
 function shutdown(signal: string) {
   logger.info({ signal }, "Shutting down gracefully...");
-  server.close(async () => {
-    try {
-      await pool.end();
-      logger.info("Database pool closed");
-      process.exit(0);
-    } catch (err) {
-      logger.error({ err }, "Error during shutdown");
-      process.exit(1);
-    }
-  });
+  if (server) {
+    server.close(async () => {
+      try {
+        await pool.end();
+        logger.info("Database pool closed");
+        process.exit(0);
+      } catch (err) {
+        logger.error({ err }, "Error during shutdown");
+        process.exit(1);
+      }
+    });
+  } else {
+    pool.end().finally(() => process.exit(0));
+  }
 
   // Force shutdown after 10 seconds
   setTimeout(() => {
