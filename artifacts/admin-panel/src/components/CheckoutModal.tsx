@@ -46,7 +46,7 @@ export function CheckoutModal({
 
   const formatCardNumber = (val: string) => {
     const digits = val.replace(/\D/g, "").slice(0, 16);
-    const groups = [];
+    const groups: string[] = [];
     for (let i = 0; i < digits.length; i += 4) {
       groups.push(digits.slice(i, i + 4));
     }

@@ -33,6 +33,7 @@ export default function Dropshipping() {
   const [urlError, setUrlError] = useState("");
   const [importingAllBrowse, setImportingAllBrowse] = useState(false);
   const [importAllSuccess, setImportAllSuccess] = useState("");
+  const [margin, setMargin] = useState(300);
 
   const handleImportAllBrowse = async () => {
     if (browseList.length === 0) return;
@@ -963,7 +964,7 @@ function AutoFetchButton({ platform, onResults }: { platform: string; onResults:
           const res = await api.post("/admin/dropship/import-chunk", { 
             platform, 
             page: p,
-            margin_percent: margin || 300, 
+            margin_percent: 300, 
             category_id: selectedCat || undefined,
             keyword: keyword || undefined,
             seed
