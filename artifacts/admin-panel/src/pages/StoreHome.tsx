@@ -98,6 +98,8 @@ export default function StoreHome() {
   const { data: categoriesData, isLoading: loadingCategories } = useQuery({
     queryKey: ["store-categories"],
     queryFn: () => api.get("/categories"),
+    staleTime: 60000,
+    refetchInterval: 60000,
   });
 
   // Fetch store products dynamically
@@ -109,12 +111,18 @@ export default function StoreHome() {
       if (searchQuery) url += `&search=${encodeURIComponent(searchQuery)}`;
       return api.get(url);
     },
+    staleTime: 10000,
+    refetchInterval: 30000,
+    refetchOnWindowFocus: true,
   });
 
   // Fetch categorized feed for multi-shelf display (Identical to Mobile App)
   const { data: homeFeed } = useQuery({
     queryKey: ["store-home-feed"],
     queryFn: () => api.get("/home-feed?lang=ar"),
+    staleTime: 10000,
+    refetchInterval: 30000,
+    refetchOnWindowFocus: true,
   });
 
   const categoriesList: any[] = Array.isArray(categoriesData)

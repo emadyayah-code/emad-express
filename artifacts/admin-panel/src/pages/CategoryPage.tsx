@@ -66,6 +66,9 @@ export default function CategoryPage() {
       return api.get(`/products?category_id=${categoryId}&limit=100`);
     },
     enabled: Boolean(categoryId),
+    staleTime: 10000,
+    refetchInterval: 30000,
+    refetchOnWindowFocus: true,
   });
 
   const rawProducts: any[] = useMemo(() => {

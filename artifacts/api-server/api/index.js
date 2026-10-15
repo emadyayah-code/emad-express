@@ -97143,7 +97143,7 @@ router2.post("/admin/dropship/purge-zero-stock", requireAuth, requireRole("admin
 });
 var autoImportRunning = false;
 var autoImportPageIndex = 1;
-async function runAutoImportCycle(targetCount = 5e3) {
+async function runAutoImportCycle(targetCount = 500) {
   if (autoImportRunning) {
     logger.info("Auto-import cycle is already in progress, skipping concurrent run.");
     return { imported: 0, skipped: 0, totalInDb: 0 };
@@ -97278,6 +97278,31 @@ async function runAutoImportCycle(targetCount = 5e3) {
     autoImportRunning = false;
   }
 }
+router2.all("/cron/auto-import", async (req, res, next) => {
+  try {
+    const { count = 500 } = req.query;
+    const result = await runAutoImportCycle(Number(count) || 500);
+    return res.json({
+      success: true,
+      message: "\u062A\u0645 \u062C\u0644\u0628 500 \u0645\u0646\u062A\u062C \u0648\u062A\u062D\u062F\u064A\u062B \u0627\u0644\u0645\u062A\u062C\u0631 \u0648\u0627\u0644\u062A\u0637\u0628\u064A\u0642 \u0628\u0646\u062C\u0627\u062D",
+      ...result
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+router2.all("/cron/sync-stock", async (_req, res, next) => {
+  try {
+    const result = await syncAllDropshipPricesAndStock();
+    return res.json({
+      success: true,
+      message: "\u062A\u0645\u062A \u0627\u0644\u0645\u0632\u0627\u0645\u0646\u0629 \u0648\u062D\u0630\u0641 \u0627\u0644\u0645\u0646\u062A\u062C\u0627\u062A \u0627\u0644\u0646\u0627\u0641\u062F\u0629 \u0646\u0647\u0627\u0626\u064A\u0627\u064B \u0645\u0646 \u0642\u0627\u0639\u062F\u0629 \u0627\u0644\u0628\u064A\u0627\u0646\u0627\u062A \u0648\u0627\u0644\u0645\u062A\u062C\u0631 \u0648\u0627\u0644\u062A\u0637\u0628\u064A\u0642 \u0628\u0646\u062C\u0627\u062D",
+      ...result
+    });
+  } catch (err) {
+    next(err);
+  }
+});
 async function getAmazonCreds2() {
   const accessKey = (await db.select().from(platform_settings).where(eq(platform_settings.key, "amazon_access_key")))[0]?.value;
   const secretKey = (await db.select().from(platform_settings).where(eq(platform_settings.key, "amazon_secret_key")))[0]?.value;

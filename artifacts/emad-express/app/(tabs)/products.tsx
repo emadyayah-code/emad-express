@@ -112,12 +112,15 @@ export default function ProductsScreen() {
   const { data: productsData, isLoading } = useQuery({
     queryKey: ["products", selectedCat, language],
     queryFn: () => api.get(`/products${selectedCat ? `?category_id=${selectedCat}&lang=${language}` : `?lang=${language}`}`),
-    staleTime: 300000,
+    staleTime: 10000,
+    refetchInterval: 30000,
+    refetchOnWindowFocus: true,
   });
   const { data: categoriesData } = useQuery({
     queryKey: ["categories", language],
     queryFn: () => api.get("/categories"),
-    staleTime: 300000,
+    staleTime: 60000,
+    refetchInterval: 60000,
   });
 
   const categoriesList = Array.isArray(categoriesData) ? categoriesData : (categoriesData?.data || []);

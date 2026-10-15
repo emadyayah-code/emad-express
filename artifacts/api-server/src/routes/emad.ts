@@ -3696,11 +3696,11 @@ router.post("/admin/dropship/purge-zero-stock", requireAuth, requireRole("admin"
   } catch (err) { next(err); }
 });
 
-// ========== AUTO IMPORT 2000 PRODUCTS EVERY 5 MINUTES (ZERO MANUAL INTERVENTION) ==========
+// ========== AUTO IMPORT 500 PRODUCTS EVERY 1 HOUR (ZERO MANUAL INTERVENTION) ==========
 let autoImportRunning = false;
 let autoImportPageIndex = 1;
 
-export async function runAutoImportCycle(targetCount = 5000): Promise<{ imported: number; skipped: number; totalInDb: number }> {
+export async function runAutoImportCycle(targetCount = 500): Promise<{ imported: number; skipped: number; totalInDb: number }> {
   if (autoImportRunning) {
     logger.info("Auto-import cycle is already in progress, skipping concurrent run.");
     return { imported: 0, skipped: 0, totalInDb: 0 };
@@ -3860,20 +3860,43 @@ export async function runAutoImportCycle(targetCount = 5000): Promise<{ imported
 }
 
 export function startAutoImportJob() {
-  const INTERVAL_MS = 12 * 60 * 60 * 1000; // Run automatically every 12 hours continuously
-  // First run starts 45 seconds after server boots up
+  const INTERVAL_MS = 60 * 60 * 1000; // Run automatically every 1 hour continuously (كل ساعة 500 منتج)
+  // First run starts 30 seconds after server boots up
   setTimeout(() => {
-    runAutoImportCycle(5000).catch(err => logger.error({ err }, "Initial auto-import job failed"));
-  }, 45 * 1000);
+    runAutoImportCycle(500).catch(err => logger.error({ err }, "Initial hourly auto-import job failed"));
+  }, 30 * 1000);
 
-  // Then recurring runs every 12 hours
+  // Recurring runs every 1 hour
   setInterval(() => {
-    runAutoImportCycle(5000).catch(err => logger.error({ err }, "Recurring auto-import job failed"));
+    runAutoImportCycle(500).catch(err => logger.error({ err }, "Recurring hourly auto-import job failed"));
   }, INTERVAL_MS);
 
-  logger.info("🤖 Auto-import job scheduled: 5,000 products will be fetched and imported every 12 hours automatically.");
+  logger.info("🤖 Auto-import job scheduled: 500 products will be fetched and imported every 1 hour automatically.");
 }
 
+// ========== CRON ENDPOINTS (FOR AUTOMATED JOBS & VERCEL CRONS) ==========
+router.all("/cron/auto-import", async (req, res, next) => {
+  try {
+    const { count = 500 } = req.query as Record<string, string>;
+    const result = await runAutoImportCycle(Number(count) || 500);
+    return res.json({
+      success: true,
+      message: "تم جلب 500 منتج وتحديث المتجر والتطبيق بنجاح",
+      ...result,
+    });
+  } catch (err) { next(err); }
+});
+
+router.all("/cron/sync-stock", async (_req, res, next) => {
+  try {
+    const result = await syncAllDropshipPricesAndStock();
+    return res.json({
+      success: true,
+      message: "تمت المزامنة وحذف المنتجات النافدة نهائياً من قاعدة البيانات والمتجر والتطبيق بنجاح",
+      ...result,
+    });
+  } catch (err) { next(err); }
+});
 
 // ========== AMAZON REAL API ==========
 

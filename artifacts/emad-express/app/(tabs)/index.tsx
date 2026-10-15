@@ -268,9 +268,26 @@ export default function HomeScreen() {
   const { t, language } = useLanguage();
   const { format } = useCurrency();
 
-  const { data: productsData } = useQuery({ queryKey: ["products", language], queryFn: () => api.get(`/products?lang=${language}`), staleTime: 300000 });
-  const { data: categoriesData } = useQuery({ queryKey: ["categories", language], queryFn: () => api.get("/categories"), staleTime: 300000 });
-  const { data: homeFeedData } = useQuery({ queryKey: ["home-feed", language], queryFn: () => api.get(`/home-feed?lang=${language}`), staleTime: 300000 });
+  const { data: productsData } = useQuery({
+    queryKey: ["products", language],
+    queryFn: () => api.get(`/products?lang=${language}`),
+    staleTime: 10000,
+    refetchInterval: 30000,
+    refetchOnWindowFocus: true,
+  });
+  const { data: categoriesData } = useQuery({
+    queryKey: ["categories", language],
+    queryFn: () => api.get("/categories"),
+    staleTime: 60000,
+    refetchInterval: 60000,
+  });
+  const { data: homeFeedData } = useQuery({
+    queryKey: ["home-feed", language],
+    queryFn: () => api.get(`/home-feed?lang=${language}`),
+    staleTime: 10000,
+    refetchInterval: 30000,
+    refetchOnWindowFocus: true,
+  });
 
   const products = Array.isArray(productsData) ? productsData : (productsData?.data || productsData?.products || []);
   const categories = Array.isArray(categoriesData) ? categoriesData : (categoriesData?.data || []);
