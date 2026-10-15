@@ -99435,6 +99435,15 @@ var app = (0, import_express5.default)();
 if (env.TRUST_PROXY) {
   app.set("trust proxy", true);
 }
+app.use((req, res, next) => {
+  const original = req.headers["x-matched-path"] || req.headers["x-invoke-path"];
+  if (original && original !== req.url) {
+    req.url = original;
+  }
+  next();
+});
+app.get("/health", (_req, res) => res.json({ status: "ok" }));
+app.get("/api/health", (_req, res) => res.json({ status: "ok" }));
 app.use(requestId);
 var helmetFn = helmet?.default || helmet;
 app.use(helmetFn({

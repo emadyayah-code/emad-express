@@ -26,6 +26,19 @@ if (env.TRUST_PROXY) {
   app.set("trust proxy", true);
 }
 
+// Restore rewritten URL in Vercel/serverless environments
+app.use((req, res, next) => {
+  const original = (req.headers["x-matched-path"] as string) || (req.headers["x-invoke-path"] as string);
+  if (original && original !== req.url) {
+    req.url = original;
+  }
+  next();
+});
+
+// Quick top-level health checks
+app.get("/health", (_req, res) => res.json({ status: "ok" }));
+app.get("/api/health", (_req, res) => res.json({ status: "ok" }));
+
 // Request ID for tracing
 app.use(requestId);
 

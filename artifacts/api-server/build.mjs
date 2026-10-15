@@ -117,6 +117,16 @@ globalThis.__dirname = __bannerPath.dirname(globalThis.__filename);
     `,
     },
   });
+  
+  // Create self-contained serverless entrypoints for Vercel
+  const { copyFile, mkdir } = await import("node:fs/promises");
+  const localApiDir = path.resolve(artifactDir, "api");
+  const rootApiDir = path.resolve(artifactDir, "../../api");
+  await mkdir(localApiDir, { recursive: true });
+  await mkdir(rootApiDir, { recursive: true });
+  await copyFile(path.resolve(distDir, "index.mjs"), path.resolve(localApiDir, "index.js"));
+  await copyFile(path.resolve(distDir, "index.mjs"), path.resolve(rootApiDir, "index.js"));
+  console.log("Self-contained serverless entrypoints generated at api/index.js");
 }
 
 buildAll().catch((err) => {
