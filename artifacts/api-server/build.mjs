@@ -156,9 +156,10 @@ globalThis.__dirname = __bannerPath.dirname(globalThis.__filename);
     },
   });
 
-  const { cp } = await import("node:fs/promises");
+  const { cp, copyFile } = await import("node:fs/promises");
   await cp(localApiDir, rootApiDir, { recursive: true });
-  console.log("Dedicated serverless bundle generated at api/index.js");
+  await copyFile(path.resolve(localApiDir, "index.js"), path.resolve(artifactDir, "index.js"));
+  console.log("Dedicated serverless bundle generated at api/index.js and index.js");
 }
 
 buildAll().catch((err) => {
