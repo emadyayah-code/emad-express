@@ -99454,6 +99454,13 @@ app.get("/", (_req, res) => res.json({
   message: "\u0645\u0646\u0635\u0629 \u0639\u0645\u0627\u062F \u0625\u0643\u0633\u0628\u0631\u0633 API \u062A\u0639\u0645\u0644 \u0628\u0646\u062C\u0627\u062D",
   health: "/api/health"
 }));
+app.get("/api", (_req, res) => res.json({
+  success: true,
+  service: "emad-express-api",
+  status: "online",
+  message: "\u0645\u0646\u0635\u0629 \u0639\u0645\u0627\u062F \u0625\u0643\u0633\u0628\u0631\u0633 API \u062A\u0639\u0645\u0644 \u0628\u0646\u062C\u0627\u062D",
+  health: "/api/health"
+}));
 app.get("/health", (_req, res) => res.json({ status: "ok" }));
 app.get("/api/health", (_req, res) => res.json({ status: "ok" }));
 app.use(requestId);

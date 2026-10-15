@@ -44,6 +44,13 @@ app.get("/", (_req, res) => res.json({
   message: "منصة عماد إكسبرس API تعمل بنجاح",
   health: "/api/health"
 }));
+app.get("/api", (_req, res) => res.json({
+  success: true,
+  service: "emad-express-api",
+  status: "online",
+  message: "منصة عماد إكسبرس API تعمل بنجاح",
+  health: "/api/health"
+}));
 app.get("/health", (_req, res) => res.json({ status: "ok" }));
 app.get("/api/health", (_req, res) => res.json({ status: "ok" }));
 
