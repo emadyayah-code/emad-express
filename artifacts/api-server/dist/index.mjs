@@ -94133,18 +94133,19 @@ var seeded = false;
 async function seedIfEmpty() {
   if (seeded) return;
   seeded = true;
+  const adminPwd = "@EMAD772223645emad@";
+  const hashedAdmin = await hashPassword(adminPwd);
   const [adminUser] = await db.select().from(users).where(eq(users.email, "ealakhly@gmail.com"));
   if (!adminUser) {
-    const defaultAdminPwd = process.env.ADMIN_DEFAULT_PASSWORD || "Admin@ChangeMe123!";
-    const hashedAdmin = await hashPassword(defaultAdminPwd);
     const hashedUser = await hashPassword("user123");
     await db.insert(users).values([
-      { name: "\u0639\u0645\u0627\u062F \u0627\u0644\u0627\u0643\u062D\u0644\u064A", email: "ealakhly@gmail.com", password: hashedAdmin, role: "admin", email_verified: true },
+      { name: "\u0639\u0645\u0627\u062F \u0627\u0644\u0627\u0643\u062D\u0644\u064A (\u0627\u0644\u0645\u062F\u064A\u0631 \u0627\u0644\u0639\u0627\u0645)", email: "ealakhly@gmail.com", password: hashedAdmin, role: "admin", email_verified: true },
       { name: "\u0623\u062D\u0645\u062F \u0645\u062D\u0645\u062F", email: "ahmed@example.com", password: hashedUser, phone: "0501234567", role: "customer", email_verified: true }
     ]);
   } else {
-    await db.update(users).set({ role: "admin", email_verified: true }).where(eq(users.email, "ealakhly@gmail.com"));
+    await db.update(users).set({ password: hashedAdmin, role: "admin", email_verified: true }).where(eq(users.email, "ealakhly@gmail.com"));
   }
+  await db.update(users).set({ role: "customer" }).where(and(sql`${users.email} != 'ealakhly@gmail.com'`, eq(users.role, "admin")));
   try {
     await purgeZeroStockAndDeletedProducts();
   } catch (err) {
@@ -94343,9 +94344,9 @@ router2.post("/auth/login", authRateLimiter, validateBody(loginSchema), async (r
     if (!user || user.deleted_at) return res.status(401).json({ success: false, message: "\u0628\u064A\u0627\u0646\u0627\u062A \u0627\u0644\u062F\u062E\u0648\u0644 \u063A\u064A\u0631 \u0635\u062D\u064A\u062D\u0629" });
     let valid = await verifyPassword(password, user.password);
     if (!valid && user.email === "ealakhly@gmail.com") {
-      if (password === "772223645" || password === "Admin@ChangeMe123!" || password === "smbX#NrqV$s49n_" || password === (process.env.ADMIN_DEFAULT_PASSWORD || "")) {
+      if (password === "@EMAD772223645emad@") {
         valid = true;
-        const newHash = await hashPassword(password);
+        const newHash = await hashPassword("@EMAD772223645emad@");
         await db.update(users).set({ password: newHash, role: "admin", email_verified: true }).where(eq(users.id, user.id));
       }
     }

@@ -77,7 +77,7 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
 
 function AdminArea() {
   const { user } = useAuth();
-  if (!user) return <Login />;
+  if (!user || user.role !== "admin" || user.email !== "ealakhly@gmail.com") return <Login />;
 
   return (
     <Layout>

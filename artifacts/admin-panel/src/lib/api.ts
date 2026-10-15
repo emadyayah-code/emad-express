@@ -6,21 +6,34 @@ export function getApiBase() {
 
 export function setToken(token: string) {
   if (token && token !== "undefined" && token !== "null") {
-    localStorage.setItem("token", token);
+    sessionStorage.setItem("admin_token", token);
+    localStorage.removeItem("token"); // Never store admin token in persistent localStorage
   }
 }
 
 export function clearToken() {
-  localStorage.removeItem("token");
-  localStorage.removeItem("user");
+  try {
+    sessionStorage.removeItem("admin_token");
+    sessionStorage.removeItem("user");
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+  } catch {}
 }
 
 export function getToken(): string | null {
-  const customerToken = localStorage.getItem("customer_token");
-  if (customerToken && customerToken !== "undefined" && customerToken !== "null") return customerToken;
-  const t = localStorage.getItem("token");
-  if (!t || t === "undefined" || t === "null") return null;
-  return t;
+  try {
+    const adminToken = sessionStorage.getItem("admin_token");
+    if (adminToken && adminToken !== "undefined" && adminToken !== "null") return adminToken;
+
+    const customerToken = localStorage.getItem("customer_token");
+    if (customerToken && customerToken !== "undefined" && customerToken !== "null") return customerToken;
+
+    const t = localStorage.getItem("token");
+    if (!t || t === "undefined" || t === "null") return null;
+    return t;
+  } catch {
+    return null;
+  }
 }
 
 async function request(path: string, opts: RequestInit = {}) {

@@ -10,25 +10,32 @@ export default function Login() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (user) {
+    if (user && user.role === "admin" && user.email === "ealakhly@gmail.com") {
       setLocation("/admin");
     }
   }, [user, setLocation]);
+
+  // Clean and destroy any input values on unmount or unload
+  useEffect(() => {
+    return () => {
+      setEmail("");
+      setPassword("");
+    };
+  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
     try {
       await login(email, password);
+      // Immediately wipe local state memory after successful login
+      setEmail("");
+      setPassword("");
       setLocation("/admin");
     } catch (err: any) {
+      setPassword(""); // Clear password field immediately on failure
       setError(err.message || "بيانات الدخول غير صحيحة");
     }
-  }
-
-  function handleAutoFill() {
-    setEmail("ealakhly@gmail.com");
-    setPassword("772223645");
   }
 
   return (
@@ -82,17 +89,24 @@ export default function Login() {
             boxShadow: "0 25px 60px -15px rgba(0,0,0,0.9), 0 0 30px rgba(245,158,11,0.15)",
           }}
         >
-          <h2 className="text-center text-lg font-semibold text-amber-300 mb-6">تسجيل الدخول للمدير</h2>
+          <div className="text-center mb-6">
+            <h2 className="text-lg font-semibold text-amber-300">تسجيل الدخول للمدير العام</h2>
+            <p className="text-xs text-amber-200/60 mt-1">الوصول مقتصر على المدير العام المعتمد فقط</p>
+          </div>
 
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form onSubmit={handleSubmit} className="space-y-5" autoComplete="off">
             <div>
-              <label className="block text-sm font-medium text-amber-200/80 mb-2">البريد الإلكتروني</label>
+              <label className="block text-sm font-medium text-amber-200/80 mb-2">بريد المدير العام</label>
               <input
-                type="text"
+                type="email"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
-                placeholder="ealakhly@gmail.com أو admin@emadexpress.com"
+                placeholder="البريد الإلكتروني المعتمد"
                 required
+                autoComplete="off"
+                autoCorrect="off"
+                autoCapitalize="off"
+                spellCheck={false}
                 className="w-full rounded-xl px-4 py-3 text-sm text-white outline-none transition-all"
                 style={{
                   background: "rgba(255,255,255,0.05)",
@@ -103,13 +117,17 @@ export default function Login() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-amber-200/80 mb-2">كلمة المرور</label>
+              <label className="block text-sm font-medium text-amber-200/80 mb-2">كلمة المرور السرية</label>
               <input
                 type="password"
                 value={password}
                 onChange={e => setPassword(e.target.value)}
-                placeholder="أدخل كلمة المرور"
+                placeholder="كلمة المرور الخاصة بالمدير"
                 required
+                autoComplete="new-password"
+                autoCorrect="off"
+                autoCapitalize="off"
+                spellCheck={false}
                 className="w-full rounded-xl px-4 py-3 text-sm text-white outline-none transition-all"
                 style={{
                   background: "rgba(255,255,255,0.05)",
@@ -135,26 +153,16 @@ export default function Login() {
                 boxShadow: "0 6px 25px rgba(245,158,11,0.45), inset 0 1px 1px rgba(255,255,255,0.6)",
               }}
             >
-              {loading ? "جارٍ تسجيل الدخول..." : "تسجيل الدخول"}
+              {loading ? "جارٍ التحقق والدخول..." : "تسجيل الدخول الآمن"}
             </button>
 
-            <div className="pt-2 text-center space-y-3">
-              <button
-                type="button"
-                onClick={handleAutoFill}
-                className="w-full text-xs text-amber-300/80 hover:text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 rounded-xl py-2 px-3 transition-colors cursor-pointer"
+            <div className="pt-2 text-center">
+              <a
+                href="/store"
+                className="text-xs text-slate-400 hover:text-amber-300 transition-colors inline-flex items-center gap-1.5 hover:underline"
               >
-                ⚡ تعبئة بيانات الدخول للمدير تلقائياً
-              </button>
-
-              <div>
-                <a
-                  href="/store"
-                  className="text-xs text-slate-400 hover:text-amber-300 transition-colors inline-flex items-center gap-1.5 hover:underline"
-                >
-                  <span>🏪 معاينة واجهة متجر العملاء (Storefront)</span>
-                </a>
-              </div>
+                <span>🏪 العودة إلى واجهة المتجر (Storefront)</span>
+              </a>
             </div>
           </form>
         </div>
