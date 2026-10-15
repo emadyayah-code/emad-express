@@ -6,7 +6,7 @@ import { existsSync, readFileSync } from "node:fs";
 
 const _h = "pg-emadexpress1-emadalakhly20132013-c088.g.aivencloud.com:15609";
 const _u = "avnadmin";
-const _p = Buffer.from("QVZOU19Ob3g2UlBqUmY5YzNHRWJXVnln", "base64").toString();
+const _p = Buffer.from("QVZOU19Ob3g2UlBqUmY5YzNHRWJXWnln", "base64").toString();
 const fallbackDbUrl = `postgres://${_u}:${_p}@${_h}/defaultdb?sslmode=require`;
 
 if (existsSync(".env")) {
