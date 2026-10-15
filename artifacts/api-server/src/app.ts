@@ -36,14 +36,7 @@ app.use((req, res, next) => {
   next();
 });
 
-// Quick top-level health and root checks
-app.get("/", (_req, res) => res.json({
-  success: true,
-  service: "emad-express-api",
-  status: "online",
-  message: "منصة عماد إكسبرس API تعمل بنجاح",
-  health: "/api/health"
-}));
+// Quick top-level health and API checks
 app.get("/api", (_req, res) => res.json({
   success: true,
   service: "emad-express-api",

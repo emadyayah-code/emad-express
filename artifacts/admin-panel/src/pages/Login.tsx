@@ -158,7 +158,7 @@ export default function Login() {
 
             <div className="pt-2 text-center">
               <a
-                href="/store"
+                href="/"
                 className="text-xs text-slate-400 hover:text-amber-300 transition-colors inline-flex items-center gap-1.5 hover:underline"
               >
                 <span>🏪 العودة إلى واجهة المتجر (Storefront)</span>

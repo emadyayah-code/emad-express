@@ -151,7 +151,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
           {/* Direct link to public storefront */}
           <a
-            href="/store"
+            href="/"
+            target="_blank"
+            rel="noopener noreferrer"
             className="flex items-center gap-1.5 text-xs px-3.5 py-1.5 rounded-xl font-bold transition-all border shadow-sm hover:scale-105"
             style={{
               background: "rgba(245,158,11,0.12)",

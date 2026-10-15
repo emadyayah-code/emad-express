@@ -82,8 +82,8 @@ function AdminArea() {
   return (
     <Layout>
       <Switch>
-        <Route path="/" component={Dashboard} />
         <Route path="/admin" component={Dashboard} />
+        <Route path="/admin/" component={Dashboard} />
         <Route path="/admin/products" component={Products} />
         <Route path="/admin/categories" component={Categories} />
         <Route path="/admin/orders" component={Orders} />
@@ -102,25 +102,6 @@ function AdminArea() {
         <Route path="/admin/partner-ads" component={PartnerAds} />
         <Route path="/admin/privacy-policy" component={Privacy} />
         <Route path="/admin/privacy" component={Privacy} />
-        {/* Direct Admin Paths */}
-        <Route path="/products" component={Products} />
-        <Route path="/categories" component={Categories} />
-        <Route path="/orders" component={Orders} />
-        <Route path="/returns" component={Returns} />
-        <Route path="/users" component={Users} />
-        <Route path="/customers" component={Users} />
-        <Route path="/vendors" component={Vendors} />
-        <Route path="/dropshipping" component={Dropshipping} />
-        <Route path="/affiliates" component={Affiliates} />
-        <Route path="/my-commission" component={MyCommission} />
-        <Route path="/supplier-payments" component={SupplierPayments} />
-        <Route path="/accounting" component={Accounting} />
-        <Route path="/reports" component={Reports} />
-        <Route path="/settings" component={Settings} />
-        <Route path="/affiliate-settings" component={AffiliateSettings} />
-        <Route path="/partner-ads" component={PartnerAds} />
-        <Route path="/privacy-policy" component={Privacy} />
-        <Route path="/privacy" component={Privacy} />
         {/* Default Admin Route */}
         <Route component={Dashboard} />
       </Switch>
@@ -131,7 +112,8 @@ function AdminArea() {
 function AppRoutes() {
   return (
     <Switch>
-      {/* Public Storefront Home (Accessible via /store) */}
+      {/* Public Storefront Home (emadexpress.ayadicmed.com) */}
+      <Route path="/" component={StoreHome} />
       <Route path="/store" component={StoreHome} />
       <Route path="/store/category/:id" component={CategoryPage} />
       <Route path="/category/:id" component={CategoryPage} />
@@ -140,34 +122,13 @@ function AppRoutes() {
       <Route path="/privacy-policy" component={Privacy} />
       <Route path="/privacy" component={Privacy} />
 
-      {/* Direct Login Page */}
-      <Route path="/login" component={Login} />
-
-      {/* Admin Panel (Primary Application at Root & Admin) */}
-      <Route path="/" component={AdminArea} />
+      {/* Admin Panel (emadexpress.ayadicmed.com/admin) */}
       <Route path="/admin" component={AdminArea} />
       <Route path="/admin/:rest*" component={AdminArea} />
+      <Route path="/login" component={AdminArea} />
 
-      {/* Direct Admin shortcuts */}
-      <Route path="/products" component={AdminArea} />
-      <Route path="/categories" component={AdminArea} />
-      <Route path="/orders" component={AdminArea} />
-      <Route path="/returns" component={AdminArea} />
-      <Route path="/users" component={AdminArea} />
-      <Route path="/customers" component={AdminArea} />
-      <Route path="/vendors" component={AdminArea} />
-      <Route path="/dropshipping" component={AdminArea} />
-      <Route path="/affiliates" component={AdminArea} />
-      <Route path="/my-commission" component={AdminArea} />
-      <Route path="/supplier-payments" component={AdminArea} />
-      <Route path="/accounting" component={AdminArea} />
-      <Route path="/reports" component={AdminArea} />
-      <Route path="/settings" component={AdminArea} />
-      <Route path="/affiliate-settings" component={AdminArea} />
-      <Route path="/partner-ads" component={AdminArea} />
-
-      {/* Fallback to Admin */}
-      <Route component={AdminArea} />
+      {/* Fallback to Storefront */}
+      <Route component={StoreHome} />
     </Switch>
   );
 }
