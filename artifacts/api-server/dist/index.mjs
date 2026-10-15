@@ -94085,8 +94085,12 @@ function getActiveJob() {
 }
 
 // src/routes/emad.ts
-var UPLOADS_DIR = env.UPLOADS_DIR;
-mkdirSync(UPLOADS_DIR, { recursive: true });
+var isServerlessEnv = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.NOW_REGION);
+var UPLOADS_DIR = isServerlessEnv ? "/tmp/uploads" : env.UPLOADS_DIR;
+try {
+  mkdirSync(UPLOADS_DIR, { recursive: true });
+} catch {
+}
 var ALLOWED_EXTENSIONS = [".jpg", ".jpeg", ".png", ".gif", ".webp"];
 var ALLOWED_MIMETYPES = ["image/jpeg", "image/png", "image/gif", "image/webp"];
 var multerFn = import_multer.default?.default || import_multer.default;
@@ -99426,7 +99430,8 @@ function notFoundHandler(_req, res) {
 }
 
 // src/app.ts
-var UPLOADS_DIR2 = env.UPLOADS_DIR;
+var isServerlessEnv2 = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.NOW_REGION);
+var UPLOADS_DIR2 = isServerlessEnv2 ? "/tmp/uploads" : env.UPLOADS_DIR;
 try {
   mkdirSync2(UPLOADS_DIR2, { recursive: true });
 } catch {

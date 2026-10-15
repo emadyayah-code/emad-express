@@ -4,7 +4,7 @@ import helmet from "helmet";
 import pinoHttp from "pino-http";
 import { mkdirSync, existsSync } from "fs";
 import { join, resolve } from "path";
-import router from "./routes";
+import router from "./routes/index";
 import privacyRouter from "./routes/privacy";
 import { logger } from "./lib/logger";
 import { env } from "./lib/env";
@@ -12,7 +12,8 @@ import { globalRateLimiter } from "./middlewares/rateLimiter";
 import { requestId, timeoutMiddleware, sanitizeInput } from "./middlewares/security";
 import { errorHandler, notFoundHandler } from "./middlewares/errorHandler";
 
-const UPLOADS_DIR = env.UPLOADS_DIR;
+const isServerlessEnv = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.NOW_REGION);
+const UPLOADS_DIR = isServerlessEnv ? "/tmp/uploads" : env.UPLOADS_DIR;
 try {
   mkdirSync(UPLOADS_DIR, { recursive: true });
 } catch {
