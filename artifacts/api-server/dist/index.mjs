@@ -99562,37 +99562,41 @@ if (!isServerless) {
     process.exit(1);
   });
 } else {
-  initDbSchema(pool).then(() => seedIfEmpty()).catch((err) => {
-    logger.error({ err }, "Database schema init failed on serverless start");
+  pool.on("error", (err) => {
+    logger.error({ err }, "Database pool error in serverless environment");
   });
 }
-function shutdown(signal) {
-  logger.info({ signal }, "Shutting down gracefully...");
-  if (server) {
-    server.close(async () => {
-      try {
-        await pool.end();
-        logger.info("Database pool closed");
-        process.exit(0);
-      } catch (err) {
-        logger.error({ err }, "Error during shutdown");
-        process.exit(1);
-      }
-    });
-  } else {
-    pool.end().finally(() => process.exit(0));
-  }
-  setTimeout(() => {
-    logger.error("Forced shutdown after timeout");
-    process.exit(1);
-  }, 1e4);
+if (!isServerless) {
+  let shutdown = function(signal) {
+    logger.info({ signal }, "Shutting down gracefully...");
+    if (server) {
+      server.close(async () => {
+        try {
+          await pool.end();
+          logger.info("Database pool closed");
+          process.exit(0);
+        } catch (err) {
+          logger.error({ err }, "Error during shutdown");
+          process.exit(1);
+        }
+      });
+    } else {
+      pool.end().finally(() => process.exit(0));
+    }
+    setTimeout(() => {
+      logger.error("Forced shutdown after timeout");
+      process.exit(1);
+    }, 1e4);
+  };
+  shutdown2 = shutdown;
+  process.on("SIGTERM", () => shutdown("SIGTERM"));
+  process.on("SIGINT", () => shutdown("SIGINT"));
+  process.on("uncaughtException", (err) => {
+    logger.fatal({ err }, "Uncaught exception");
+    shutdown("uncaughtException");
+  });
 }
-process.on("SIGTERM", () => shutdown("SIGTERM"));
-process.on("SIGINT", () => shutdown("SIGINT"));
-process.on("uncaughtException", (err) => {
-  logger.fatal({ err }, "Uncaught exception");
-  shutdown("uncaughtException");
-});
+var shutdown2;
 process.on("unhandledRejection", (reason) => {
   logger.error({ reason }, "Unhandled rejection");
 });

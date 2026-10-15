@@ -29,47 +29,45 @@ if (!isServerless) {
     process.exit(1);
   });
 } else {
-  // In Serverless/Vercel: initialize schema on cold start
-  initDbSchema(pool)
-    .then(() => seedIfEmpty())
-    .catch((err) => {
-      logger.error({ err }, "Database schema init failed on serverless start");
-    });
+  // In Serverless/Vercel: ensure pool errors are logged and not fatal
+  pool.on("error", (err) => {
+    logger.error({ err }, "Database pool error in serverless environment");
+  });
 }
 
-// Graceful shutdown
-function shutdown(signal: string) {
-  logger.info({ signal }, "Shutting down gracefully...");
-  if (server) {
-    server.close(async () => {
-      try {
-        await pool.end();
-        logger.info("Database pool closed");
-        process.exit(0);
-      } catch (err) {
-        logger.error({ err }, "Error during shutdown");
-        process.exit(1);
-      }
-    });
-  } else {
-    pool.end().finally(() => process.exit(0));
+// Graceful shutdown - only for persistent server environments (Docker, VPS, cPanel)
+if (!isServerless) {
+  function shutdown(signal: string) {
+    logger.info({ signal }, "Shutting down gracefully...");
+    if (server) {
+      server.close(async () => {
+        try {
+          await pool.end();
+          logger.info("Database pool closed");
+          process.exit(0);
+        } catch (err) {
+          logger.error({ err }, "Error during shutdown");
+          process.exit(1);
+        }
+      });
+    } else {
+      pool.end().finally(() => process.exit(0));
+    }
+
+    setTimeout(() => {
+      logger.error("Forced shutdown after timeout");
+      process.exit(1);
+    }, 10000);
   }
 
-  // Force shutdown after 10 seconds
-  setTimeout(() => {
-    logger.error("Forced shutdown after timeout");
-    process.exit(1);
-  }, 10000);
+  process.on("SIGTERM", () => shutdown("SIGTERM"));
+  process.on("SIGINT", () => shutdown("SIGINT"));
+
+  process.on("uncaughtException", (err) => {
+    logger.fatal({ err }, "Uncaught exception");
+    shutdown("uncaughtException");
+  });
 }
-
-process.on("SIGTERM", () => shutdown("SIGTERM"));
-process.on("SIGINT", () => shutdown("SIGINT"));
-
-// Handle uncaught exceptions
-process.on("uncaughtException", (err) => {
-  logger.fatal({ err }, "Uncaught exception");
-  shutdown("uncaughtException");
-});
 
 process.on("unhandledRejection", (reason) => {
   logger.error({ reason }, "Unhandled rejection");
