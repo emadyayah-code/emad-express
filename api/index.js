@@ -99042,7 +99042,13 @@ app.use("/uploads", import_express5.default.static(UPLOADS_DIR2, {
 }));
 app.use(privacy_default);
 app.use("/api", globalRateLimiter, routes_default);
-var adminPanelDir = resolve(process.cwd(), env.ADMIN_PANEL_DIR);
+var possibleAdminDirs = [
+  resolve(process.cwd(), "public"),
+  resolve(process.cwd(), env.ADMIN_PANEL_DIR),
+  resolve(process.cwd(), "../admin-panel/dist/public"),
+  resolve(process.cwd(), "artifacts/admin-panel/dist/public")
+];
+var adminPanelDir = possibleAdminDirs.find((d) => existsSync(resolve(d, "index.html"))) || possibleAdminDirs[0];
 if (existsSync(adminPanelDir)) {
   app.use(
     import_express5.default.static(adminPanelDir, {

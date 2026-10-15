@@ -139,7 +139,14 @@ app.use(privacyRouter);
 app.use("/api", globalRateLimiter, router);
 
 // Serve admin panel & frontend directly on root domain if present
-const adminPanelDir = resolve(process.cwd(), env.ADMIN_PANEL_DIR);
+const possibleAdminDirs = [
+  resolve(process.cwd(), "public"),
+  resolve(process.cwd(), env.ADMIN_PANEL_DIR),
+  resolve(process.cwd(), "../admin-panel/dist/public"),
+  resolve(process.cwd(), "artifacts/admin-panel/dist/public"),
+];
+const adminPanelDir = possibleAdminDirs.find(d => existsSync(resolve(d, "index.html"))) || possibleAdminDirs[0];
+
 if (existsSync(adminPanelDir)) {
   app.use(
     express.static(adminPanelDir, {
