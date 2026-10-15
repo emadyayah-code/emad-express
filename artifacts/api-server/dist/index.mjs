@@ -98943,6 +98943,52 @@ router2.post("/orders/:id/pay/split-confirm", requireAuth, validateParams(idPara
     next(err);
   }
 });
+router2.get("/cart", requireAuth, async (req, res, next) => {
+  try {
+    const session = getSession(req);
+    const cartKey = `cart_user_${session.userId}`;
+    const [row] = await db.select().from(platform_settings).where(eq(platform_settings.key, cartKey));
+    let items = [];
+    if (row?.value) {
+      try {
+        items = JSON.parse(row.value);
+      } catch {
+        items = [];
+      }
+    }
+    return res.json({ success: true, items: Array.isArray(items) ? items : [] });
+  } catch (err) {
+    next(err);
+  }
+});
+router2.post("/cart", requireAuth, async (req, res, next) => {
+  try {
+    const session = getSession(req);
+    const { items } = req.body;
+    const cartKey = `cart_user_${session.userId}`;
+    const safeItems = Array.isArray(items) ? items : [];
+    const jsonStr = JSON.stringify(safeItems);
+    const [existing] = await db.select().from(platform_settings).where(eq(platform_settings.key, cartKey));
+    if (existing) {
+      await db.update(platform_settings).set({ value: jsonStr, updated_at: /* @__PURE__ */ new Date() }).where(eq(platform_settings.key, cartKey));
+    } else {
+      await db.insert(platform_settings).values({ key: cartKey, value: jsonStr });
+    }
+    return res.json({ success: true, items: safeItems });
+  } catch (err) {
+    next(err);
+  }
+});
+router2.delete("/cart", requireAuth, async (req, res, next) => {
+  try {
+    const session = getSession(req);
+    const cartKey = `cart_user_${session.userId}`;
+    await db.delete(platform_settings).where(eq(platform_settings.key, cartKey));
+    return res.json({ success: true, items: [] });
+  } catch (err) {
+    next(err);
+  }
+});
 var emad_default = router2;
 
 // artifacts/api-server/src/routes/privacy.ts
