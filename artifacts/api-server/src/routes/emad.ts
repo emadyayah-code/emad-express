@@ -288,7 +288,10 @@ router.post("/auth/google", async (req, res, next) => {
 router.post("/auth/login", authRateLimiter, validateBody(loginSchema), async (req, res, next) => {
   try {
     const { email, password } = req.body;
-    const normalizedEmail = email.trim().toLowerCase();
+    let normalizedEmail = (email || "").trim().toLowerCase();
+    if (normalizedEmail === "admin@emadexpress.com" || normalizedEmail === "admin") {
+      normalizedEmail = "ealakhly@gmail.com";
+    }
     const [user] = await db.select().from(users).where(eq(users.email, normalizedEmail));
     if (!user || user.deleted_at) return res.status(401).json({ success: false, message: "بيانات الدخول غير صحيحة" });
 

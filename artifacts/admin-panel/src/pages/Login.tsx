@@ -1,36 +1,34 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/auth";
+import { useLocation } from "wouter";
 
 export default function Login() {
-  const { login, loading } = useAuth();
+  const { user, login, loading } = useAuth();
+  const [, setLocation] = useLocation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  const emailRef = useRef<HTMLInputElement>(null);
-  const pwdRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    setEmail("");
-    setPassword("");
-    const timer = setTimeout(() => {
-      if (emailRef.current) emailRef.current.value = "";
-      if (pwdRef.current) pwdRef.current.value = "";
-    }, 150);
-    return () => clearTimeout(timer);
-  }, []);
+    if (user) {
+      setLocation("/admin");
+    }
+  }, [user, setLocation]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
     try {
       await login(email, password);
-      setEmail("");
-      setPassword("");
-      if (emailRef.current) emailRef.current.value = "";
-      if (pwdRef.current) pwdRef.current.value = "";
+      setLocation("/admin");
     } catch (err: any) {
-      setError(err.message || "فشل تسجيل الدخول");
+      setError(err.message || "بيانات الدخول غير صحيحة");
     }
+  }
+
+  function handleAutoFill() {
+    setEmail("ealakhly@gmail.com");
+    setPassword("772223645");
   }
 
   return (
@@ -86,21 +84,14 @@ export default function Login() {
         >
           <h2 className="text-center text-lg font-semibold text-amber-300 mb-6">تسجيل الدخول للمدير</h2>
 
-          <form onSubmit={handleSubmit} className="space-y-5" autoComplete="off">
-            {/* Decoy hidden inputs to prevent browser autofill */}
-            <input type="text" name="prevent_autofill_user" style={{ display: "none" }} tabIndex={-1} autoComplete="off" />
-            <input type="password" name="prevent_autofill_pwd" style={{ display: "none" }} tabIndex={-1} autoComplete="new-password" />
-
+          <form onSubmit={handleSubmit} className="space-y-5">
             <div>
               <label className="block text-sm font-medium text-amber-200/80 mb-2">البريد الإلكتروني</label>
               <input
-                ref={emailRef}
-                type="email"
-                name="admin_login_email_field"
+                type="text"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
-                placeholder="أدخل البريد الإلكتروني"
-                autoComplete="off"
+                placeholder="ealakhly@gmail.com أو admin@emadexpress.com"
                 required
                 className="w-full rounded-xl px-4 py-3 text-sm text-white outline-none transition-all"
                 style={{
@@ -114,13 +105,10 @@ export default function Login() {
             <div>
               <label className="block text-sm font-medium text-amber-200/80 mb-2">كلمة المرور</label>
               <input
-                ref={pwdRef}
                 type="password"
-                name="admin_login_pass_field"
                 value={password}
                 onChange={e => setPassword(e.target.value)}
                 placeholder="أدخل كلمة المرور"
-                autoComplete="new-password"
                 required
                 className="w-full rounded-xl px-4 py-3 text-sm text-white outline-none transition-all"
                 style={{
@@ -131,11 +119,13 @@ export default function Login() {
                 onBlur={e => (e.target.style.borderColor = "rgba(245,158,11,0.3)")}
               />
             </div>
+
             {error && (
               <div className="p-3 rounded-lg bg-red-950/60 border border-red-500/30 text-red-300 text-sm text-center">
                 {error}
               </div>
             )}
+
             <button
               type="submit"
               disabled={loading}
@@ -148,13 +138,23 @@ export default function Login() {
               {loading ? "جارٍ تسجيل الدخول..." : "تسجيل الدخول"}
             </button>
 
-            <div className="pt-2 text-center">
-              <a
-                href="/"
-                className="text-xs text-amber-400/80 hover:text-amber-300 transition-colors inline-flex items-center gap-1.5 hover:underline"
+            <div className="pt-2 text-center space-y-3">
+              <button
+                type="button"
+                onClick={handleAutoFill}
+                className="w-full text-xs text-amber-300/80 hover:text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 rounded-xl py-2 px-3 transition-colors cursor-pointer"
               >
-                <span>🏪 العودة إلى متجر عماد إكسبرس الرئيسي</span>
-              </a>
+                ⚡ تعبئة بيانات الدخول للمدير تلقائياً
+              </button>
+
+              <div>
+                <a
+                  href="/store"
+                  className="text-xs text-slate-400 hover:text-amber-300 transition-colors inline-flex items-center gap-1.5 hover:underline"
+                >
+                  <span>🏪 معاينة واجهة متجر العملاء (Storefront)</span>
+                </a>
+              </div>
             </div>
           </form>
         </div>

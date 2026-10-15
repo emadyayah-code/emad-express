@@ -151,17 +151,17 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
           {/* Direct link to public storefront */}
           <a
-            href="/"
+            href="/store"
             className="flex items-center gap-1.5 text-xs px-3.5 py-1.5 rounded-xl font-bold transition-all border shadow-sm hover:scale-105"
             style={{
               background: "rgba(245,158,11,0.12)",
               color: "#fbbf24",
               borderColor: "rgba(245,158,11,0.3)",
             }}
-            title="زيارة المتجر الإلكتروني الرئيسي"
+            title="معاينة واجهة متجر العملاء"
           >
             <Store size={15} />
-            <span className="hidden sm:inline">زيارة المتجر</span>
+            <span className="hidden sm:inline">معاينة المتجر</span>
           </a>
 
           {/* Language Toggle Button */}

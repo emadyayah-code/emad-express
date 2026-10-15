@@ -82,6 +82,7 @@ function AdminArea() {
   return (
     <Layout>
       <Switch>
+        <Route path="/" component={Dashboard} />
         <Route path="/admin" component={Dashboard} />
         <Route path="/admin/products" component={Products} />
         <Route path="/admin/categories" component={Categories} />
@@ -101,7 +102,7 @@ function AdminArea() {
         <Route path="/admin/partner-ads" component={PartnerAds} />
         <Route path="/admin/privacy-policy" component={Privacy} />
         <Route path="/admin/privacy" component={Privacy} />
-        {/* Legacy Direct Admin Paths */}
+        {/* Direct Admin Paths */}
         <Route path="/products" component={Products} />
         <Route path="/categories" component={Categories} />
         <Route path="/orders" component={Orders} />
@@ -118,6 +119,8 @@ function AdminArea() {
         <Route path="/settings" component={Settings} />
         <Route path="/affiliate-settings" component={AffiliateSettings} />
         <Route path="/partner-ads" component={PartnerAds} />
+        <Route path="/privacy-policy" component={Privacy} />
+        <Route path="/privacy" component={Privacy} />
         {/* Default Admin Route */}
         <Route component={Dashboard} />
       </Switch>
@@ -128,11 +131,9 @@ function AdminArea() {
 function AppRoutes() {
   return (
     <Switch>
-      {/* Public Storefront Home */}
-      <Route path="/" component={StoreHome} />
+      {/* Public Storefront Home (Accessible via /store) */}
       <Route path="/store" component={StoreHome} />
-
-      {/* Public Dedicated Category Page */}
+      <Route path="/store/category/:id" component={CategoryPage} />
       <Route path="/category/:id" component={CategoryPage} />
 
       {/* Public Privacy Policy */}
@@ -142,16 +143,18 @@ function AppRoutes() {
       {/* Direct Login Page */}
       <Route path="/login" component={Login} />
 
-      {/* Admin Panel (Separate Dashboard & Management) */}
+      {/* Admin Panel (Primary Application at Root & Admin) */}
+      <Route path="/" component={AdminArea} />
       <Route path="/admin" component={AdminArea} />
       <Route path="/admin/:rest*" component={AdminArea} />
 
-      {/* Legacy Admin shortcuts if accessed directly */}
+      {/* Direct Admin shortcuts */}
       <Route path="/products" component={AdminArea} />
       <Route path="/categories" component={AdminArea} />
       <Route path="/orders" component={AdminArea} />
       <Route path="/returns" component={AdminArea} />
       <Route path="/users" component={AdminArea} />
+      <Route path="/customers" component={AdminArea} />
       <Route path="/vendors" component={AdminArea} />
       <Route path="/dropshipping" component={AdminArea} />
       <Route path="/affiliates" component={AdminArea} />
@@ -160,9 +163,11 @@ function AppRoutes() {
       <Route path="/accounting" component={AdminArea} />
       <Route path="/reports" component={AdminArea} />
       <Route path="/settings" component={AdminArea} />
+      <Route path="/affiliate-settings" component={AdminArea} />
+      <Route path="/partner-ads" component={AdminArea} />
 
-      {/* Fallback to Public Storefront */}
-      <Route component={StoreHome} />
+      {/* Fallback to Admin */}
+      <Route component={AdminArea} />
     </Switch>
   );
 }
