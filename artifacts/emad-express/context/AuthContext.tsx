@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { setMemoryToken } from "@/lib/api";
 
 const DOMAIN = process.env.EXPO_PUBLIC_DOMAIN || "emadexpress.ayadicmed.com";
 const BASE = `https://${DOMAIN}/api`;
@@ -33,7 +34,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     AsyncStorage.multiGet(["user", "token"]).then(([userItem, tokenItem]) => {
       if (userItem[1]) { try { setUser(JSON.parse(userItem[1])); } catch {} }
-      if (tokenItem[1]) setToken(tokenItem[1]);
+      if (tokenItem[1]) {
+        setToken(tokenItem[1]);
+        setMemoryToken(tokenItem[1]);
+      }
       setLoading(false);
     });
   }, []);
@@ -49,6 +53,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const authToken = data.access_token || data.token;
     setUser(data.user);
     setToken(authToken);
+    setMemoryToken(authToken);
     await AsyncStorage.multiSet([["user", JSON.stringify(data.user)], ["token", authToken]]);
   }
 
@@ -63,6 +68,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const authToken = data.access_token || data.token;
     setUser(data.user);
     setToken(authToken);
+    setMemoryToken(authToken);
     if (authToken) {
       await AsyncStorage.multiSet([["user", JSON.stringify(data.user)], ["token", authToken]]);
     }
@@ -79,6 +85,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const authToken = data.access_token || data.token;
     setUser(data.user);
     setToken(authToken);
+    setMemoryToken(authToken);
     if (authToken) {
       await AsyncStorage.multiSet([["user", JSON.stringify(data.user)], ["token", authToken]]);
     }
@@ -87,6 +94,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   async function logout() {
     setUser(null);
     setToken(null);
+    setMemoryToken(null);
     await AsyncStorage.multiRemove(["user", "token"]);
   }
 

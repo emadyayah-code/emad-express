@@ -42,6 +42,8 @@ export default function LoginScreen() {
   const [googleError, setGoogleError] = useState("");
   const [googleLoading, setGoogleLoading] = useState(false);
 
+  const [submitting, setSubmitting] = useState(false);
+
   const topPad = Platform.OS === "web" ? 67 : insets.top;
 
   async function handleLogin() {
@@ -50,6 +52,7 @@ export default function LoginScreen() {
       return;
     }
     setError("");
+    setSubmitting(true);
     try {
       await login(email.trim(), password);
       router.replace("/(tabs)");
@@ -60,6 +63,8 @@ export default function LoginScreen() {
       } else {
         setError(msg || t.auth.login_failed);
       }
+    } finally {
+      setSubmitting(false);
     }
   }
 
@@ -117,6 +122,7 @@ export default function LoginScreen() {
 
             {/* Google Sign-in Button */}
             <TouchableOpacity
+              activeOpacity={0.75}
               style={[styles.googleBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
               onPress={openGoogleModal}
               disabled={loading}
@@ -171,11 +177,19 @@ export default function LoginScreen() {
             {error ? <Text style={styles.error}>{error}</Text> : null}
 
             <TouchableOpacity
-              style={[styles.loginBtn, { backgroundColor: colors.primary, opacity: loading ? 0.7 : 1 }]}
+              activeOpacity={0.75}
+              style={[styles.loginBtn, { backgroundColor: colors.primary, opacity: (loading || submitting) ? 0.7 : 1 }]}
               onPress={handleLogin}
-              disabled={loading}
+              disabled={loading || submitting}
             >
-              <Text style={styles.loginBtnText}>{loading ? t.auth.logging_in : t.auth.login_btn}</Text>
+              {(loading || submitting) ? (
+                <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8 }}>
+                  <ActivityIndicator size="small" color="#000" />
+                  <Text style={styles.loginBtnText}>{t.auth.logging_in}</Text>
+                </View>
+              ) : (
+                <Text style={styles.loginBtnText}>{t.auth.login_btn}</Text>
+              )}
             </TouchableOpacity>
 
             <View style={{ flexDirection: "row", justifyContent: "center", gap: 6, marginTop: 24 }}>

@@ -91,12 +91,15 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!isLoadedRef.current) return;
 
-    // Save to account-specific local storage
+    // Save to account-specific local storage immediately
     AsyncStorage.setItem(storageKey, JSON.stringify(items)).catch(() => {});
 
-    // If logged in, sync with server cart
+    // Debounce background server sync to keep UI completely lag-free
     if (token && user?.id) {
-      api.post("/cart", { items }, token).catch(() => {});
+      const handler = setTimeout(() => {
+        api.post("/cart", { items }, token).catch(() => {});
+      }, 800);
+      return () => clearTimeout(handler);
     }
   }, [items, storageKey, token, user?.id]);
 

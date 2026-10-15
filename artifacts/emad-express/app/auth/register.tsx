@@ -35,6 +35,7 @@ export default function RegisterScreen() {
   const [countryModalVisible, setCountryModalVisible] = useState(false);
   const [searchCountry, setSearchCountry] = useState("");
   const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   // Google Sign-In Dedicated Modal State
   const [googleModalVisible, setGoogleModalVisible] = useState(false);
@@ -70,6 +71,7 @@ export default function RegisterScreen() {
       return;
     }
     setError("");
+    setSubmitting(true);
 
     const cleanNumber = phoneNumber.trim().replace(/^0+/, "");
     const fullPhone = `${selectedCountry.dialCode}${cleanNumber}`;
@@ -86,6 +88,8 @@ export default function RegisterScreen() {
       } else {
         setError(msg || "فشل إنشاء الحساب. حاول مجدداً.");
       }
+    } finally {
+      setSubmitting(false);
     }
   }
 
@@ -255,11 +259,16 @@ export default function RegisterScreen() {
           ) : null}
 
           <TouchableOpacity
-            style={[styles.btn, { backgroundColor: colors.primary, opacity: loading ? 0.7 : 1 }]}
+            activeOpacity={0.75}
+            style={[styles.btn, { backgroundColor: colors.primary, opacity: (loading || submitting) ? 0.7 : 1 }]}
             onPress={handleRegister}
-            disabled={loading}
+            disabled={loading || submitting}
           >
-            {loading ? <ActivityIndicator color="#000" size="small" /> : <Text style={styles.btnText}>إنشاء الحساب فوراً</Text>}
+            {(loading || submitting) ? (
+              <ActivityIndicator color="#000" size="small" />
+            ) : (
+              <Text style={styles.btnText}>إنشاء الحساب فوراً</Text>
+            )}
           </TouchableOpacity>
 
           {/* Privacy Policy Terms Notice */}

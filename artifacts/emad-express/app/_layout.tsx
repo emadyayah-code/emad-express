@@ -71,7 +71,7 @@ export default function RootLayout() {
                 <AddressProvider>
                   <FavoritesProvider>
                     <CartProvider>
-                      <GestureHandlerRootView>
+                      <GestureHandlerRootView style={{ flex: 1 }}>
                         <KeyboardProvider>
                           <RootLayoutNav />
                         </KeyboardProvider>

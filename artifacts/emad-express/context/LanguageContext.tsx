@@ -6,6 +6,7 @@ import { en } from "@/locales/en";
 import { zh } from "@/locales/zh";
 import { fr } from "@/locales/fr";
 import { tr } from "@/locales/tr";
+import { setMemoryLang } from "@/lib/api";
 
 export type Lang = "ar" | "en" | "zh" | "fr" | "tr";
 
@@ -54,12 +55,14 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
       const valid: Lang[] = ["ar", "en", "zh", "fr", "tr"];
       const lang = (stored && valid.includes(stored as Lang) ? stored : "ar") as Lang;
       setLangState(lang);
+      setMemoryLang(lang);
       applyRTL(lang);
     });
   }, []);
 
   function setLanguage(lang: Lang) {
     setLangState(lang);
+    setMemoryLang(lang);
     AsyncStorage.setItem("app_language", lang);
     applyRTL(lang);
   }

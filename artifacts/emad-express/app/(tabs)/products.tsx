@@ -12,19 +12,94 @@ import { useLanguage } from "@/context/LanguageContext";
 import { useCurrency } from "@/context/CurrencyContext";
 import { useFavorites } from "@/context/FavoritesContext";
 
+// Highly responsive memoized Product Grid Item
+const ProductGridItem = React.memo(function ProductGridItem({
+  item,
+  colors,
+  language,
+  isRTL,
+  format,
+}: {
+  item: any;
+  colors: any;
+  language: string;
+  isRTL: boolean;
+  format: (amt: number, lang: string) => string;
+}) {
+  const router = useRouter();
+  const { addItem } = useCart();
+  const { isFavorite, toggleFavorite } = useFavorites() as any;
+  const isFav = isFavorite(item.id);
+  const displayName = language === "ar" ? (item.name_ar || item.name) : (item.name_en || item.name);
+
+  return (
+    <TouchableOpacity
+      activeOpacity={0.8}
+      style={[styles.productCard, { backgroundColor: colors.card, borderColor: colors.border, flex: 1 }]}
+      onPress={() => router.push({ pathname: "/product/[id]", params: { id: item.id } })}
+    >
+      <View style={{ position: "relative" }}>
+        {item.image ? (
+          <ExpoImage
+            source={{ uri: item.image }}
+            style={styles.productImage}
+            contentFit="cover"
+            transition={100}
+            cachePolicy="memory-disk"
+          />
+        ) : (
+          <View style={[styles.productImage, { backgroundColor: colors.muted, alignItems: "center", justifyContent: "center" }]}>
+            <Feather name="package" size={32} color={colors.mutedForeground} />
+          </View>
+        )}
+        <TouchableOpacity
+          activeOpacity={0.65}
+          style={[styles.cardFavBtn, { backgroundColor: "rgba(0,0,0,0.6)" }]}
+          onPress={(e) => {
+            e.stopPropagation?.();
+            toggleFavorite({
+              id: item.id,
+              name: item.name,
+              name_ar: item.name_ar,
+              name_en: item.name_en,
+              price: item.price,
+              image: item.image,
+              category_id: item.category_id,
+            });
+          }}
+        >
+          <Feather name="heart" size={14} color={isFav ? "#ef4444" : "#fff"} />
+        </TouchableOpacity>
+      </View>
+      <View style={styles.productInfo}>
+        <Text style={[styles.productName, { color: colors.foreground, textAlign: isRTL ? "right" : "left" }]} numberOfLines={2}>
+          {displayName}
+        </Text>
+        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 8 }}>
+          <Text style={[styles.productPrice, { color: colors.primary }]}>{format(item.price, language)}</Text>
+          <TouchableOpacity
+            activeOpacity={0.65}
+            style={[styles.addBtn, { backgroundColor: colors.primary }]}
+            onPress={() => addItem({ id: item.id, name: displayName, price: item.price, image: item.image })}
+          >
+            <Feather name="plus" size={14} color="#000" />
+          </TouchableOpacity>
+        </View>
+      </View>
+    </TouchableOpacity>
+  );
+});
+
 export default function ProductsScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const params = useLocalSearchParams<{ category_id?: string }>();
-  const { addItem } = useCart();
   const { t, language, isRTL } = useLanguage();
   const { format } = useCurrency();
-  const { isFavorites, toggleFavorite, isFavorite } = useFavorites() as any;
 
   const [search, setSearch] = useState("");
   const [selectedCat, setSelectedCat] = useState<number | null>(params.category_id ? parseInt(params.category_id) : null);
-  const catScrollRef = useRef<ScrollView>(null);
 
   // Sync selected category whenever params change from navigation (e.g. from Home Screen)
   useEffect(() => {
@@ -37,8 +112,13 @@ export default function ProductsScreen() {
   const { data: productsData, isLoading } = useQuery({
     queryKey: ["products", selectedCat, language],
     queryFn: () => api.get(`/products${selectedCat ? `?category_id=${selectedCat}&lang=${language}` : `?lang=${language}`}`),
+    staleTime: 300000,
   });
-  const { data: categoriesData } = useQuery({ queryKey: ["categories", language], queryFn: () => api.get("/categories") });
+  const { data: categoriesData } = useQuery({
+    queryKey: ["categories", language],
+    queryFn: () => api.get("/categories"),
+    staleTime: 300000,
+  });
 
   const categoriesList = Array.isArray(categoriesData) ? categoriesData : (categoriesData?.data || []);
   const allProducts = Array.isArray(productsData) ? productsData : (productsData?.data || productsData?.products || []);
@@ -78,6 +158,7 @@ export default function ProductsScreen() {
       <View style={{ backgroundColor: colors.card }}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 12, gap: 8 }}>
           <TouchableOpacity
+            activeOpacity={0.7}
             onPress={() => setSelectedCat(null)}
             style={[styles.catPill, { backgroundColor: !selectedCat ? colors.primary : colors.muted }]}
           >
@@ -90,6 +171,7 @@ export default function ProductsScreen() {
             return (
               <TouchableOpacity
                 key={c.id}
+                activeOpacity={0.7}
                 onPress={() => setSelectedCat(c.id)}
                 style={[styles.catPill, { backgroundColor: selectedCat === c.id ? colors.primary : colors.muted }]}
               >
@@ -119,67 +201,19 @@ export default function ProductsScreen() {
           contentContainerStyle={{ padding: 12, gap: 10 }}
           columnWrapperStyle={{ gap: 10 }}
           showsVerticalScrollIndicator={false}
-          initialNumToRender={6}
-          maxToRenderPerBatch={6}
-          windowSize={3}
+          initialNumToRender={8}
+          maxToRenderPerBatch={8}
+          windowSize={5}
           removeClippedSubviews={Platform.OS === "android"}
-          renderItem={({ item }: { item: any }) => {
-            const displayName = language === "ar" ? (item.name_ar || item.name) : (item.name_en || item.name);
-            const isFav = isFavorite(item.id);
-            return (
-              <TouchableOpacity
-                style={[styles.productCard, { backgroundColor: colors.card, borderColor: colors.border, flex: 1 }]}
-                onPress={() => router.push({ pathname: "/product/[id]", params: { id: item.id } })}
-              >
-                <View style={{ position: "relative" }}>
-                  {item.image ? (
-                    <ExpoImage
-                      source={{ uri: item.image }}
-                      style={styles.productImage}
-                      contentFit="cover"
-                      transition={200}
-                      cachePolicy="memory-disk"
-                    />
-                  ) : (
-                    <View style={[styles.productImage, { backgroundColor: colors.muted, alignItems: "center", justifyContent: "center" }]}>
-                      <Feather name="package" size={32} color={colors.mutedForeground} />
-                    </View>
-                  )}
-                  <TouchableOpacity
-                    style={[styles.cardFavBtn, { backgroundColor: "rgba(0,0,0,0.6)" }]}
-                    onPress={(e) => {
-                      e.stopPropagation?.();
-                      toggleFavorite({
-                        id: item.id,
-                        name: item.name,
-                        name_ar: item.name_ar,
-                        name_en: item.name_en,
-                        price: item.price,
-                        image: item.image,
-                        category_id: item.category_id,
-                      });
-                    }}
-                  >
-                    <Feather name="heart" size={14} color={isFav ? "#ef4444" : "#fff"} />
-                  </TouchableOpacity>
-                </View>
-                <View style={styles.productInfo}>
-                  <Text style={[styles.productName, { color: colors.foreground, textAlign: isRTL ? "right" : "left" }]} numberOfLines={2}>
-                    {displayName}
-                  </Text>
-                  <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 8 }}>
-                    <Text style={[styles.productPrice, { color: colors.primary }]}>{format(item.price, language)}</Text>
-                    <TouchableOpacity
-                      style={[styles.addBtn, { backgroundColor: colors.primary }]}
-                      onPress={() => addItem({ id: item.id, name: displayName, price: item.price, image: item.image })}
-                    >
-                      <Feather name="plus" size={14} color="#000" />
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              </TouchableOpacity>
-            );
-          }}
+          renderItem={({ item }: { item: any }) => (
+            <ProductGridItem
+              item={item}
+              colors={colors}
+              language={language}
+              isRTL={isRTL}
+              format={format}
+            />
+          )}
           ListFooterComponent={<View style={{ height: Platform.OS === "web" ? 34 + 84 : insets.bottom + 80 }} />}
         />
       )}
@@ -191,15 +225,15 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   header: { paddingHorizontal: 16, paddingBottom: 12 },
   title: { fontSize: 22, fontWeight: "700", marginBottom: 12 },
-  searchBox: { flexDirection: "row", alignItems: "center", gap: 8, borderRadius: 12, borderWidth: 1, paddingHorizontal: 12, paddingVertical: 10 },
-  searchInput: { flex: 1, fontSize: 14, textAlign: "right" },
-  catPill: { paddingVertical: 7, paddingHorizontal: 16, borderRadius: 20 },
-  catPillText: { fontSize: 13, fontWeight: "600" },
+  searchBox: { flexDirection: "row", alignItems: "center", paddingHorizontal: 12, borderRadius: 12, borderWidth: 1, height: 42, gap: 8 },
+  searchInput: { flex: 1, fontSize: 14, height: "100%" },
+  catPill: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20 },
+  catPillText: { fontSize: 13 },
   productCard: { borderRadius: 14, overflow: "hidden", borderWidth: 1 },
-  productImage: { width: "100%", height: 130 },
+  productImage: { width: "100%", height: 140 },
   cardFavBtn: { position: "absolute", top: 8, right: 8, width: 28, height: 28, borderRadius: 14, alignItems: "center", justifyContent: "center" },
-  productInfo: { padding: 10 },
-  productName: { fontSize: 13, fontWeight: "600", marginBottom: 4 },
-  productPrice: { fontSize: 14, fontWeight: "700" },
-  addBtn: { width: 28, height: 28, borderRadius: 14, alignItems: "center", justifyContent: "center" },
+  productInfo: { padding: 12 },
+  productName: { fontSize: 13, fontWeight: "600", lineHeight: 18, marginBottom: 4 },
+  productPrice: { fontSize: 15, fontWeight: "700" },
+  addBtn: { width: 30, height: 30, borderRadius: 15, alignItems: "center", justifyContent: "center" },
 });
