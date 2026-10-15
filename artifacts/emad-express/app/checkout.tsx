@@ -31,7 +31,7 @@ export default function CheckoutScreen() {
   const router = useRouter();
   const { items, total, clearCart } = useCart();
   const { token } = useAuth();
-  const { t, isRTL } = useLanguage();
+  const { t, language, isRTL } = useLanguage();
   const { format } = useCurrency();
   const { addresses, defaultAddress } = useAddress();
 
