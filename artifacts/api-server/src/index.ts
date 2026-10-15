@@ -5,7 +5,13 @@ import { pool, initDbSchema } from "@workspace/db";
 import { seedIfEmpty, startPriceSyncJob, startAutoImportJob } from "./routes/emad";
 
 const port = env.PORT;
-const isServerless = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
+const isServerless = Boolean(
+  process.env.VERCEL ||
+  process.env.VERCEL_ENV ||
+  process.env.AWS_LAMBDA_FUNCTION_NAME ||
+  process.env.LAMBDA_TASK_ROOT ||
+  process.env.NOW_REGION
+);
 
 let server: any = null;
 

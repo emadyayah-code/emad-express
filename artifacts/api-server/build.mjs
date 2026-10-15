@@ -118,15 +118,47 @@ globalThis.__dirname = __bannerPath.dirname(globalThis.__filename);
     },
   });
   
-  // Create self-contained serverless entrypoints for Vercel
+  // Build dedicated serverless bundle from src/app.ts (pure Express app, instant response, no cold start delay)
   const { copyFile, mkdir } = await import("node:fs/promises");
   const localApiDir = path.resolve(artifactDir, "api");
   const rootApiDir = path.resolve(artifactDir, "../../api");
   await mkdir(localApiDir, { recursive: true });
   await mkdir(rootApiDir, { recursive: true });
-  await copyFile(path.resolve(distDir, "index.mjs"), path.resolve(localApiDir, "index.js"));
-  await copyFile(path.resolve(distDir, "index.mjs"), path.resolve(rootApiDir, "index.js"));
-  console.log("Self-contained serverless entrypoints generated at api/index.js");
+
+  await esbuild({
+    entryPoints: { index: path.resolve(artifactDir, "src/app.ts") },
+    platform: "node",
+    bundle: true,
+    format: "esm",
+    outdir: localApiDir,
+    logLevel: "info",
+    external: [
+      "*.node",
+      "sharp",
+      "better-sqlite3",
+      "sqlite3",
+      "canvas",
+      "pg-native",
+    ],
+    sourcemap: "linked",
+    plugins: [
+      esbuildPluginPino({ transports: ["pino-pretty"] })
+    ],
+    banner: {
+      js: `import { createRequire as __bannerCrReq } from 'node:module';
+import __bannerPath from 'node:path';
+import __bannerUrl from 'node:url';
+
+globalThis.require = __bannerCrReq(import.meta.url);
+globalThis.__filename = __bannerUrl.fileURLToPath(import.meta.url);
+globalThis.__dirname = __bannerPath.dirname(globalThis.__filename);
+    `,
+    },
+  });
+
+  const { cp } = await import("node:fs/promises");
+  await cp(localApiDir, rootApiDir, { recursive: true });
+  console.log("Dedicated serverless bundle generated at api/index.js");
 }
 
 buildAll().catch((err) => {

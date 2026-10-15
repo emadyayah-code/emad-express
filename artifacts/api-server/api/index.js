@@ -21228,13 +21228,13 @@ var require_application = __commonJS({
       tryRender(view, renderOptions, done);
     };
     app2.listen = function listen() {
-      var server2 = http.createServer(this);
+      var server = http.createServer(this);
       var args = slice.call(arguments);
       if (typeof args[args.length - 1] === "function") {
         var done = args[args.length - 1] = once(args[args.length - 1]);
-        server2.once("error", done);
+        server.once("error", done);
       }
-      return server2.listen.apply(server2, args);
+      return server.listen.apply(server, args);
     };
     function logerror(err) {
       if (this.get("env") !== "test") console.error(err.stack || err.toString());
@@ -28048,14 +28048,14 @@ var require_pino = __commonJS({
     function pinoBundlerAbsolutePath(p) {
       try {
         const path = __require("path");
-        const outputDir = "D:\\emad.express\\emad.express\\artifacts\\api-server\\dist";
+        const outputDir = "D:\\emad.express\\emad.express\\artifacts\\api-server\\api";
         return path.resolve(outputDir, p.replace(/^\.\//, ""));
       } catch (e) {
         const f = new Function("p", "return new URL(p, import.meta.url).pathname");
         return f(p);
       }
     }
-    globalThis.__bundlerPathsOverrides = { ...globalThis.__bundlerPathsOverrides || {}, "thread-stream-worker": pinoBundlerAbsolutePath("./thread-stream-worker.mjs"), "pino-worker": pinoBundlerAbsolutePath("./pino-worker.mjs"), "pino/file": pinoBundlerAbsolutePath("./pino-file.mjs"), "pino-pretty": pinoBundlerAbsolutePath("./pino-pretty.mjs") };
+    globalThis.__bundlerPathsOverrides = { ...globalThis.__bundlerPathsOverrides || {}, "thread-stream-worker": pinoBundlerAbsolutePath("./thread-stream-worker.js"), "pino-worker": pinoBundlerAbsolutePath("./pino-worker.js"), "pino/file": pinoBundlerAbsolutePath("./pino-file.js"), "pino-pretty": pinoBundlerAbsolutePath("./pino-pretty.js") };
     var os = __require("node:os");
     var stdSerializers = require_pino_std_serializers();
     var caller = require_caller();
@@ -31657,11 +31657,11 @@ var require_connection = __commonJS({
           }
         });
       }
-      connect(port3, host) {
+      connect(port2, host) {
         const self2 = this;
         this._connecting = true;
         this.stream.setNoDelay(true);
-        this.stream.connect(port3, host);
+        this.stream.connect(port2, host);
         this.stream.once("connect", function() {
           if (self2._keepAlive) {
             self2.stream.setKeepAlive(true, self2._keepAliveInitialDelayMillis);
@@ -42287,313 +42287,6 @@ var init_schema2 = __esm({
 });
 
 // ../../lib/db/src/migrations.ts
-async function initDbSchema(pool2) {
-  const client = await pool2.connect();
-  try {
-    await client.query("BEGIN");
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS users (
-        id SERIAL PRIMARY KEY,
-        name TEXT NOT NULL,
-        email TEXT NOT NULL UNIQUE,
-        password TEXT NOT NULL,
-        phone TEXT,
-        role TEXT NOT NULL DEFAULT 'user',
-        preferred_language TEXT DEFAULT 'ar',
-        preferred_currency TEXT DEFAULT 'SAR',
-        email_verified BOOLEAN NOT NULL DEFAULT false,
-        verification_code TEXT DEFAULT '',
-        verification_expires_at TIMESTAMP,
-        created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-        deleted_at TIMESTAMP
-      );
-    `);
-    await client.query(`
-      ALTER TABLE users ADD COLUMN IF NOT EXISTS phone TEXT;
-      ALTER TABLE users ADD COLUMN IF NOT EXISTS role TEXT NOT NULL DEFAULT 'user';
-      ALTER TABLE users ADD COLUMN IF NOT EXISTS preferred_language TEXT DEFAULT 'ar';
-      ALTER TABLE users ADD COLUMN IF NOT EXISTS preferred_currency TEXT DEFAULT 'SAR';
-      ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified BOOLEAN NOT NULL DEFAULT false;
-      ALTER TABLE users ADD COLUMN IF NOT EXISTS verification_code TEXT DEFAULT '';
-      ALTER TABLE users ADD COLUMN IF NOT EXISTS verification_expires_at TIMESTAMP;
-      ALTER TABLE users ADD COLUMN IF NOT EXISTS created_at TIMESTAMP NOT NULL DEFAULT NOW();
-      ALTER TABLE users ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP;
-    `);
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS currencies (
-        id SERIAL PRIMARY KEY,
-        code TEXT NOT NULL UNIQUE,
-        name_ar TEXT NOT NULL,
-        name_en TEXT NOT NULL,
-        symbol TEXT NOT NULL,
-        rate_to_usd REAL NOT NULL DEFAULT 1,
-        is_active BOOLEAN NOT NULL DEFAULT true,
-        is_default BOOLEAN NOT NULL DEFAULT false,
-        updated_at TIMESTAMP NOT NULL DEFAULT NOW()
-      );
-    `);
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS categories (
-        id SERIAL PRIMARY KEY,
-        name_ar TEXT NOT NULL,
-        name_en TEXT NOT NULL,
-        icon TEXT DEFAULT '\u{1F4E6}',
-        image TEXT DEFAULT '',
-        description_ar TEXT DEFAULT '',
-        description_en TEXT DEFAULT '',
-        is_active BOOLEAN NOT NULL DEFAULT true,
-        deleted_at TIMESTAMP
-      );
-    `);
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS products (
-        id SERIAL PRIMARY KEY,
-        name_ar TEXT NOT NULL,
-        name_en TEXT NOT NULL,
-        sku TEXT NOT NULL UNIQUE,
-        price REAL NOT NULL,
-        cost REAL NOT NULL DEFAULT 0,
-        quantity INTEGER NOT NULL DEFAULT 0,
-        min_quantity INTEGER NOT NULL DEFAULT 0,
-        category_id INTEGER,
-        description_ar TEXT DEFAULT '',
-        description_en TEXT DEFAULT '',
-        image TEXT DEFAULT '',
-        is_active BOOLEAN NOT NULL DEFAULT true,
-        deleted_at TIMESTAMP
-      );
-    `);
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS product_translations (
-        id SERIAL PRIMARY KEY,
-        product_id INTEGER NOT NULL,
-        language TEXT NOT NULL,
-        name TEXT NOT NULL,
-        description TEXT DEFAULT '',
-        updated_at TIMESTAMP NOT NULL DEFAULT NOW()
-      );
-    `);
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS customers (
-        id SERIAL PRIMARY KEY,
-        user_id INTEGER,
-        name TEXT NOT NULL,
-        email TEXT NOT NULL,
-        phone TEXT DEFAULT '',
-        address TEXT DEFAULT '',
-        city TEXT DEFAULT '',
-        country TEXT DEFAULT 'SA',
-        total_orders INTEGER NOT NULL DEFAULT 0,
-        total_spent REAL NOT NULL DEFAULT 0,
-        loyalty_points INTEGER NOT NULL DEFAULT 0,
-        created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-        deleted_at TIMESTAMP
-      );
-    `);
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS vendors (
-        id SERIAL PRIMARY KEY,
-        store_name TEXT NOT NULL,
-        name TEXT NOT NULL,
-        email TEXT NOT NULL,
-        phone TEXT DEFAULT '',
-        address TEXT DEFAULT '',
-        commission_rate REAL NOT NULL DEFAULT 10,
-        balance REAL NOT NULL DEFAULT 0,
-        is_approved BOOLEAN NOT NULL DEFAULT false,
-        created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-        deleted_at TIMESTAMP
-      );
-    `);
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS affiliates (
-        id SERIAL PRIMARY KEY,
-        name TEXT NOT NULL,
-        email TEXT NOT NULL UNIQUE,
-        phone TEXT DEFAULT '',
-        code TEXT NOT NULL UNIQUE,
-        commission_rate REAL NOT NULL DEFAULT 5,
-        balance REAL NOT NULL DEFAULT 0,
-        total_earned REAL NOT NULL DEFAULT 0,
-        total_clicks INTEGER NOT NULL DEFAULT 0,
-        total_conversions INTEGER NOT NULL DEFAULT 0,
-        is_active BOOLEAN NOT NULL DEFAULT true,
-        created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-        deleted_at TIMESTAMP
-      );
-    `);
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS affiliate_conversions (
-        id SERIAL PRIMARY KEY,
-        affiliate_id INTEGER NOT NULL,
-        order_id INTEGER,
-        order_number TEXT,
-        order_total REAL NOT NULL DEFAULT 0,
-        commission_amount REAL NOT NULL DEFAULT 0,
-        status TEXT NOT NULL DEFAULT 'pending',
-        created_at TIMESTAMP NOT NULL DEFAULT NOW()
-      );
-    `);
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS dropship_products (
-        id SERIAL PRIMARY KEY,
-        product_id INTEGER,
-        platform TEXT NOT NULL,
-        source_id TEXT NOT NULL,
-        source_url TEXT NOT NULL DEFAULT '',
-        source_price REAL NOT NULL DEFAULT 0,
-        source_currency TEXT NOT NULL DEFAULT 'USD',
-        our_price REAL NOT NULL DEFAULT 0,
-        supplier_name TEXT DEFAULT '',
-        platform_commission_rate REAL NOT NULL DEFAULT 0,
-        created_at TIMESTAMP NOT NULL DEFAULT NOW()
-      );
-    `);
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS platform_settings (
-        id SERIAL PRIMARY KEY,
-        key TEXT NOT NULL UNIQUE,
-        value TEXT NOT NULL,
-        updated_at TIMESTAMP NOT NULL DEFAULT NOW()
-      );
-    `);
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS payment_gateways (
-        id SERIAL PRIMARY KEY,
-        name TEXT NOT NULL,
-        name_ar TEXT NOT NULL,
-        name_en TEXT NOT NULL,
-        provider TEXT NOT NULL,
-        config JSONB NOT NULL DEFAULT '{}'::jsonb,
-        is_active BOOLEAN NOT NULL DEFAULT true,
-        is_default BOOLEAN NOT NULL DEFAULT false,
-        supported_currencies JSONB NOT NULL DEFAULT '[]'::jsonb,
-        created_at TIMESTAMP NOT NULL DEFAULT NOW()
-      );
-    `);
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS orders (
-        id SERIAL PRIMARY KEY,
-        order_number TEXT NOT NULL UNIQUE,
-        customer_id INTEGER,
-        customer_name TEXT NOT NULL,
-        customer_email TEXT DEFAULT '',
-        customer_phone TEXT DEFAULT '',
-        shipping_address TEXT DEFAULT '',
-        shipping_city TEXT DEFAULT '',
-        shipping_country TEXT DEFAULT 'SA',
-        payment_method TEXT NOT NULL DEFAULT 'cod',
-        payment_status TEXT NOT NULL DEFAULT 'pending',
-        payment_gateway TEXT DEFAULT '',
-        payment_transaction_id TEXT DEFAULT '',
-        status TEXT NOT NULL DEFAULT 'pending',
-        currency TEXT NOT NULL DEFAULT 'SAR',
-        subtotal REAL NOT NULL DEFAULT 0,
-        discount REAL NOT NULL DEFAULT 0,
-        tax REAL NOT NULL DEFAULT 0,
-        shipping REAL NOT NULL DEFAULT 0,
-        total REAL NOT NULL DEFAULT 0,
-        items JSONB NOT NULL DEFAULT '[]'::jsonb,
-        affiliate_code TEXT DEFAULT '',
-        fulfillment_status TEXT NOT NULL DEFAULT 'unfulfilled',
-        fulfillment_platform TEXT DEFAULT '',
-        supplier_tracking TEXT DEFAULT '',
-        platform_order_id TEXT DEFAULT '',
-        order_date TIMESTAMP NOT NULL DEFAULT NOW()
-      );
-    `);
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS supplier_payments (
-        id SERIAL PRIMARY KEY,
-        order_id INTEGER NOT NULL,
-        order_number TEXT NOT NULL,
-        platform TEXT NOT NULL,
-        supplier_cost REAL NOT NULL DEFAULT 0,
-        supplier_currency TEXT NOT NULL DEFAULT 'USD',
-        customer_paid REAL NOT NULL DEFAULT 0,
-        customer_currency TEXT NOT NULL DEFAULT 'SAR',
-        admin_profit REAL NOT NULL DEFAULT 0,
-        status TEXT NOT NULL DEFAULT 'pending',
-        paid_at TIMESTAMP,
-        notes TEXT DEFAULT '',
-        created_at TIMESTAMP NOT NULL DEFAULT NOW()
-      );
-    `);
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS vendor_stripe_accounts (
-        id SERIAL PRIMARY KEY,
-        vendor_id INTEGER NOT NULL UNIQUE,
-        stripe_account_id TEXT NOT NULL,
-        stripe_account_status TEXT NOT NULL DEFAULT 'pending',
-        charges_enabled BOOLEAN NOT NULL DEFAULT false,
-        payouts_enabled BOOLEAN NOT NULL DEFAULT false,
-        onboarding_url TEXT DEFAULT '',
-        dashboard_url TEXT DEFAULT '',
-        created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-        updated_at TIMESTAMP NOT NULL DEFAULT NOW()
-      );
-    `);
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS shipping_carriers (
-        id SERIAL PRIMARY KEY,
-        name TEXT NOT NULL,
-        name_ar TEXT NOT NULL,
-        name_en TEXT NOT NULL,
-        tracking_url_template TEXT DEFAULT '',
-        is_active BOOLEAN NOT NULL DEFAULT true
-      );
-    `);
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS shipments (
-        id SERIAL PRIMARY KEY,
-        order_id INTEGER NOT NULL,
-        carrier_id INTEGER,
-        tracking_number TEXT DEFAULT '',
-        status TEXT NOT NULL DEFAULT 'pending',
-        estimated_delivery TIMESTAMP,
-        actual_delivery TIMESTAMP,
-        cost REAL NOT NULL DEFAULT 0,
-        currency TEXT NOT NULL DEFAULT 'SAR',
-        created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-        updated_at TIMESTAMP NOT NULL DEFAULT NOW()
-      );
-    `);
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS returns_refunds (
-        id SERIAL PRIMARY KEY,
-        order_id INTEGER NOT NULL,
-        order_number TEXT NOT NULL,
-        customer_id INTEGER NOT NULL,
-        customer_name TEXT NOT NULL,
-        customer_email TEXT DEFAULT '',
-        customer_phone TEXT DEFAULT '',
-        items JSONB NOT NULL DEFAULT '[]'::jsonb,
-        refund_amount REAL NOT NULL DEFAULT 0,
-        currency TEXT NOT NULL DEFAULT 'SAR',
-        type TEXT NOT NULL DEFAULT 'return_and_refund',
-        reason TEXT NOT NULL,
-        details TEXT DEFAULT '',
-        refund_method TEXT NOT NULL DEFAULT 'original_payment',
-        bank_name TEXT DEFAULT '',
-        bank_iban TEXT DEFAULT '',
-        bank_account_name TEXT DEFAULT '',
-        status TEXT NOT NULL DEFAULT 'pending',
-        admin_notes TEXT DEFAULT '',
-        created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-        updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
-        resolved_at TIMESTAMP
-      );
-    `);
-    await client.query("COMMIT");
-    console.log("Database schema initialized successfully (18 tables verified)");
-  } catch (error) {
-    await client.query("ROLLBACK");
-    console.error("Error initializing database schema:", error);
-    throw error;
-  } finally {
-    client.release();
-  }
-}
 var init_migrations = __esm({
   "../../lib/db/src/migrations.ts"() {
     "use strict";
@@ -73564,7 +73257,7 @@ var require_url = __commonJS({
         return urllib.parse(input, parseQueryString);
       }
       const hostname = normalizeHostname(u.hostname);
-      const port3 = u.port || null;
+      const port2 = u.port || null;
       const pathname = u.pathname || null;
       const search = u.search || null;
       let auth = null;
@@ -73592,7 +73285,7 @@ var require_url = __commonJS({
         protocol: u.protocol || null,
         host: u.host || null,
         hostname,
-        port: port3,
+        port: port2,
         pathname,
         search,
         path: (pathname || "") + (search || "") || null,
@@ -86378,12 +86071,12 @@ async function getSmtpConfigFromDb() {
     const cfg = {};
     settings.forEach((s) => cfg[s.key] = s.value);
     const host = cfg["smtp_host"] || process.env.SMTP_HOST;
-    const port3 = cfg["smtp_port"] ? parseInt(cfg["smtp_port"]) : process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT) : 587;
+    const port2 = cfg["smtp_port"] ? parseInt(cfg["smtp_port"]) : process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT) : 587;
     const user = cfg["smtp_user"] || process.env.SMTP_USER;
     const pass = cfg["smtp_pass"] || process.env.SMTP_PASS;
     const from = cfg["smtp_from"] || process.env.SMTP_FROM || process.env.SMTP_USER;
     if (!host || !user || !pass || pass === "your-app-password") return null;
-    return { host, port: port3, secure: port3 === 465, user, pass, from: from || user };
+    return { host, port: port2, secure: port2 === 465, user, pass, from: from || user };
   } catch {
     return null;
   }
@@ -86391,7 +86084,7 @@ async function getSmtpConfigFromDb() {
 function getDefaultTransporter() {
   if (transporter) return transporter;
   const host = process.env.SMTP_HOST;
-  const port3 = process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT) : 587;
+  const port2 = process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT) : 587;
   const user = process.env.SMTP_USER;
   const pass = process.env.SMTP_PASS;
   const from = process.env.SMTP_FROM || process.env.SMTP_USER;
@@ -86401,8 +86094,8 @@ function getDefaultTransporter() {
   }
   transporter = createTransporter({
     host,
-    port: port3,
-    secure: port3 === 465,
+    port: port2,
+    secure: port2 === 465,
     user,
     pass,
     from: from || user
@@ -92152,18 +91845,6 @@ async function convertCurrency(amount, from, to) {
   const toRate = rates[to] || DEFAULT_RATES[to] || 1;
   return parseFloat((amount / fromRate * toRate).toFixed(2));
 }
-async function seedCurrencies() {
-  const existing = await db.select().from(currencies).limit(1);
-  if (existing.length > 0) return;
-  await db.insert(currencies).values([
-    { code: "SAR", name_ar: "\u0631\u064A\u0627\u0644 \u0633\u0639\u0648\u062F\u064A", name_en: "Saudi Riyal", symbol: "\u0631.\u0633", rate_to_usd: 3.75, is_active: true, is_default: true },
-    { code: "USD", name_ar: "\u062F\u0648\u0644\u0627\u0631 \u0623\u0645\u0631\u064A\u0643\u064A", name_en: "US Dollar", symbol: "$", rate_to_usd: 1, is_active: true, is_default: false },
-    { code: "YER", name_ar: "\u0631\u064A\u0627\u0644 \u064A\u0645\u0646\u064A", name_en: "Yemeni Rial", symbol: "\u0631.\u064A", rate_to_usd: 1500, is_active: true, is_default: false },
-    { code: "EUR", name_ar: "\u064A\u0648\u0631\u0648", name_en: "Euro", symbol: "\u20AC", rate_to_usd: 0.92, is_active: true, is_default: false },
-    { code: "AED", name_ar: "\u062F\u0631\u0647\u0645 \u0625\u0645\u0627\u0631\u0627\u062A\u064A", name_en: "UAE Dirham", symbol: "\u062F.\u0625", rate_to_usd: 3.67, is_active: true, is_default: false }
-  ]);
-  logger.info("Currencies seeded");
-}
 
 // src/lib/i18n.ts
 init_src();
@@ -92419,20 +92100,6 @@ async function calculateAliExpressShipping(input) {
     tax,
     grandTotal
   };
-}
-async function seedShippingCarriers() {
-  const existing = await db.select().from(shipping_carriers).limit(1);
-  if (existing.length > 0) return;
-  await db.insert(shipping_carriers).values([
-    { name: "AliExpress Standard Shipping", name_ar: "\u0627\u0644\u0634\u062D\u0646 \u0627\u0644\u0639\u0627\u062F\u064A \u0639\u0644\u064A \u0625\u0643\u0633\u0628\u0631\u0633", name_en: "AliExpress Standard Shipping", tracking_url_template: "https://global.cainiao.com/detail.htm?mailNoList={tracking}", is_active: true },
-    { name: "AliExpress Premium Shipping", name_ar: "\u0627\u0644\u0634\u062D\u0646 \u0627\u0644\u0633\u0631\u064A\u0639 \u0639\u0644\u064A \u0625\u0643\u0633\u0628\u0631\u0633", name_en: "AliExpress Premium Shipping", tracking_url_template: "https://global.cainiao.com/detail.htm?mailNoList={tracking}", is_active: true },
-    { name: "AliExpress Economic Freight", name_ar: "\u0634\u062D\u0646 \u0627\u0642\u062A\u0635\u0627\u062F\u064A \u0645\u062C\u0645\u0651\u0639 \u0639\u0644\u064A \u0625\u0643\u0633\u0628\u0631\u0633", name_en: "AliExpress Economic Freight", tracking_url_template: "https://global.cainiao.com/detail.htm?mailNoList={tracking}", is_active: true },
-    { name: "Amazon Logistics", name_ar: "\u0634\u062D\u0646 \u0623\u0645\u0627\u0632\u0648\u0646", name_en: "Amazon Logistics", tracking_url_template: "https://track.amazon.com/tracking/{tracking}", is_active: true },
-    { name: "DHL Express", name_ar: "\u062F\u064A \u0625\u062A\u0634 \u0625\u0644 \u0625\u0643\u0633\u0628\u0631\u064A\u0633", name_en: "DHL Express", tracking_url_template: "https://www.dhl.com/en/express/tracking.html?AWB={tracking}", is_active: true },
-    { name: "Aramex", name_ar: "\u0623\u0631\u0627\u0645\u0643\u0633", name_en: "Aramex", tracking_url_template: "https://www.aramex.com/track?ShipmentNumber={tracking}", is_active: true },
-    { name: "SMSA Express", name_ar: "\u0633\u0645\u0633\u0627", name_en: "SMSA Express", tracking_url_template: "https://www.smsaexpress.com/tracking", is_active: true }
-  ]);
-  logger.info("Shipping carriers seeded");
 }
 async function createShipment(orderId, carrierId, trackingNumber, cost, currency = "SAR") {
   const [shipment] = await db.insert(shipments).values({
@@ -94124,129 +93791,6 @@ function sanitizeText(text2, maxLength = 5e3) {
 }
 function escapeLike(str2) {
   return str2.replace(/[%_\\]/g, "\\$&");
-}
-var seeded = false;
-async function seedIfEmpty() {
-  if (seeded) return;
-  seeded = true;
-  const [adminUser] = await db.select().from(users).where(eq(users.email, "ealakhly@gmail.com"));
-  if (!adminUser) {
-    const defaultAdminPwd = process.env.ADMIN_DEFAULT_PASSWORD || "Admin@ChangeMe123!";
-    const hashedAdmin = await hashPassword(defaultAdminPwd);
-    const hashedUser = await hashPassword("user123");
-    await db.insert(users).values([
-      { name: "\u0639\u0645\u0627\u062F \u0627\u0644\u0627\u0643\u062D\u0644\u064A", email: "ealakhly@gmail.com", password: hashedAdmin, role: "admin", email_verified: true },
-      { name: "\u0623\u062D\u0645\u062F \u0645\u062D\u0645\u062F", email: "ahmed@example.com", password: hashedUser, phone: "0501234567", role: "customer", email_verified: true }
-    ]);
-  } else {
-    await db.update(users).set({ role: "admin", email_verified: true }).where(eq(users.email, "ealakhly@gmail.com"));
-  }
-  try {
-    await purgeZeroStockAndDeletedProducts();
-  } catch (err) {
-    logger.warn({ err: err.message }, "Initial zero stock purge skipped");
-  }
-  try {
-    const existingCats = await db.select().from(categories).where(isNull(categories.deleted_at));
-    if (existingCats.length < 10) {
-      const allAliCategories = [
-        { name_ar: "\u0647\u0648\u0627\u062A\u0641 \u0630\u0643\u064A\u0629 \u0648\u0645\u0644\u062D\u0642\u0627\u062A\u0647\u0627", name_en: "Phones & Telecommunications", icon: "\u{1F4F1}", image: "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=600", description_ar: "\u0623\u062D\u062F\u062B \u0627\u0644\u0647\u0648\u0627\u062A\u0641 \u0627\u0644\u0630\u0643\u064A\u0629\u060C \u0643\u0641\u0631\u0627\u062A\u060C \u0634\u0648\u0627\u062D\u0646\u060C \u0648\u0627\u0642\u064A\u0627\u062A \u0634\u0627\u0634\u0629 \u0648\u0625\u0643\u0633\u0633\u0648\u0627\u0631\u0627\u062A \u0627\u0644\u0647\u0648\u0627\u062A\u0641", description_en: "Latest smartphones, cases, chargers, screen protectors and accessories" },
-        { name_ar: "\u0625\u0644\u0643\u062A\u0631\u0648\u0646\u064A\u0627\u062A \u0627\u0633\u062A\u0647\u0644\u0627\u0643\u064A\u0629", name_en: "Consumer Electronics", icon: "\u{1F3A7}", image: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=600", description_ar: "\u0633\u0645\u0627\u0639\u0627\u062A \u0644\u0627\u0633\u0644\u0643\u064A\u0629\u060C \u0645\u0643\u0628\u0631\u0627\u062A \u0635\u0648\u062A\u060C \u0623\u062C\u0647\u0632\u0629 \u0623\u0644\u0639\u0627\u0628 \u0648\u0633\u0627\u0639\u0627\u062A \u0630\u0643\u064A\u0629", description_en: "Wireless headphones, speakers, gaming gear and smartwatches" },
-        { name_ar: "\u0623\u062C\u0647\u0632\u0629 \u0643\u0645\u0628\u064A\u0648\u062A\u0631 \u0648\u0645\u0643\u0627\u062A\u0628", name_en: "Computer & Office", icon: "\u{1F4BB}", image: "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=600", description_ar: "\u0644\u0627\u0628\u062A\u0648\u0628\u0627\u062A\u060C \u0634\u0627\u0634\u0627\u062A\u060C \u0644\u0648\u062D\u0627\u062A \u0645\u0641\u0627\u062A\u064A\u062D\u060C \u0637\u0627\u0628\u0639\u0627\u062A \u0648\u0645\u0633\u062A\u0644\u0632\u0645\u0627\u062A \u0645\u0643\u062A\u0628\u064A\u0629", description_en: "Laptops, monitors, keyboards, printers and office essentials" },
-        { name_ar: "\u0623\u0632\u064A\u0627\u0621 \u0648\u0645\u0644\u0627\u0628\u0633 \u0646\u0633\u0627\u0626\u064A\u0629", name_en: "Women's Clothing", icon: "\u{1F457}", image: "https://images.unsplash.com/photo-1483985988355-763728e1935b?w=600", description_ar: "\u0641\u0633\u0627\u062A\u064A\u0646\u060C \u0628\u0644\u0648\u0632\u0627\u062A\u060C \u0639\u0628\u0627\u064A\u0627\u062A\u060C \u0645\u0644\u0627\u0628\u0633 \u0634\u062A\u0648\u064A\u0629 \u0648\u0635\u064A\u0641\u064A\u0629 \u0628\u0623\u062D\u062F\u062B \u0627\u0644\u0645\u0648\u062F\u064A\u0644\u0627\u062A", description_en: "Dresses, tops, abayas, winter and summer trendy fashion" },
-        { name_ar: "\u0623\u0632\u064A\u0627\u0621 \u0648\u0645\u0644\u0627\u0628\u0633 \u0631\u062C\u0627\u0644\u064A\u0629", name_en: "Men's Clothing", icon: "\u{1F454}", image: "https://images.unsplash.com/photo-1490578474895-699cd4e2cf59?w=600", description_ar: "\u0642\u0645\u0635\u0627\u0646\u060C \u0628\u0646\u0627\u0637\u064A\u0644\u060C \u0647\u0648\u062F\u064A\u0632\u060C \u0633\u062A\u0631\u0627\u062A \u0648\u0623\u062D\u062F\u062B \u0635\u064A\u062D\u0627\u062A \u0627\u0644\u0645\u0648\u0636\u0629 \u0627\u0644\u0631\u062C\u0627\u0644\u064A\u0629", description_en: "Shirts, trousers, hoodies, jackets and trendy men fashion" },
-        { name_ar: "\u0633\u0627\u0639\u0627\u062A \u0648\u0645\u062C\u0648\u0647\u0631\u0627\u062A \u0648\u0625\u0643\u0633\u0633\u0648\u0627\u0631\u0627\u062A", name_en: "Jewelry & Watches", icon: "\u231A", image: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600", description_ar: "\u0633\u0627\u0639\u0627\u062A \u064A\u062F \u0630\u0643\u064A\u0629 \u0648\u0641\u0627\u062E\u0631\u0629\u060C \u062E\u0648\u0627\u062A\u0645\u060C \u0623\u0633\u0627\u0648\u0631 \u0648\u0642\u0644\u0627\u0626\u062F \u0646\u0633\u0627\u0626\u064A\u0629 \u0648\u0631\u062C\u0627\u0644\u064A\u0629", description_en: "Luxury and smartwatches, rings, bracelets and necklaces" },
-        { name_ar: "\u062D\u0642\u0627\u0626\u0628 \u0648\u0623\u062D\u0630\u064A\u0629", name_en: "Bags & Shoes", icon: "\u{1F45F}", image: "https://images.unsplash.com/photo-1549298916-b41d501d3772?w=600", description_ar: "\u0623\u062D\u0630\u064A\u0629 \u0631\u064A\u0627\u0636\u064A\u0629 \u0648\u0631\u0633\u0645\u064A\u0629\u060C \u062D\u0642\u0627\u0626\u0628 \u064A\u062F\u060C \u062D\u0642\u0627\u0626\u0628 \u0633\u0641\u0631 \u0648\u062D\u0642\u0627\u0626\u0628 \u0638\u0647\u0631", description_en: "Sneakers, formal shoes, handbags, luggage and backpacks" },
-        { name_ar: "\u0627\u0644\u0645\u0646\u0632\u0644 \u0648\u0627\u0644\u062D\u062F\u064A\u0642\u0629 \u0648\u0627\u0644\u0645\u0637\u0628\u062E", name_en: "Home & Garden", icon: "\u{1F3E0}", image: "https://images.unsplash.com/photo-1513694203232-719a280e022f?w=600", description_ar: "\u0623\u062F\u0648\u0627\u062A \u0645\u0637\u0628\u062E\u060C \u062F\u064A\u0643\u0648\u0631\u0627\u062A \u0645\u0646\u0632\u0644\u064A\u0629\u060C \u0645\u0633\u062A\u0644\u0632\u0645\u0627\u062A \u0627\u0644\u062D\u062F\u064A\u0642\u0629 \u0648\u0627\u0644\u062A\u062E\u0632\u064A\u0646 \u0648\u0627\u0644\u062A\u0646\u0638\u064A\u0645", description_en: "Kitchenware, home decor, garden supplies and storage solutions" },
-        { name_ar: "\u0623\u062C\u0647\u0632\u0629 \u0645\u0646\u0632\u0644\u064A\u0629 \u0643\u0647\u0631\u0628\u0627\u0626\u064A\u0629", name_en: "Home Appliances", icon: "\u{1F50C}", image: "https://images.unsplash.com/photo-1585338107529-13afc5f02586?w=600", description_ar: "\u0642\u0644\u0627\u064A\u0627\u062A \u0647\u0648\u0627\u0626\u064A\u0629\u060C \u0645\u0643\u0627\u0646\u0633 \u0631\u0648\u0628\u0648\u062A\u060C \u063A\u0644\u0627\u064A\u0627\u062A\u060C \u0645\u0627\u0643\u064A\u0646\u0627\u062A \u0642\u0647\u0648\u0629 \u0648\u0623\u062C\u0647\u0632\u0629 \u0630\u0643\u064A\u0629", description_en: "Air fryers, robot vacuums, kettles, coffee makers and smart home devices" },
-        { name_ar: "\u0627\u0644\u062C\u0645\u0627\u0644 \u0648\u0627\u0644\u0635\u062D\u0629 \u0648\u0627\u0644\u0639\u0646\u0627\u064A\u0629 \u0627\u0644\u0634\u062E\u0635\u064A\u0629", name_en: "Beauty & Health", icon: "\u{1F484}", image: "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=600", description_ar: "\u0645\u0633\u062A\u062D\u0636\u0631\u0627\u062A \u062A\u062C\u0645\u064A\u0644\u060C \u0639\u0646\u0627\u064A\u0629 \u0628\u0627\u0644\u0628\u0634\u0631\u0629 \u0648\u0627\u0644\u0634\u0639\u0631\u060C \u0639\u0637\u0648\u0631 \u0648\u0623\u062C\u0647\u0632\u0629 \u0627\u0644\u0639\u0646\u0627\u064A\u0629", description_en: "Cosmetics, skincare, haircare, perfumes and grooming tools" },
-        { name_ar: "\u0623\u0644\u0639\u0627\u0628 \u0648\u0623\u0637\u0641\u0627\u0644 \u0648\u0631\u0636\u0639", name_en: "Toys, Kids & Babies", icon: "\u{1F9F8}", image: "https://images.unsplash.com/photo-1566576912321-d58ddd7a6088?w=600", description_ar: "\u0623\u0644\u0639\u0627\u0628 \u062A\u0639\u0644\u064A\u0645\u064A\u0629\u060C \u0645\u0644\u0627\u0628\u0633 \u0623\u0637\u0641\u0627\u0644 \u0648\u0631\u0636\u0639\u060C \u0639\u0631\u0628\u0627\u062A \u0648\u0623\u0644\u0639\u0627\u0628 \u062A\u062D\u0643\u0645 \u0639\u0646 \u0628\u0639\u062F", description_en: "Educational toys, baby clothing, strollers and RC toys" },
-        { name_ar: "\u0631\u064A\u0627\u0636\u0629 \u0648\u0644\u064A\u0627\u0642\u0629 \u0628\u062F\u0646\u064A\u0629 \u0648\u062E\u0627\u0631\u062C\u064A\u0629", name_en: "Sports & Outdoors", icon: "\u26BD", image: "https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=600", description_ar: "\u0645\u0639\u062F\u0627\u062A \u062A\u0645\u0627\u0631\u064A\u0646\u060C \u0645\u0644\u0627\u0628\u0633 \u0631\u064A\u0627\u0636\u064A\u0629\u060C \u0645\u0633\u062A\u0644\u0632\u0645\u0627\u062A \u0627\u0644\u062A\u062E\u064A\u064A\u0645 \u0648\u0627\u0644\u062F\u0631\u0627\u062C\u0627\u062A \u0627\u0644\u0647\u0648\u0627\u0626\u064A\u0629", description_en: "Fitness gear, sportswear, camping equipment and bicycles" },
-        { name_ar: "\u0633\u064A\u0627\u0631\u0627\u062A \u0648\u062F\u0631\u0627\u062C\u0627\u062A \u0646\u0627\u0631\u064A\u0629 \u0648\u0642\u0637\u0639 \u063A\u064A\u0627\u0631", name_en: "Automotive & Motorcycles", icon: "\u{1F697}", image: "https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=600", description_ar: "\u0625\u0643\u0633\u0633\u0648\u0627\u0631\u0627\u062A \u0633\u064A\u0627\u0631\u0627\u062A\u060C \u0634\u0648\u0627\u062D\u0646\u060C \u0625\u0636\u0627\u0621\u0627\u062A LED\u060C \u0623\u062F\u0648\u0627\u062A \u0635\u064A\u0627\u0646\u0629 \u0648\u0642\u0637\u0639 \u063A\u064A\u0627\u0631", description_en: "Car accessories, chargers, LED lights, tools and spare parts" },
-        { name_ar: "\u062A\u062D\u0633\u064A\u0646 \u0627\u0644\u0645\u0646\u0632\u0644 \u0648\u0627\u0644\u0639\u062F\u062F \u0648\u0627\u0644\u0623\u062F\u0648\u0627\u062A", name_en: "Tools & Home Improvement", icon: "\u{1F6E0}\uFE0F", image: "https://images.unsplash.com/photo-1581244277943-fe4a9c777189?w=600", description_ar: "\u062F\u0631\u064A\u0644\u0627\u062A\u060C \u0623\u062F\u0648\u0627\u062A \u064A\u062F\u0648\u064A\u0629 \u0648\u0643\u0647\u0631\u0628\u0627\u0626\u064A\u0629\u060C \u0645\u0639\u062F\u0627\u062A \u0642\u064A\u0627\u0633 \u0648\u062A\u0631\u0643\u064A\u0628\u0627\u062A \u0633\u0628\u0627\u0643\u0629", description_en: "Power drills, hand tools, measuring devices and plumbing fixtures" },
-        { name_ar: "\u0623\u0636\u0648\u0627\u0621 \u0648\u0625\u0646\u0627\u0631\u0629 \u0630\u0643\u064A\u0629", name_en: "Lights & Lighting", icon: "\u{1F4A1}", image: "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?w=600", description_ar: "\u0623\u0634\u0631\u0637\u0629 RGB LED\u060C \u0625\u0646\u0627\u0631\u0629 \u0644\u064A\u0644\u064A\u0629\u060C \u0645\u0635\u0627\u0628\u064A\u062D \u0645\u0643\u062A\u0628\u064A\u0629 \u0648\u0625\u0646\u0627\u0631\u0629 \u062E\u0627\u0631\u062C\u064A\u0629", description_en: "RGB LED strips, night lights, desk lamps and outdoor illumination" },
-        { name_ar: "\u0623\u0645\u0646 \u0648\u062D\u0645\u0627\u064A\u0629 \u0648\u0643\u0627\u0645\u064A\u0631\u0627\u062A \u0645\u0631\u0627\u0642\u0628\u0629", name_en: "Security & Protection", icon: "\u{1F512}", image: "https://images.unsplash.com/photo-1557597774-9d273605dfa9?w=600", description_ar: "\u0643\u0627\u0645\u064A\u0631\u0627\u062A \u0645\u0631\u0627\u0642\u0628\u0629 \u0630\u0643\u064A\u0629\u060C \u0623\u0642\u0641\u0627\u0644 \u0625\u0644\u0643\u062A\u0631\u0648\u0646\u064A\u0629\u060C \u0623\u0646\u0638\u0645\u0629 \u0625\u0646\u0630\u0627\u0631 \u0648\u062D\u0633\u0627\u0633\u0627\u062A", description_en: "Smart security cameras, smart door locks, alarm systems and sensors" },
-        { name_ar: "\u0645\u0633\u062A\u0644\u0632\u0645\u0627\u062A \u0627\u0644\u062D\u064A\u0648\u0627\u0646\u0627\u062A \u0627\u0644\u0623\u0644\u064A\u0641\u0629", name_en: "Pet Supplies", icon: "\u{1F43E}", image: "https://images.unsplash.com/photo-1543466835-00a7907e9de1?w=600", description_ar: "\u0623\u0637\u0648\u0627\u0642\u060C \u0623\u0644\u0639\u0627\u0628 \u0644\u0644\u0642\u0637\u0637 \u0648\u0627\u0644\u0643\u0644\u0627\u0628\u060C \u0623\u0633\u0631\u0651\u0629 \u0648\u0645\u0633\u062A\u0644\u0632\u0645\u0627\u062A \u062A\u0646\u0638\u064A\u0641", description_en: "Collars, pet toys, beds, carriers and grooming supplies" },
-        { name_ar: "\u0623\u062F\u0648\u0627\u062A \u0645\u0643\u062A\u0628\u064A\u0629 \u0648\u0645\u062F\u0631\u0633\u064A\u0629", name_en: "Office & School Supplies", icon: "\u{1F4DA}", image: "https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=600", description_ar: "\u062F\u0641\u0627\u062A\u0631\u060C \u0623\u0642\u0644\u0627\u0645\u060C \u062D\u0642\u0627\u0626\u0628 \u0645\u062F\u0631\u0633\u064A\u0629 \u0648\u0645\u0633\u062A\u0644\u0632\u0645\u0627\u062A \u0641\u0646\u064A\u0629 \u0648\u0631\u0633\u0645", description_en: "Notebooks, pens, school bags and artistic materials" },
-        { name_ar: "\u0623\u062B\u0627\u062B \u0648\u062F\u064A\u0643\u0648\u0631 \u0645\u0646\u0632\u0644\u064A", name_en: "Furniture & Home Decor", icon: "\u{1F6CB}\uFE0F", image: "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=600", description_ar: "\u0643\u0631\u0627\u0633\u064A \u0642\u064A\u0645\u0646\u0642 \u0648\u0645\u0643\u062A\u0628\u064A\u0629\u060C \u0637\u0627\u0648\u0644\u0627\u062A\u060C \u0631\u0641\u0648\u0641 \u0648\u0644\u0648\u062D\u0627\u062A \u062C\u062F\u0627\u0631\u064A\u0629", description_en: "Gaming chairs, office chairs, desks, shelves and wall art" },
-        { name_ar: "\u0643\u0627\u0645\u064A\u0631\u0627\u062A \u0648\u0628\u0635\u0631\u064A\u0627\u062A \u0648\u0637\u0627\u0626\u0631\u0627\u062A \u062F\u0631\u0648\u0646", name_en: "Cameras & Drones", icon: "\u{1F4F7}", image: "https://images.unsplash.com/photo-1502920917128-1aa500764cbd?w=600", description_ar: "\u0643\u0627\u0645\u064A\u0631\u0627\u062A \u0627\u062D\u062A\u0631\u0627\u0641\u064A\u0629\u060C \u062F\u0631\u0648\u0646 \u062A\u0635\u0648\u064A\u0631 \u062C\u0648\u064A\u060C \u0639\u062F\u0633\u0627\u062A \u0648\u062D\u0648\u0627\u0645\u0644 \u062A\u062B\u0628\u064A\u062A", description_en: "Professional cameras, photography drones, lenses and tripods" },
-        { name_ar: "\u0623\u062C\u0647\u0632\u0629 \u0630\u0643\u064A\u0629 \u0648\u0625\u0646\u062A\u0631\u0646\u062A \u0627\u0644\u0623\u0634\u064A\u0627\u0621", name_en: "Smart Home & IoT", icon: "\u{1F916}", image: "https://images.unsplash.com/photo-1558002038-1055907df827?w=600", description_ar: "\u062D\u0633\u0627\u0633\u0627\u062A \u0630\u0643\u064A\u0629\u060C \u0645\u0641\u0627\u062A\u064A\u062D \u0630\u0643\u064A\u0629 \u062A\u0639\u0645\u0644 \u0628\u0627\u0644\u0648\u0627\u064A \u0641\u0627\u064A \u0648\u0627\u0644\u062A\u062D\u0643\u0645 \u0627\u0644\u0635\u0648\u062A\u064A", description_en: "Smart sensors, Wi-Fi switches and voice-controlled devices" },
-        { name_ar: "\u0634\u0639\u0631 \u0645\u0633\u062A\u0639\u0627\u0631 \u0648\u0628\u0627\u0631\u0648\u0643\u0627\u062A", name_en: "Hair Extensions & Wigs", icon: "\u{1F487}", image: "https://images.unsplash.com/photo-1560869713-7d0a29430803?w=600", description_ar: "\u062E\u0635\u0644\u0627\u062A \u0634\u0639\u0631 \u0637\u0628\u064A\u0639\u064A\u0629 \u0648\u0635\u0646\u0627\u0639\u064A\u0629\u060C \u0628\u0627\u0631\u0648\u0643\u0627\u062A \u0648\u0625\u0643\u0633\u0633\u0648\u0627\u0631\u0627\u062A \u062A\u0635\u0641\u064A\u0641", description_en: "Synthetic and human hair wigs, extensions and styling accessories" },
-        { name_ar: "\u0645\u0633\u062A\u0644\u0632\u0645\u0627\u062A \u0627\u0644\u062D\u0641\u0644\u0627\u062A \u0648\u0627\u0644\u0645\u0646\u0627\u0633\u0628\u0627\u062A", name_en: "Event & Party Supplies", icon: "\u{1F389}", image: "https://images.unsplash.com/photo-1530103862676-de8c9debad1d?w=600", description_ar: "\u0628\u0627\u0644\u0648\u0646\u0627\u062A\u060C \u0623\u0632\u064A\u0627\u0621 \u062A\u0646\u0643\u0631\u064A\u0629\u060C \u0632\u064A\u0646\u0629 \u0623\u0639\u064A\u0627\u062F \u0648\u0645\u0646\u0627\u0633\u0628\u0627\u062A \u0648\u0647\u062F\u0627\u064A\u0627", description_en: "Balloons, costumes, event decorations and gift supplies" },
-        { name_ar: "\u0623\u0642\u0645\u0634\u0629 \u0648\u062D\u0631\u0641 \u064A\u062F\u0648\u064A\u0629 \u0648\u062E\u064A\u0627\u0637\u0629", name_en: "Arts, Crafts & Sewing", icon: "\u{1F9F5}", image: "https://images.unsplash.com/photo-1528458876885-5b6eac7b949b?w=600", description_ar: "\u062E\u064A\u0648\u0637\u060C \u0645\u0627\u0643\u064A\u0646\u0627\u062A \u062E\u064A\u0627\u0637\u0629\u060C \u062E\u0631\u0632 \u0648\u0645\u0633\u062A\u0644\u0632\u0645\u0627\u062A \u0627\u0644\u0623\u0639\u0645\u0627\u0644 \u0627\u0644\u0641\u0646\u064A\u0629", description_en: "Threads, sewing machines, beads and art craft accessories" }
-      ];
-      for (const cat of allAliCategories) {
-        const [exists2] = await db.select().from(categories).where(eq(categories.name_en, cat.name_en)).limit(1);
-        if (!exists2) {
-          await db.insert(categories).values({ ...cat, is_active: true });
-        }
-      }
-    }
-  } catch {
-  }
-  try {
-    const existingCust = await db.select().from(customers).limit(1);
-    if (existingCust.length === 0) {
-      await db.insert(customers).values([
-        { name: "\u0623\u062D\u0645\u062F \u0645\u062D\u0645\u062F \u0627\u0644\u0633\u0639\u064A\u062F", email: "ahmed@example.com", phone: "0501234567", address: "\u0627\u0644\u0631\u064A\u0627\u0636\u060C \u062D\u064A \u0627\u0644\u0646\u062E\u064A\u0644", total_orders: 2, total_spent: 9595, loyalty_points: 960 },
-        { name: "\u0641\u0627\u0637\u0645\u0629 \u0639\u0644\u064A \u0627\u0644\u0632\u0647\u0631\u0627\u0646\u064A", email: "fatima@example.com", phone: "0557654321", address: "\u062C\u062F\u0629\u060C \u062D\u064A \u0627\u0644\u0634\u0627\u0637\u0626", total_orders: 2, total_spent: 11845, loyalty_points: 1185 },
-        { name: "\u062E\u0627\u0644\u062F \u0639\u0628\u062F\u0627\u0644\u0644\u0647 \u0627\u0644\u0642\u062D\u0637\u0627\u0646\u064A", email: "khaled@example.com", phone: "0531112233", address: "\u0627\u0644\u062F\u0645\u0627\u0645\u060C \u062D\u064A \u0627\u0644\u0641\u064A\u0635\u0644\u064A\u0629", total_orders: 1, total_spent: 10350, loyalty_points: 1035 },
-        { name: "\u0646\u0648\u0631\u0629 \u0633\u0639\u062F \u0627\u0644\u0634\u0645\u0631\u064A", email: "nora@example.com", phone: "0509876543", address: "\u0627\u0644\u0631\u064A\u0627\u0636\u060C \u062D\u064A \u0627\u0644\u0639\u0644\u064A\u0627", total_orders: 1, total_spent: 2100, loyalty_points: 210 }
-      ]);
-    }
-  } catch {
-  }
-  try {
-    const existingVendors = await db.select().from(vendors).limit(1);
-    if (existingVendors.length === 0) {
-      await db.insert(vendors).values([
-        { store_name: "\u0645\u062A\u062C\u0631 \u0627\u0644\u062A\u0642\u0646\u064A\u0629", name: "\u0645\u062D\u0645\u062F \u0627\u0644\u0639\u0644\u064A", email: "tech@example.com", phone: "0501112222", address: "\u0627\u0644\u0631\u064A\u0627\u0636", commission_rate: 12, balance: 5e3, is_approved: true },
-        { store_name: "\u0625\u0644\u0643\u062A\u0631\u0648\u0646\u064A\u0627\u062A \u0627\u0644\u062C\u0646\u0648\u0628", name: "\u0633\u0627\u0644\u0645 \u0627\u0644\u0628\u0631\u064A\u0643", email: "south@example.com", phone: "0503334444", address: "\u062C\u062F\u0629", commission_rate: 10, balance: 3200, is_approved: true },
-        { store_name: "\u0645\u062A\u062C\u0631 \u0627\u0644\u0634\u0645\u0627\u0644", name: "\u0639\u0628\u062F\u0627\u0644\u0644\u0647 \u0627\u0644\u0641\u0647\u062F", email: "north@example.com", phone: "0505556666", address: "\u0627\u0644\u062F\u0645\u0627\u0645", commission_rate: 15, balance: 1500, is_approved: false }
-      ]);
-    }
-  } catch {
-  }
-  try {
-    const existingAff = await db.select().from(affiliates).limit(1);
-    if (existingAff.length === 0) {
-      await db.insert(affiliates).values([
-        { name: "\u062E\u0627\u0644\u062F \u0627\u0644\u0639\u0645\u0631\u064A", email: "khaled.aff@example.com", phone: "0507778888", code: "AFF2024A", commission_rate: 5, balance: 450, total_earned: 1200, total_clicks: 342, total_conversions: 18, is_active: true },
-        { name: "\u0633\u0627\u0631\u0629 \u0627\u0644\u0645\u0637\u064A\u0631\u064A", email: "sara.aff@example.com", phone: "0509990000", code: "AFF2024B", commission_rate: 7, balance: 280, total_earned: 800, total_clicks: 215, total_conversions: 12, is_active: true }
-      ]);
-    }
-  } catch {
-  }
-  try {
-    await seedCurrencies();
-  } catch {
-  }
-  try {
-    await seedPaymentGateways();
-  } catch {
-  }
-  try {
-    await seedShippingCarriers();
-  } catch {
-  }
-  try {
-    const defaultSettings = [
-      { key: "aliexpress_app_key", value: "540456" },
-      { key: "aliexpress_app_key_secret", value: "VKz8Ppc40dGMXGbcLyjXRxBhrXw3itnT" },
-      { key: "aliexpress_tracking_id", value: "default" },
-      { key: "aliexpress_commission_rate", value: "10" }
-    ];
-    for (const s of defaultSettings) {
-      const existing = await db.select().from(platform_settings).where(eq(platform_settings.key, s.key));
-      if (existing.length === 0) {
-        await db.insert(platform_settings).values(s);
-      } else {
-        await db.update(platform_settings).set({ value: s.value }).where(eq(platform_settings.key, s.key));
-      }
-    }
-  } catch {
-  }
-  logger.info("Database seeded successfully");
 }
 router2.post("/auth/register", validateBody(registerSchema), async (req, res, next) => {
   try {
@@ -97578,25 +97122,6 @@ async function syncAllDropshipPricesAndStock() {
     return { total: 0, synced: 0, deletedOutOfStock: 0 };
   }
 }
-function startPriceSyncJob() {
-  const INTERVAL_MS = 10 * 60 * 1e3;
-  setTimeout(async () => {
-    try {
-      await purgeZeroStockAndDeletedProducts();
-      await syncAllDropshipPricesAndStock();
-    } catch (e) {
-      logger.error({ err: e.message }, "Initial price/stock sync job error");
-    }
-  }, 15 * 1e3);
-  setInterval(async () => {
-    try {
-      await syncAllDropshipPricesAndStock();
-      await purgeZeroStockAndDeletedProducts();
-    } catch (e) {
-      logger.error({ err: e.message }, "Recurring price/stock sync job error");
-    }
-  }, INTERVAL_MS);
-}
 router2.post("/admin/dropship/purge-zero-stock", requireAuth, requireRole("admin", "manager"), async (_req, res, next) => {
   try {
     const deletedCount = await purgeZeroStockAndDeletedProducts();
@@ -97745,16 +97270,6 @@ async function runAutoImportCycle(targetCount = 5e3) {
   } finally {
     autoImportRunning = false;
   }
-}
-function startAutoImportJob() {
-  const INTERVAL_MS = 12 * 60 * 60 * 1e3;
-  setTimeout(() => {
-    runAutoImportCycle(5e3).catch((err) => logger.error({ err }, "Initial auto-import job failed"));
-  }, 45 * 1e3);
-  setInterval(() => {
-    runAutoImportCycle(5e3).catch((err) => logger.error({ err }, "Recurring auto-import job failed"));
-  }, INTERVAL_MS);
-  logger.info("\u{1F916} Auto-import job scheduled: 5,000 products will be fetched and imported every 12 hours automatically.");
 }
 async function getAmazonCreds2() {
   const accessKey = (await db.select().from(platform_settings).where(eq(platform_settings.key, "amazon_access_key")))[0]?.value;
@@ -99545,74 +99060,8 @@ app.use((req, res, next) => {
 app.use(notFoundHandler);
 app.use(errorHandler);
 var app_default = app;
-
-// src/index.ts
-init_logger2();
-init_src();
-var port2 = env.PORT;
-var isServerless = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
-var server = null;
-if (!isServerless) {
-  server = app_default.listen(port2, "0.0.0.0", async () => {
-    logger.info({ port: port2, nodeEnv: env.NODE_ENV }, "Server listening");
-    try {
-      logger.info("Initializing database schema...");
-      await initDbSchema(pool);
-      logger.info("Database schema initialized. Seeding initial data...");
-      await seedIfEmpty();
-      startPriceSyncJob();
-      startAutoImportJob();
-    } catch (e) {
-      logger.error({ err: e }, "Database initialization/seed failed");
-    }
-  });
-  server.on("error", (err) => {
-    logger.error({ err }, "Error listening on port");
-    process.exit(1);
-  });
-} else {
-  pool.on("error", (err) => {
-    logger.error({ err }, "Database pool error in serverless environment");
-  });
-}
-if (!isServerless) {
-  let shutdown = function(signal) {
-    logger.info({ signal }, "Shutting down gracefully...");
-    if (server) {
-      server.close(async () => {
-        try {
-          await pool.end();
-          logger.info("Database pool closed");
-          process.exit(0);
-        } catch (err) {
-          logger.error({ err }, "Error during shutdown");
-          process.exit(1);
-        }
-      });
-    } else {
-      pool.end().finally(() => process.exit(0));
-    }
-    setTimeout(() => {
-      logger.error("Forced shutdown after timeout");
-      process.exit(1);
-    }, 1e4);
-  };
-  shutdown2 = shutdown;
-  process.on("SIGTERM", () => shutdown("SIGTERM"));
-  process.on("SIGINT", () => shutdown("SIGINT"));
-  process.on("uncaughtException", (err) => {
-    logger.fatal({ err }, "Uncaught exception");
-    shutdown("uncaughtException");
-  });
-}
-var shutdown2;
-process.on("unhandledRejection", (reason) => {
-  logger.error({ reason }, "Unhandled rejection");
-});
-var src_default = app_default;
 export {
-  app_default as app,
-  src_default as default
+  app_default as default
 };
 /*! Bundled license information:
 
@@ -99932,4 +99381,4 @@ bcryptjs/dist/bcrypt.js:
    * see: https://github.com/dcodeIO/bcrypt.js for details
    *)
 */
-//# sourceMappingURL=index.mjs.map
+//# sourceMappingURL=index.js.map

@@ -99550,7 +99550,9 @@ var app_default = app;
 init_logger2();
 init_src();
 var port2 = env.PORT;
-var isServerless = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
+var isServerless = Boolean(
+  process.env.VERCEL || process.env.VERCEL_ENV || process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.LAMBDA_TASK_ROOT || process.env.NOW_REGION
+);
 var server = null;
 if (!isServerless) {
   server = app_default.listen(port2, "0.0.0.0", async () => {
