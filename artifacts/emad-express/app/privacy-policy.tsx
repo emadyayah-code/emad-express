@@ -13,19 +13,23 @@ import { Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
 import { useLanguage } from "@/context/LanguageContext";
+import { useAppSettings } from "@/hooks/useAppSettings";
 
 export default function PrivacyPolicyScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { language, isRTL } = useLanguage();
+  const settings = useAppSettings();
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
   const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
 
+  const contactEmail = settings.support_email || "support@emadexpress.com";
+
   const handleEmailPress = async () => {
     try {
-      await Linking.openURL("mailto:support@emadexpress.com?subject=Privacy%20Policy%20Inquiry%20-%20Emad%20Express");
+      await Linking.openURL(`mailto:${contactEmail}?subject=Privacy%20Policy%20Inquiry%20-%20Emad%20Express`);
     } catch {
       // ignore
     }
@@ -246,7 +250,7 @@ export default function PrivacyPolicyScreen() {
             activeOpacity={0.85}
           >
             <Feather name="mail" size={18} color="#000" />
-            <Text style={styles.emailActionText}>support@emadexpress.com</Text>
+            <Text style={styles.emailActionText}>{contactEmail}</Text>
           </TouchableOpacity>
         </View>
 

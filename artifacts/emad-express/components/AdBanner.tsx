@@ -1,6 +1,8 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { View, Text, StyleSheet, TouchableOpacity, Linking } from "react-native";
 import { useColors } from "@/hooks/useColors";
+import { useAppSettings } from "@/hooks/useAppSettings";
+import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 
 export type AdSize = "banner" | "largeBanner" | "mediumRectangle";
@@ -14,32 +16,21 @@ interface AdBannerProps {
 
 export function AdBanner({ size = "banner", style, bannerIndex = 0 }: AdBannerProps) {
   const colors = useColors();
-  const [banners, setBanners] = useState<any[]>([]);
-  const [adsEnabled, setAdsEnabled] = useState(true);
-  const [loading, setLoading] = useState(true);
+  const settings = useAppSettings();
 
-  useEffect(() => {
-    let mounted = true;
-    Promise.all([
-      api.get("/banners").catch(() => null),
-      api.get("/app-settings").catch(() => null),
-    ]).then(([bannersRes, settingsRes]) => {
-      if (!mounted) return;
-      if (settingsRes?.data?.google_ads_enabled === false) {
-        setAdsEnabled(false);
-      }
-      if (bannersRes?.data && Array.isArray(bannersRes.data)) {
-        setBanners(bannersRes.data);
-      }
-      setLoading(false);
-    });
+  const { data: banners = [] } = useQuery<any[]>({
+    queryKey: ["partner-banners"],
+    queryFn: async () => {
+      const res = await api.get("/banners").catch(() => null);
+      if (res?.data && Array.isArray(res.data)) return res.data;
+      if (Array.isArray(res)) return res;
+      return [];
+    },
+    staleTime: 15000,
+    refetchInterval: 30000, // Auto-sync banners every 30 seconds
+  });
 
-    return () => {
-      mounted = false;
-    };
-  }, []);
-
-  if (!adsEnabled) return null;
+  if (settings.google_ads_enabled === false) return null;
 
   // If there are partner banners configured in Admin Panel
   if (banners.length > 0) {
