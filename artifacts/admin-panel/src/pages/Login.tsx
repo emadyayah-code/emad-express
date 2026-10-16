@@ -15,11 +15,44 @@ export default function Login() {
     }
   }, [user, setLocation]);
 
-  // Clean and destroy any input values on unmount or unload
+  // Ensure zero credentials remain in fields on mount and window blur
   useEffect(() => {
-    return () => {
+    setEmail("");
+    setPassword("");
+    const scrub = () => {
       setEmail("");
       setPassword("");
+      const inputs = document.querySelectorAll("input");
+      inputs.forEach(inp => {
+        if (inp.name === "adm_acc_key" || inp.name === "adm_sec_pass") {
+          inp.value = "";
+        }
+      });
+    };
+    scrub();
+    const t1 = setTimeout(scrub, 50);
+    const t2 = setTimeout(scrub, 250);
+    const t3 = setTimeout(scrub, 600);
+
+    const handleExit = () => {
+      scrub();
+      try {
+        sessionStorage.clear();
+        localStorage.removeItem("admin_token");
+        localStorage.removeItem("user");
+      } catch {}
+    };
+
+    window.addEventListener("beforeunload", handleExit);
+    window.addEventListener("pagehide", handleExit);
+
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+      clearTimeout(t3);
+      window.removeEventListener("beforeunload", handleExit);
+      window.removeEventListener("pagehide", handleExit);
+      scrub();
     };
   }, []);
 
@@ -95,18 +128,25 @@ export default function Login() {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5" autoComplete="off">
+            {/* Decoy hidden inputs to prevent Chrome / Edge password manager autofill */}
+            <input type="text" style={{ display: "none" }} tabIndex={-1} autoComplete="off" />
+            <input type="password" style={{ display: "none" }} tabIndex={-1} autoComplete="off" />
+
             <div>
               <label className="block text-sm font-medium text-amber-200/80 mb-2">بريد المدير العام</label>
               <input
-                type="email"
+                type="text"
+                name="adm_acc_key"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 placeholder="البريد الإلكتروني المعتمد"
                 required
-                autoComplete="off"
+                autoComplete="new-password"
                 autoCorrect="off"
-                autoCapitalize="off"
+                autoCapitalize="none"
                 spellCheck={false}
+                data-lpignore="true"
+                data-1p-ignore="true"
                 className="w-full rounded-xl px-4 py-3 text-sm text-white outline-none transition-all"
                 style={{
                   background: "rgba(255,255,255,0.05)",
@@ -120,14 +160,17 @@ export default function Login() {
               <label className="block text-sm font-medium text-amber-200/80 mb-2">كلمة المرور السرية</label>
               <input
                 type="password"
+                name="adm_sec_pass"
                 value={password}
                 onChange={e => setPassword(e.target.value)}
                 placeholder="كلمة المرور الخاصة بالمدير"
                 required
                 autoComplete="new-password"
                 autoCorrect="off"
-                autoCapitalize="off"
+                autoCapitalize="none"
                 spellCheck={false}
+                data-lpignore="true"
+                data-1p-ignore="true"
                 className="w-full rounded-xl px-4 py-3 text-sm text-white outline-none transition-all"
                 style={{
                   background: "rgba(255,255,255,0.05)",

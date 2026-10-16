@@ -89,11 +89,11 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
             className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold text-black flex-shrink-0 shadow-md"
             style={{ background: "linear-gradient(135deg, #fbbf24, #d97706)" }}
           >
-            {user?.name?.charAt(0) || "ع"}
+            <Shield size={16} className="text-black" />
           </div>
           <div className="overflow-hidden">
-            <p className="text-sm font-semibold text-white/95 truncate">{user?.name || "عماد الأكحلي"}</p>
-            <p className="text-xs text-amber-200/50 truncate">{user?.email || "ealakhly@gmail.com"}</p>
+            <p className="text-sm font-semibold text-white/95 truncate">الإدارة المركزية</p>
+            <p className="text-xs text-amber-200/50 truncate">جلسة مشفرة وآمنة</p>
           </div>
         </div>
         <button

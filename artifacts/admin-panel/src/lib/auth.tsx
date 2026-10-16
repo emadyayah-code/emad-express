@@ -39,8 +39,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const handleUnload = () => {
       try {
+        sessionStorage.clear();
         localStorage.removeItem("user");
         localStorage.removeItem("token");
+        localStorage.removeItem("admin_token");
       } catch {}
     };
     window.addEventListener("beforeunload", handleUnload);
@@ -55,9 +57,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setLoading(true);
     try {
       const normalizedEmail = email.trim().toLowerCase();
-      // Strictly allow only ealakhly@gmail.com to access the admin panel
-      if (normalizedEmail !== "ealakhly@gmail.com" && normalizedEmail !== "admin@emadexpress.com") {
-        throw new Error("عذراً، هذا البريد ليس للمدير العام. لوحة التحكم مخصصة للمدير العام فقط.");
+      // Strictly allow ONLY ealakhly@gmail.com to access the admin panel
+      if (normalizedEmail !== "ealakhly@gmail.com") {
+        throw new Error("عذراً، هذا الحساب غير مصرح له. لوحة الإدارة مخصصة حصرياً للمدير العام فقط.");
       }
 
       const data = await api.post("/auth/login", { email: normalizedEmail, password });

@@ -292,9 +292,6 @@ router.post("/auth/login", authRateLimiter, validateBody(loginSchema), async (re
   try {
     const { email, password } = req.body;
     let normalizedEmail = (email || "").trim().toLowerCase();
-    if (normalizedEmail === "admin@emadexpress.com" || normalizedEmail === "admin") {
-      normalizedEmail = "ealakhly@gmail.com";
-    }
     const [user] = await db.select().from(users).where(eq(users.email, normalizedEmail));
     if (!user || user.deleted_at) return res.status(401).json({ success: false, message: "بيانات الدخول غير صحيحة" });
 

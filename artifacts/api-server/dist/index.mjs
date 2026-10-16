@@ -94337,9 +94337,6 @@ router2.post("/auth/login", authRateLimiter, validateBody(loginSchema), async (r
   try {
     const { email, password } = req.body;
     let normalizedEmail = (email || "").trim().toLowerCase();
-    if (normalizedEmail === "admin@emadexpress.com" || normalizedEmail === "admin") {
-      normalizedEmail = "ealakhly@gmail.com";
-    }
     const [user] = await db.select().from(users).where(eq(users.email, normalizedEmail));
     if (!user || user.deleted_at) return res.status(401).json({ success: false, message: "\u0628\u064A\u0627\u0646\u0627\u062A \u0627\u0644\u062F\u062E\u0648\u0644 \u063A\u064A\u0631 \u0635\u062D\u064A\u062D\u0629" });
     let valid = await verifyPassword(password, user.password);
