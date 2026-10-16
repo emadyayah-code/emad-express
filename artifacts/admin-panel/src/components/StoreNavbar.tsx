@@ -72,10 +72,6 @@ export function StoreNavbar({ onSearch }: { onSearch?: (q: string) => void }) {
             <Link href="/privacy-policy" className="hover:text-amber-200 transition-colors">
               سياسة الخصوصية
             </Link>
-            <span className="text-slate-600">|</span>
-            <a href="/admin" className="text-amber-400 hover:text-amber-300 font-bold bg-amber-500/10 hover:bg-amber-500/20 px-2.5 py-1 rounded-lg border border-amber-500/30 transition-colors inline-flex items-center gap-1">
-              <span>⚙️ لوحة الإدارة</span>
-            </a>
           </div>
         </div>
       </div>
