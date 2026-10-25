@@ -1437,7 +1437,7 @@ router.get("/products", async (req, res, next) => {
       return {
         ...p,
         name: locName,
-        name_en: requestLang === "en" ? locName : (p.name_en && !isArabicText(p.name_en) ? p.name_en : locName),
+        name_en: requestLang === "en" ? locName : (isValidEnglishText(p.name_en) ? p.name_en! : locName),
         name_ar: p.name_ar || locName,
         image: toOptimizedThumb(p.image),
         description: "",
@@ -1476,10 +1476,10 @@ router.get("/products/:id", validateParams(idParamSchema), async (req, res, next
     const localized = {
       ...product,
       name: locName,
-      name_en: requestLang === "en" ? locName : (product.name_en && !isArabicText(product.name_en) ? product.name_en : locName),
+      name_en: requestLang === "en" ? locName : (isValidEnglishText(product.name_en) ? product.name_en! : locName),
       name_ar: product.name_ar || locName,
       description: locDesc,
-      description_en: requestLang === "en" ? locDesc : (product.description_en && !isArabicText(product.description_en) ? product.description_en : locDesc),
+      description_en: requestLang === "en" ? locDesc : (isValidEnglishText(product.description_en) ? product.description_en! : locDesc),
       description_ar: product.description_ar || locDesc,
     };
     return res.json({ 
