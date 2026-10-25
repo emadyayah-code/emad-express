@@ -118,7 +118,7 @@ export default function ProductsScreen() {
   });
   const { data: categoriesData } = useQuery({
     queryKey: ["categories", language],
-    queryFn: () => api.get("/categories"),
+    queryFn: () => api.get(`/categories?lang=${language}`),
     staleTime: 60000,
     refetchInterval: 60000,
   });
