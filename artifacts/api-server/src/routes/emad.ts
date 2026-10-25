@@ -1276,18 +1276,65 @@ const AR_TO_EN_PRODUCT_DICT: Record<string, string> = {
   "شفرات": "Blades", "حصيرة": "Mat", "قص": "Cutting", "أمان": "Safety", "قفل": "Lock"
 };
 
-function isArabicText(t: string | null | undefined): boolean {
-  return /[\u0600-\u06FF]/.test(t || "");
+const CLEAN_CATEGORY_NAMES: Record<number, { ar: string; en: string }> = {
+  1: { ar: "إلكترونيات وأجهزة ذكية", en: "Electronics & Smart Devices" },
+  2: { ar: "أزياء وموضة", en: "Fashion & Style" },
+  3: { ar: "هواتف ذكية وإكسسوارات", en: "Smartphones & Accessories" },
+  4: { ar: "ساعات ومجوهرات", en: "Watches & Jewelry" },
+  5: { ar: "المنزل والمطبخ", en: "Home & Kitchen" },
+  6: { ar: "الصحة والجمال", en: "Health & Beauty" },
+  7: { ar: "رياضة وترفيه", en: "Sports & Outdoors" },
+  8: { ar: "ألعاب وأطفال", en: "Toys, Kids & Babies" },
+  9: { ar: "سيارات ودراجات نارية", en: "Automotive & Motorcycles" },
+  10: { ar: "أحذية وحقائب", en: "Shoes & Bags" },
+  11: { ar: "كمبيوتر ولابتوب", en: "Computers & Office" },
+  12: { ar: "أجهزة إلكترونية استهلاكية", en: "Consumer Electronics" },
+  13: { ar: "أزياء وملابس رجالية", en: "Men's Fashion" },
+  14: { ar: "أدوات وتحسين المنزل", en: "Tools & Home Improvement" },
+  15: { ar: "إضاءة ومصابيح", en: "Lights & Lighting" },
+  16: { ar: "أمان وحماية ذكية", en: "Security & Protection" },
+  17: { ar: "مستلزمات الحيوانات الأليفة", en: "Pet Supplies" },
+  18: { ar: "أدوات مكتبية ومدرسية", en: "Office & School Supplies" },
+  19: { ar: "أثاث وديكور منزلي", en: "Furniture & Home Decor" },
+  20: { ar: "كاميرات وطائرات درون", en: "Cameras & Drones" },
+  21: { ar: "المنزل الذكي وإنترنت الأشياء", en: "Smart Home & IoT" },
+  22: { ar: "وصلات وشعر مستعار", en: "Hair Extensions & Wigs" },
+  23: { ar: "مستلزمات الحفلات والمناسبات", en: "Event & Party Supplies" },
+  24: { ar: "فنون وحرف وخياطة", en: "Arts, Crafts & Sewing" },
+};
+
+function isValidEnglishText(t: string | null | undefined): boolean {
+  if (!t) return false;
+  const cleaned = t.trim();
+  if (cleaned.length < 3) return false;
+  if (cleaned.includes("\uFFFD")) return false;
+  if (/[\u0600-\u06FF]/.test(cleaned)) return false;
+  if (/[\u4E00-\u9FFF\u3400-\u4DBF\uAC00-\uD7AF\u1100-\u11FF]/.test(cleaned)) return false;
+  const latinLetters = cleaned.match(/[a-zA-Z]/g);
+  return Boolean(latinLetters && latinLetters.length >= 3);
 }
 
-function localizeProductName(p: { name_ar?: string | null; name_en?: string | null; name?: string | null; sku?: string | null }, lang: string): string {
+function isCleanArabicText(t: string | null | undefined): boolean {
+  if (!t) return false;
+  const cleaned = t.trim();
+  if (cleaned.length < 3) return false;
+  if (cleaned.includes("\uFFFD")) return false;
+  if (/[\u4E00-\u9FFF\u3400-\u4DBF\uAC00-\uD7AF\u1100-\u11FF]/.test(cleaned)) return false;
+  const arLetters = cleaned.match(/[\u0600-\u06FF]/g);
+  return Boolean(arLetters && arLetters.length >= 3);
+}
+
+function localizeProductName(p: { id?: number; name_ar?: string | null; name_en?: string | null; name?: string | null; sku?: string | null; category_id?: number | null }, lang: string): string {
+  const cat = p.category_id ? CLEAN_CATEGORY_NAMES[Number(p.category_id)] : null;
+  const catEn = cat ? cat.en : "AliExpress Verified";
+  const catAr = cat ? cat.ar : "علي إكسبرس الرسمي";
+  const cleanSku = p.sku?.replace(/^ALI-/, "").slice(0, 14) || String(p.id || "PROD");
+
   if (lang === "en") {
-    if (p.name_en && !isArabicText(p.name_en)) {
-      return p.name_en.trim();
+    if (isValidEnglishText(p.name_en)) {
+      return p.name_en!.trim();
     }
     const raw = (p.name_ar || p.name || p.name_en || "").trim();
-    if (!raw) return `AliExpress Verified Item (${p.sku || "PROD"})`;
-
     const tokens = raw.split(/[\s,،\-–—._/()+]+/);
     const words: string[] = [];
     for (const t of tokens) {
@@ -1299,21 +1346,29 @@ function localizeProductName(p: { name_ar?: string | null; name_en?: string | nu
       }
     }
     if (words.length >= 2) {
-      return words.slice(0, 10).join(" ") + " (Pro Edition)";
+      return words.slice(0, 8).join(" ") + " Pro Edition";
     }
-    return `AliExpress Official Verified Product (${p.sku || "PROD"})`;
+    return `${catEn} Premium Item (${cleanSku})`;
+  } else {
+    if (isCleanArabicText(p.name_ar)) {
+      return p.name_ar!.trim();
+    }
+    return `${catAr} - منتج أصلي عالي الجودة (${cleanSku})`;
   }
-  if (p.name_ar && isArabicText(p.name_ar)) return p.name_ar.trim();
-  return p.name_ar || (p as any).name || p.name_en || "منتج رسمي عالي الجودة من علي إكسبرس";
 }
 
-function localizeProductDesc(p: { description_ar?: string | null; description_en?: string | null; description?: string | null; sku?: string | null }, lang: string): string {
+function localizeProductDesc(p: { id?: number; description_ar?: string | null; description_en?: string | null; description?: string | null; sku?: string | null; category_id?: number | null }, lang: string): string {
+  const cat = p.category_id ? CLEAN_CATEGORY_NAMES[Number(p.category_id)] : null;
+  const catEn = cat ? cat.en : "AliExpress verified item";
+  const catAr = cat ? cat.ar : "منتج رسمي من علي إكسبرس";
+  const cleanSku = p.sku?.replace(/^ALI-/, "").slice(0, 14) || String(p.id || "PROD");
+
   if (lang === "en") {
-    if (p.description_en && !isArabicText(p.description_en)) return p.description_en.trim();
-    return `Authentic AliExpress verified item (SKU: ${p.sku || "—"}). High quality standards, official warranty, and express international shipping.`;
+    if (isValidEnglishText(p.description_en)) return p.description_en!.trim();
+    return `Authentic ${catEn} (SKU: ${cleanSku}). High quality standards, official supplier warranty, and express international shipping.`;
   }
-  if (p.description_ar && isArabicText(p.description_ar)) return p.description_ar.trim();
-  return p.description_ar || (p as any).description || p.description_en || "منتج أصلي عالي الجودة ومضمون 100% من المورد المعتمد مع شحن سريع ومباشر.";
+  if (isCleanArabicText(p.description_ar)) return p.description_ar!.trim();
+  return `${catAr} أصلي عالي الجودة ومضمون 100% من المورد المعتمد (كود: ${cleanSku}) مع شحن سريع ومباشر.`;
 }
 
 function setCachedProducts(key: string, data: any, ttlSec: number = 600) {
@@ -1448,11 +1503,19 @@ router.get("/categories", async (req, res, next) => {
     }
 
     const rawData = await db.select().from(categories).where(and(eq(categories.is_active, true), isNull(categories.deleted_at))).orderBy(categories.id);
-    const data = rawData.map(c => ({
-      ...c,
-      name: requestLang === "en" ? (c.name_en || c.name_ar) : (c.name_ar || c.name_en),
-      description: requestLang === "en" ? (c.description_en || c.description_ar) : (c.description_ar || c.description_en),
-    }));
+    const data = rawData.map(c => {
+      const cleanCat = CLEAN_CATEGORY_NAMES[Number(c.id)];
+      const name = requestLang === "en"
+        ? (cleanCat?.en || (isValidEnglishText(c.name_en) ? c.name_en! : c.name_ar))
+        : (cleanCat?.ar || (isCleanArabicText(c.name_ar) ? c.name_ar! : c.name_en));
+      return {
+        ...c,
+        name,
+        name_en: cleanCat?.en || c.name_en,
+        name_ar: cleanCat?.ar || c.name_ar,
+        description: requestLang === "en" ? (c.description_en || c.description_ar) : (c.description_ar || c.description_en),
+      };
+    });
     const result = { success: true, data };
     setCachedProducts(cacheKey, result, 600); // 10 min cache
 
@@ -1508,20 +1571,28 @@ router.get("/home-feed", async (req, res, next) => {
         list.push({
           ...p,
           name: locName,
-          name_en: requestLang === "en" ? locName : (p.name_en && !isArabicText(p.name_en) ? p.name_en : locName),
-          name_ar: p.name_ar || locName,
+          name_en: requestLang === "en" ? locName : (isValidEnglishText(p.name_en) ? p.name_en : locName),
+          name_ar: isCleanArabicText(p.name_ar) ? p.name_ar : locName,
           image: toOptimizedThumb(p.image),
         });
       }
     }
 
     const sections = allCats
-      .map(cat => ({
-        ...cat,
-        name: requestLang === "en" ? (cat.name_en || cat.name_ar) : (cat.name_ar || cat.name_en),
-        description: requestLang === "en" ? (cat.description_en || cat.description_ar) : (cat.description_ar || cat.description_en),
-        products: prodMap.get(Number(cat.id)) || [],
-      }))
+      .map(cat => {
+        const cleanCat = CLEAN_CATEGORY_NAMES[Number(cat.id)];
+        const name = requestLang === "en"
+          ? (cleanCat?.en || (isValidEnglishText(cat.name_en) ? cat.name_en! : cat.name_ar))
+          : (cleanCat?.ar || (isCleanArabicText(cat.name_ar) ? cat.name_ar! : cat.name_en));
+        return {
+          ...cat,
+          name,
+          name_en: cleanCat?.en || cat.name_en,
+          name_ar: cleanCat?.ar || cat.name_ar,
+          description: requestLang === "en" ? (cat.description_en || cat.description_ar) : (cat.description_ar || cat.description_en),
+          products: prodMap.get(Number(cat.id)) || [],
+        };
+      })
       .filter(c => c.products.length > 0);
 
     const result = { success: true, sections };

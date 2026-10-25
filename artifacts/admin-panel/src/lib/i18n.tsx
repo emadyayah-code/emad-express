@@ -292,27 +292,75 @@ const AR_EN_DICT: Record<string, string> = {
   "مطورة": "Upgraded",
 };
 
+export const CLEAN_CATEGORY_NAMES: Record<number, { ar: string; en: string }> = {
+  1: { ar: "إلكترونيات وأجهزة ذكية", en: "Electronics & Smart Devices" },
+  2: { ar: "أزياء وموضة", en: "Fashion & Style" },
+  3: { ar: "هواتف ذكية وإكسسوارات", en: "Smartphones & Accessories" },
+  4: { ar: "ساعات ومجوهرات", en: "Watches & Jewelry" },
+  5: { ar: "المنزل والمطبخ", en: "Home & Kitchen" },
+  6: { ar: "الصحة والجمال", en: "Health & Beauty" },
+  7: { ar: "رياضة وترفيه", en: "Sports & Outdoors" },
+  8: { ar: "ألعاب وأطفال", en: "Toys, Kids & Babies" },
+  9: { ar: "سيارات ودراجات نارية", en: "Automotive & Motorcycles" },
+  10: { ar: "أحذية وحقائب", en: "Shoes & Bags" },
+  11: { ar: "كمبيوتر ولابتوب", en: "Computers & Office" },
+  12: { ar: "أجهزة إلكترونية استهلاكية", en: "Consumer Electronics" },
+  13: { ar: "أزياء وملابس رجالية", en: "Men's Fashion" },
+  14: { ar: "أدوات وتحسين المنزل", en: "Tools & Home Improvement" },
+  15: { ar: "إضاءة ومصابيح", en: "Lights & Lighting" },
+  16: { ar: "أمان وحماية ذكية", en: "Security & Protection" },
+  17: { ar: "مستلزمات الحيوانات الأليفة", en: "Pet Supplies" },
+  18: { ar: "أدوات مكتبية ومدرسية", en: "Office & School Supplies" },
+  19: { ar: "أثاث وديكور منزلي", en: "Furniture & Home Decor" },
+  20: { ar: "كاميرات وطائرات درون", en: "Cameras & Drones" },
+  21: { ar: "المنزل الذكي وإنترنت الأشياء", en: "Smart Home & IoT" },
+  22: { ar: "وصلات وشعر مستعار", en: "Hair Extensions & Wigs" },
+  23: { ar: "مستلزمات الحفلات والمناسبات", en: "Event & Party Supplies" },
+  24: { ar: "فنون وحرف وخياطة", en: "Arts, Crafts & Sewing" },
+};
+
+export function isValidEnglishText(t: string | null | undefined): boolean {
+  if (!t) return false;
+  const cleaned = t.trim();
+  if (cleaned.length < 3) return false;
+  if (cleaned.includes("\uFFFD")) return false;
+  if (/[\u0600-\u06FF]/.test(cleaned)) return false;
+  if (/[\u4E00-\u9FFF\u3400-\u4DBF\uAC00-\uD7AF\u1100-\u11FF]/.test(cleaned)) return false;
+  const latinLetters = cleaned.match(/[a-zA-Z]/g);
+  return Boolean(latinLetters && latinLetters.length >= 3);
+}
+
+export function isCleanArabicText(t: string | null | undefined): boolean {
+  if (!t) return false;
+  const cleaned = t.trim();
+  if (cleaned.length < 3) return false;
+  if (cleaned.includes("\uFFFD")) return false;
+  if (/[\u4E00-\u9FFF\u3400-\u4DBF\uAC00-\uD7AF\u1100-\u11FF]/.test(cleaned)) return false;
+  const arLetters = cleaned.match(/[\u0600-\u06FF]/g);
+  return Boolean(arLetters && arLetters.length >= 3);
+}
+
 export function getProductLocalizedName(p: any, lang: Language): string {
   if (!p) return "";
-  const isArabic = (t: string) => /[\u0600-\u06FF]/.test(t || "");
+  const cat = p.category_id ? CLEAN_CATEGORY_NAMES[Number(p.category_id)] : null;
+  const catEn = cat ? cat.en : "AliExpress Verified";
+  const catAr = cat ? cat.ar : "علي إكسبرس الرسمي";
+  const cleanSku = p.sku?.replace(/^ALI-/, "").slice(0, 14) || String(p.id || "PROD");
 
   if (lang === "en") {
-    if (p.name_en && !isArabic(p.name_en)) {
+    if (isValidEnglishText(p.name_en)) {
       return p.name_en;
     }
-    if (p.name && !isArabic(p.name)) {
+    if (isValidEnglishText(p.name)) {
       return p.name;
     }
     
     // Convert Arabic product title dynamically to clear English
     const rawAr = p.name_ar || p.name || p.name_en || "";
-    if (!rawAr) return "AliExpress Verified Product";
-    
-    // Extract English numbers and words if already embedded
-    const words = rawAr.split(/[\s,،\-–—._/]+/);
+    const tokens = rawAr.split(/[\s,،\-–—._/()+]+/);
     const translatedWords: string[] = [];
     
-    for (const w of words) {
+    for (const w of tokens) {
       if (!w) continue;
       if (/^[a-zA-Z0-9]+$/.test(w)) {
         translatedWords.push(w);
@@ -322,26 +370,29 @@ export function getProductLocalizedName(p: any, lang: Language): string {
     }
 
     if (translatedWords.length >= 2) {
-      return translatedWords.join(" ") + " Pro Edition";
+      return translatedWords.slice(0, 8).join(" ") + " Pro Edition";
     }
 
-    // Default fallback based on SKU or category
-    return `AliExpress Premium Item (${p.sku || "PROD"})`;
+    return `${catEn} Premium Item (${cleanSku})`;
   } else {
-    if (p.name_ar && isArabic(p.name_ar)) return p.name_ar;
-    return p.name_ar || p.name || p.name_en || "منتج رسمي عالي الجودة";
+    if (isCleanArabicText(p.name_ar)) return p.name_ar;
+    if (isCleanArabicText(p.name)) return p.name;
+    return `${catAr} - منتج أصلي عالي الجودة (${cleanSku})`;
   }
 }
 
 export function getProductLocalizedDesc(p: any, lang: Language): string {
   if (!p) return "";
-  const isArabic = (t: string) => /[\u0600-\u06FF]/.test(t || "");
+  const cat = p.category_id ? CLEAN_CATEGORY_NAMES[Number(p.category_id)] : null;
+  const catEn = cat ? cat.en : "AliExpress verified item";
+  const catAr = cat ? cat.ar : "منتج رسمي من علي إكسبرس";
+  const cleanSku = p.sku?.replace(/^ALI-/, "").slice(0, 14) || String(p.id || "PROD");
 
   if (lang === "en") {
-    if (p.description_en && !isArabic(p.description_en)) return p.description_en;
-    return `Authentic AliExpress verified item (SKU: ${p.sku || "—"}). High quality standards and fast international shipping.`;
+    if (isValidEnglishText(p.description_en)) return p.description_en;
+    return `Authentic ${catEn} (SKU: ${cleanSku}). High quality standards and fast international shipping.`;
   } else {
-    if (p.description_ar && isArabic(p.description_ar)) return p.description_ar;
-    return p.description_ar || p.description || "منتج عالي الجودة ومضمون من المورد الرسمي مع شحن سريع.";
+    if (isCleanArabicText(p.description_ar)) return p.description_ar;
+    return `${catAr} أصلي عالي الجودة ومضمون 100% من المورد المعتمد (كود: ${cleanSku}) مع شحن سريع ومباشر.`;
   }
 }

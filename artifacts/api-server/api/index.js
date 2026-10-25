@@ -94898,16 +94898,61 @@ var AR_TO_EN_PRODUCT_DICT = {
   "\u0623\u0645\u0627\u0646": "Safety",
   "\u0642\u0641\u0644": "Lock"
 };
-function isArabicText(t) {
-  return /[\u0600-\u06FF]/.test(t || "");
+var CLEAN_CATEGORY_NAMES = {
+  1: { ar: "\u0625\u0644\u0643\u062A\u0631\u0648\u0646\u064A\u0627\u062A \u0648\u0623\u062C\u0647\u0632\u0629 \u0630\u0643\u064A\u0629", en: "Electronics & Smart Devices" },
+  2: { ar: "\u0623\u0632\u064A\u0627\u0621 \u0648\u0645\u0648\u0636\u0629", en: "Fashion & Style" },
+  3: { ar: "\u0647\u0648\u0627\u062A\u0641 \u0630\u0643\u064A\u0629 \u0648\u0625\u0643\u0633\u0633\u0648\u0627\u0631\u0627\u062A", en: "Smartphones & Accessories" },
+  4: { ar: "\u0633\u0627\u0639\u0627\u062A \u0648\u0645\u062C\u0648\u0647\u0631\u0627\u062A", en: "Watches & Jewelry" },
+  5: { ar: "\u0627\u0644\u0645\u0646\u0632\u0644 \u0648\u0627\u0644\u0645\u0637\u0628\u062E", en: "Home & Kitchen" },
+  6: { ar: "\u0627\u0644\u0635\u062D\u0629 \u0648\u0627\u0644\u062C\u0645\u0627\u0644", en: "Health & Beauty" },
+  7: { ar: "\u0631\u064A\u0627\u0636\u0629 \u0648\u062A\u0631\u0641\u064A\u0647", en: "Sports & Outdoors" },
+  8: { ar: "\u0623\u0644\u0639\u0627\u0628 \u0648\u0623\u0637\u0641\u0627\u0644", en: "Toys, Kids & Babies" },
+  9: { ar: "\u0633\u064A\u0627\u0631\u0627\u062A \u0648\u062F\u0631\u0627\u062C\u0627\u062A \u0646\u0627\u0631\u064A\u0629", en: "Automotive & Motorcycles" },
+  10: { ar: "\u0623\u062D\u0630\u064A\u0629 \u0648\u062D\u0642\u0627\u0626\u0628", en: "Shoes & Bags" },
+  11: { ar: "\u0643\u0645\u0628\u064A\u0648\u062A\u0631 \u0648\u0644\u0627\u0628\u062A\u0648\u0628", en: "Computers & Office" },
+  12: { ar: "\u0623\u062C\u0647\u0632\u0629 \u0625\u0644\u0643\u062A\u0631\u0648\u0646\u064A\u0629 \u0627\u0633\u062A\u0647\u0644\u0627\u0643\u064A\u0629", en: "Consumer Electronics" },
+  13: { ar: "\u0623\u0632\u064A\u0627\u0621 \u0648\u0645\u0644\u0627\u0628\u0633 \u0631\u062C\u0627\u0644\u064A\u0629", en: "Men's Fashion" },
+  14: { ar: "\u0623\u062F\u0648\u0627\u062A \u0648\u062A\u062D\u0633\u064A\u0646 \u0627\u0644\u0645\u0646\u0632\u0644", en: "Tools & Home Improvement" },
+  15: { ar: "\u0625\u0636\u0627\u0621\u0629 \u0648\u0645\u0635\u0627\u0628\u064A\u062D", en: "Lights & Lighting" },
+  16: { ar: "\u0623\u0645\u0627\u0646 \u0648\u062D\u0645\u0627\u064A\u0629 \u0630\u0643\u064A\u0629", en: "Security & Protection" },
+  17: { ar: "\u0645\u0633\u062A\u0644\u0632\u0645\u0627\u062A \u0627\u0644\u062D\u064A\u0648\u0627\u0646\u0627\u062A \u0627\u0644\u0623\u0644\u064A\u0641\u0629", en: "Pet Supplies" },
+  18: { ar: "\u0623\u062F\u0648\u0627\u062A \u0645\u0643\u062A\u0628\u064A\u0629 \u0648\u0645\u062F\u0631\u0633\u064A\u0629", en: "Office & School Supplies" },
+  19: { ar: "\u0623\u062B\u0627\u062B \u0648\u062F\u064A\u0643\u0648\u0631 \u0645\u0646\u0632\u0644\u064A", en: "Furniture & Home Decor" },
+  20: { ar: "\u0643\u0627\u0645\u064A\u0631\u0627\u062A \u0648\u0637\u0627\u0626\u0631\u0627\u062A \u062F\u0631\u0648\u0646", en: "Cameras & Drones" },
+  21: { ar: "\u0627\u0644\u0645\u0646\u0632\u0644 \u0627\u0644\u0630\u0643\u064A \u0648\u0625\u0646\u062A\u0631\u0646\u062A \u0627\u0644\u0623\u0634\u064A\u0627\u0621", en: "Smart Home & IoT" },
+  22: { ar: "\u0648\u0635\u0644\u0627\u062A \u0648\u0634\u0639\u0631 \u0645\u0633\u062A\u0639\u0627\u0631", en: "Hair Extensions & Wigs" },
+  23: { ar: "\u0645\u0633\u062A\u0644\u0632\u0645\u0627\u062A \u0627\u0644\u062D\u0641\u0644\u0627\u062A \u0648\u0627\u0644\u0645\u0646\u0627\u0633\u0628\u0627\u062A", en: "Event & Party Supplies" },
+  24: { ar: "\u0641\u0646\u0648\u0646 \u0648\u062D\u0631\u0641 \u0648\u062E\u064A\u0627\u0637\u0629", en: "Arts, Crafts & Sewing" }
+};
+function isValidEnglishText(t) {
+  if (!t) return false;
+  const cleaned = t.trim();
+  if (cleaned.length < 3) return false;
+  if (cleaned.includes("\uFFFD")) return false;
+  if (/[\u0600-\u06FF]/.test(cleaned)) return false;
+  if (/[\u4E00-\u9FFF\u3400-\u4DBF\uAC00-\uD7AF\u1100-\u11FF]/.test(cleaned)) return false;
+  const latinLetters = cleaned.match(/[a-zA-Z]/g);
+  return Boolean(latinLetters && latinLetters.length >= 3);
+}
+function isCleanArabicText(t) {
+  if (!t) return false;
+  const cleaned = t.trim();
+  if (cleaned.length < 3) return false;
+  if (cleaned.includes("\uFFFD")) return false;
+  if (/[\u4E00-\u9FFF\u3400-\u4DBF\uAC00-\uD7AF\u1100-\u11FF]/.test(cleaned)) return false;
+  const arLetters = cleaned.match(/[\u0600-\u06FF]/g);
+  return Boolean(arLetters && arLetters.length >= 3);
 }
 function localizeProductName(p, lang) {
+  const cat = p.category_id ? CLEAN_CATEGORY_NAMES[Number(p.category_id)] : null;
+  const catEn = cat ? cat.en : "AliExpress Verified";
+  const catAr = cat ? cat.ar : "\u0639\u0644\u064A \u0625\u0643\u0633\u0628\u0631\u0633 \u0627\u0644\u0631\u0633\u0645\u064A";
+  const cleanSku = p.sku?.replace(/^ALI-/, "").slice(0, 14) || String(p.id || "PROD");
   if (lang === "en") {
-    if (p.name_en && !isArabicText(p.name_en)) {
+    if (isValidEnglishText(p.name_en)) {
       return p.name_en.trim();
     }
     const raw = (p.name_ar || p.name || p.name_en || "").trim();
-    if (!raw) return `AliExpress Verified Item (${p.sku || "PROD"})`;
     const tokens = raw.split(/[\s,،\-–—._/()+]+/);
     const words = [];
     for (const t of tokens) {
@@ -94919,20 +94964,27 @@ function localizeProductName(p, lang) {
       }
     }
     if (words.length >= 2) {
-      return words.slice(0, 10).join(" ") + " (Pro Edition)";
+      return words.slice(0, 8).join(" ") + " Pro Edition";
     }
-    return `AliExpress Official Verified Product (${p.sku || "PROD"})`;
+    return `${catEn} Premium Item (${cleanSku})`;
+  } else {
+    if (isCleanArabicText(p.name_ar)) {
+      return p.name_ar.trim();
+    }
+    return `${catAr} - \u0645\u0646\u062A\u062C \u0623\u0635\u0644\u064A \u0639\u0627\u0644\u064A \u0627\u0644\u062C\u0648\u062F\u0629 (${cleanSku})`;
   }
-  if (p.name_ar && isArabicText(p.name_ar)) return p.name_ar.trim();
-  return p.name_ar || p.name || p.name_en || "\u0645\u0646\u062A\u062C \u0631\u0633\u0645\u064A \u0639\u0627\u0644\u064A \u0627\u0644\u062C\u0648\u062F\u0629 \u0645\u0646 \u0639\u0644\u064A \u0625\u0643\u0633\u0628\u0631\u0633";
 }
 function localizeProductDesc(p, lang) {
+  const cat = p.category_id ? CLEAN_CATEGORY_NAMES[Number(p.category_id)] : null;
+  const catEn = cat ? cat.en : "AliExpress verified item";
+  const catAr = cat ? cat.ar : "\u0645\u0646\u062A\u062C \u0631\u0633\u0645\u064A \u0645\u0646 \u0639\u0644\u064A \u0625\u0643\u0633\u0628\u0631\u0633";
+  const cleanSku = p.sku?.replace(/^ALI-/, "").slice(0, 14) || String(p.id || "PROD");
   if (lang === "en") {
-    if (p.description_en && !isArabicText(p.description_en)) return p.description_en.trim();
-    return `Authentic AliExpress verified item (SKU: ${p.sku || "\u2014"}). High quality standards, official warranty, and express international shipping.`;
+    if (isValidEnglishText(p.description_en)) return p.description_en.trim();
+    return `Authentic ${catEn} (SKU: ${cleanSku}). High quality standards, official supplier warranty, and express international shipping.`;
   }
-  if (p.description_ar && isArabicText(p.description_ar)) return p.description_ar.trim();
-  return p.description_ar || p.description || p.description_en || "\u0645\u0646\u062A\u062C \u0623\u0635\u0644\u064A \u0639\u0627\u0644\u064A \u0627\u0644\u062C\u0648\u062F\u0629 \u0648\u0645\u0636\u0645\u0648\u0646 100% \u0645\u0646 \u0627\u0644\u0645\u0648\u0631\u062F \u0627\u0644\u0645\u0639\u062A\u0645\u062F \u0645\u0639 \u0634\u062D\u0646 \u0633\u0631\u064A\u0639 \u0648\u0645\u0628\u0627\u0634\u0631.";
+  if (isCleanArabicText(p.description_ar)) return p.description_ar.trim();
+  return `${catAr} \u0623\u0635\u0644\u064A \u0639\u0627\u0644\u064A \u0627\u0644\u062C\u0648\u062F\u0629 \u0648\u0645\u0636\u0645\u0648\u0646 100% \u0645\u0646 \u0627\u0644\u0645\u0648\u0631\u062F \u0627\u0644\u0645\u0639\u062A\u0645\u062F (\u0643\u0648\u062F: ${cleanSku}) \u0645\u0639 \u0634\u062D\u0646 \u0633\u0631\u064A\u0639 \u0648\u0645\u0628\u0627\u0634\u0631.`;
 }
 function setCachedProducts(key, data, ttlSec = 600) {
   if (productsApiCache.size > 1e3) {
@@ -95052,11 +95104,17 @@ router2.get("/categories", async (req, res, next) => {
       return res.json(cached);
     }
     const rawData = await db.select().from(categories).where(and(eq(categories.is_active, true), isNull(categories.deleted_at))).orderBy(categories.id);
-    const data = rawData.map((c) => ({
-      ...c,
-      name: requestLang === "en" ? c.name_en || c.name_ar : c.name_ar || c.name_en,
-      description: requestLang === "en" ? c.description_en || c.description_ar : c.description_ar || c.description_en
-    }));
+    const data = rawData.map((c) => {
+      const cleanCat = CLEAN_CATEGORY_NAMES[Number(c.id)];
+      const name = requestLang === "en" ? cleanCat?.en || (isValidEnglishText(c.name_en) ? c.name_en : c.name_ar) : cleanCat?.ar || (isCleanArabicText(c.name_ar) ? c.name_ar : c.name_en);
+      return {
+        ...c,
+        name,
+        name_en: cleanCat?.en || c.name_en,
+        name_ar: cleanCat?.ar || c.name_ar,
+        description: requestLang === "en" ? c.description_en || c.description_ar : c.description_ar || c.description_en
+      };
+    });
     const result = { success: true, data };
     setCachedProducts(cacheKey, result, 600);
     res.setHeader("X-Cache", "MISS");
@@ -95099,18 +95157,24 @@ router2.get("/home-feed", async (req, res, next) => {
         list.push({
           ...p,
           name: locName,
-          name_en: requestLang === "en" ? locName : p.name_en && !isArabicText(p.name_en) ? p.name_en : locName,
-          name_ar: p.name_ar || locName,
+          name_en: requestLang === "en" ? locName : isValidEnglishText(p.name_en) ? p.name_en : locName,
+          name_ar: isCleanArabicText(p.name_ar) ? p.name_ar : locName,
           image: toOptimizedThumb(p.image)
         });
       }
     }
-    const sections = allCats.map((cat) => ({
-      ...cat,
-      name: requestLang === "en" ? cat.name_en || cat.name_ar : cat.name_ar || cat.name_en,
-      description: requestLang === "en" ? cat.description_en || cat.description_ar : cat.description_ar || cat.description_en,
-      products: prodMap.get(Number(cat.id)) || []
-    })).filter((c) => c.products.length > 0);
+    const sections = allCats.map((cat) => {
+      const cleanCat = CLEAN_CATEGORY_NAMES[Number(cat.id)];
+      const name = requestLang === "en" ? cleanCat?.en || (isValidEnglishText(cat.name_en) ? cat.name_en : cat.name_ar) : cleanCat?.ar || (isCleanArabicText(cat.name_ar) ? cat.name_ar : cat.name_en);
+      return {
+        ...cat,
+        name,
+        name_en: cleanCat?.en || cat.name_en,
+        name_ar: cleanCat?.ar || cat.name_ar,
+        description: requestLang === "en" ? cat.description_en || cat.description_ar : cat.description_ar || cat.description_en,
+        products: prodMap.get(Number(cat.id)) || []
+      };
+    }).filter((c) => c.products.length > 0);
     const result = { success: true, sections };
     setCachedProducts(cacheKey, result, 300);
     res.setHeader("X-Cache", "MISS");
