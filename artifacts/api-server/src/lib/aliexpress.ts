@@ -59,6 +59,10 @@ export interface AliExpressProduct {
   shop_name: string;
   evaluate_rate: string;
   sales_volume: string;
+  product_stock?: number | string;
+  stock?: number | string;
+  inventory?: number | string;
+  ae_item_sku_info_dtos?: any;
 }
 
 export async function fetchAliExpressProduct(

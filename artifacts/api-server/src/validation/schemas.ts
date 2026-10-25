@@ -126,6 +126,7 @@ export const dropshipImportSchema = z.object({
   description: z.string().max(10000).optional(),
   platform: z.enum(["aliexpress", "amazon", "alibaba", "ebay", "noon", "jumia", "temu", "other"]),
   source_url: z.string().max(5000).optional(),
+  quantity: z.coerce.number().min(0).max(999999).optional(),
 });
 
 export const fulfillmentSchema = z.object({

@@ -4,6 +4,7 @@ import { logger } from "./logger";
 import { fetchAliExpressProduct, searchAliExpressProducts, type AliExpressCredentials } from "./aliexpress";
 import { searchAmazonItems, type AmazonCredentials } from "./amazon";
 import { searchAlibabaProducts, type AlibabaCredentials } from "./alibaba";
+import { extractRealSupplierStock } from "./supplier-stock";
 
 // In-memory job queue
 interface ImportJob {
@@ -72,14 +73,17 @@ async function saveProduct(
     const ourPrice = parseFloat((sourcePrice * (1 + marginPercent / 100)).toFixed(2));
     const sku = `${platform.toUpperCase().slice(0, 3)}-${String(sourceId).slice(-12)}`;
 
+    const realStock = extractRealSupplierStock(item);
+    if (realStock <= 0) return { success: false, error: "Out of stock at supplier" };
+
     const [newProduct] = await db.insert(products).values({
       name_ar: name.slice(0, 200),
       name_en: name.slice(0, 200),
       sku: sku.slice(0, 100),
       price: ourPrice,
       cost: sourcePrice,
-      quantity: 999,
-      min_quantity: 0,
+      quantity: realStock,
+      min_quantity: Math.min(5, realStock),
       category_id: categoryId || null,
       description_ar: `منتج مستورد من ${platform} - ${supplierName}`.slice(0, 500),
       description_en: `Imported product from ${platform} - ${supplierName}`.slice(0, 500),

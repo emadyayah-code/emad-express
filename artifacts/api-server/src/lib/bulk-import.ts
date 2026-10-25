@@ -5,6 +5,7 @@ import { fetchAliExpressProduct, searchAliExpressProducts, type AliExpressCreden
 import { searchAmazonProducts, getAmazonProduct, type AmazonCredentials } from "./amazon";
 import { searchAlibabaProducts, getAlibabaProduct, type AlibabaCredentials } from "./alibaba";
 import { matchCategoryId } from "./category-matcher";
+import { extractRealSupplierStock } from "./supplier-stock";
 
 export interface BulkImportJob {
   id: string;
@@ -75,6 +76,7 @@ async function saveProduct(
   supplierName: string,
   commissionRate: number,
   categoryName?: string,
+  rawStock?: number,
 ): Promise<"imported" | "skipped" | "failed"> {
   try {
     // Check for duplicate by source_id
@@ -85,6 +87,7 @@ async function saveProduct(
       return "skipped";
     }
 
+    const realStock = rawStock && rawStock > 0 ? rawStock : 20;
     const ourPrice = parseFloat((price * (1 + job.marginPercent / 100)).toFixed(2));
     const matchedCategoryId = await matchCategoryId(`${name} ${categoryName || ""}`);
 
@@ -94,8 +97,8 @@ async function saveProduct(
       sku: `${platform.toUpperCase().slice(0, 3)}-${sourceId.slice(-12)}`,
       price: ourPrice,
       cost: price,
-      quantity: 999,
-      min_quantity: 0,
+      quantity: realStock,
+      min_quantity: Math.min(5, realStock),
       category_id: matchedCategoryId,
       description_ar: categoryName ? `منتج من ${platform} - ${supplierName} - التصنيف: ${categoryName}` : `منتج من ${platform} - ${supplierName}`,
       description_en: categoryName ? `Product from ${platform} - ${supplierName} - Category: ${categoryName}` : `Product from ${platform} - ${supplierName}`,
@@ -146,7 +149,8 @@ async function importAliExpress(job: BulkImportJob): Promise<void> {
         if (job.status !== "running") break;
 
         const price = parseFloat(item.target_sale_price) || parseFloat(item.target_original_price) || 0;
-        if (price <= 0 || (item as any).stock === 0 || (item as any).inventory === 0 || (item as any).product_status === "offline") {
+        const realStock = extractRealSupplierStock(item);
+        if (price <= 0 || realStock <= 0) {
           job.skipped++;
           continue;
         }
@@ -164,6 +168,7 @@ async function importAliExpress(job: BulkImportJob): Promise<void> {
           item.shop_name || "AliExpress",
           parseFloat(item.commission_rate) || 0,
           item.first_level_category_name,
+          realStock,
         );
 
         // Rate limiting: 1 request per second for AliExpress
@@ -198,6 +203,12 @@ async function importAmazon(job: BulkImportJob): Promise<void> {
         if (job.imported + job.skipped + job.failed >= job.maxProducts) break;
         if (job.status !== "running") break;
 
+        const realStock = extractRealSupplierStock(item);
+        if (realStock <= 0) {
+          job.skipped++;
+          continue;
+        }
+
         await saveProduct(
           job,
           item.id || item.asin,
@@ -211,6 +222,7 @@ async function importAmazon(job: BulkImportJob): Promise<void> {
           item.brand || "Amazon",
           0,
           item.category,
+          realStock,
         );
 
         // Rate limiting: 1 request per second for Amazon
@@ -245,6 +257,12 @@ async function importAlibaba(job: BulkImportJob): Promise<void> {
         if (job.imported + job.skipped + job.failed >= job.maxProducts) break;
         if (job.status !== "running") break;
 
+        const realStock = extractRealSupplierStock(item);
+        if (realStock <= 0) {
+          job.skipped++;
+          continue;
+        }
+
         await saveProduct(
           job,
           item.productId,
@@ -258,6 +276,7 @@ async function importAlibaba(job: BulkImportJob): Promise<void> {
           item.supplierName || "Alibaba",
           0,
           item.categoryName,
+          realStock,
         );
 
         // Rate limiting: 1 request per second

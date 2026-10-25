@@ -28,6 +28,7 @@ import { seedShippingCarriers, createShipment, getOrderShipments, updateShipment
 import { fulfillAliExpressOrder, fulfillAmazonOrder, fulfillAlibabaOrder, fulfillLocalVendorOrder, autoFulfillOrder, getFulfillmentTracking } from "../lib/fulfillment";
 import { startBulkImport, stopBulkImport, getJobStatus, getAllJobs, getActiveJob } from "../lib/bulk-import";
 import { matchCategoryId } from "../lib/category-matcher";
+import { extractRealSupplierStock } from "../lib/supplier-stock";
 
 const isServerlessEnv = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.NOW_REGION);
 const UPLOADS_DIR = isServerlessEnv ? "/tmp/uploads" : env.UPLOADS_DIR;
@@ -2751,6 +2752,12 @@ router.post("/admin/dropship/import-chunk", requireAuth, requireRole("admin", "m
         if (normImg) existingImageSet.add(normImg);
 
         const sourcePrice = parsePrice(p.target_sale_price || p.target_original_price, 25);
+        const realStock = extractRealSupplierStock(p);
+        if (realStock <= 0) {
+          skippedCount++;
+          continue;
+        }
+
         const salePrice = Number((sourcePrice * margin).toFixed(2));
         const skuUnique = `ALI-${srcId}-${Date.now().toString(36).slice(-4)}`;
         const autoCatId = await matchCategoryId(p.product_title, category_id ? Number(category_id) : null, p.first_level_category_name);
@@ -2761,8 +2768,8 @@ router.post("/admin/dropship/import-chunk", requireAuth, requireRole("admin", "m
           sku: skuUnique,
           price: salePrice,
           cost: sourcePrice,
-          quantity: 500 + ((parseInt(srcId.slice(-4)) || 100) % 1500),
-          min_quantity: 5,
+          quantity: realStock,
+          min_quantity: Math.min(5, realStock),
           category_id: autoCatId,
           description_ar: `${p.product_title} - منتج أصلي عالي الجودة متوفر للشحن السريع والتسليم الفوري.`,
           description_en: `${p.product_title} - Premium quality genuine product with fast direct delivery.`,
@@ -2998,13 +3005,15 @@ router.post("/admin/dropship/bulk-import-1000", requireAuth, requireRole("admin"
                   existingSet.add(srcId);
                   if (normImg) existingImageSet.add(normImg);
                   const cPrice = parsePrice(p.target_sale_price || p.target_original_price, 25);
+                  const realStock = extractRealSupplierStock(p);
+                  if (realStock <= 0) continue;
                   liveFetched.push({
                     source_id: srcId,
                     name: p.product_title || `AliExpress Product ${srcId}`,
                     cost: cPrice,
                     image: img,
                     category_name: p.first_level_category_name || "",
-                    quantity: 500 + ((parseInt(srcId.slice(-4)) || 100) % 1500),
+                    quantity: realStock,
                     source_url: p.product_detail_url || `https://www.aliexpress.com/item/${srcId}.html`,
                     supplier_name: p.shop_name || "AliExpress Verified Seller",
                   });
@@ -3036,13 +3045,15 @@ router.post("/admin/dropship/bulk-import-1000", requireAuth, requireRole("admin"
                       let img = p.product_main_image_url || "";
                       if (img.startsWith("//")) img = `https:${img}`;
                       const cPrice = parsePrice(p.target_sale_price || p.target_original_price, 25);
+                      const realStock = extractRealSupplierStock(p);
+                      if (realStock <= 0) continue;
                       liveFetched.push({
                         source_id: srcId,
                         name: p.product_title || `AliExpress Product ${srcId}`,
                         cost: cPrice,
                         image: img,
                         category_name: p.first_level_category_name || "",
-                        quantity: 500 + ((parseInt(srcId.slice(-4)) || 100) % 1500),
+                        quantity: realStock,
                         source_url: p.product_detail_url || `https://www.aliexpress.com/item/${srcId}.html`,
                         supplier_name: p.shop_name || "AliExpress Verified Seller",
                       });
@@ -3078,6 +3089,12 @@ router.post("/admin/dropship/bulk-import-1000", requireAuth, requireRole("admin"
         existingSet.add(item.source_id);
 
         const sourcePrice = parsePrice(item.cost, 25);
+        const finalStock = Number(item.quantity) > 0 ? Number(item.quantity) : extractRealSupplierStock(item);
+        if (finalStock <= 0) {
+          skippedCount++;
+          continue;
+        }
+
         const salePrice = Number((sourcePrice * margin).toFixed(2));
         const skuUnique = `ALI-${item.source_id}-${Date.now().toString(36).slice(-4)}`;
         const autoCatId = await matchCategoryId(item.name, category_id ? Number(category_id) : null, item.category_name);
@@ -3088,8 +3105,8 @@ router.post("/admin/dropship/bulk-import-1000", requireAuth, requireRole("admin"
           sku: skuUnique,
           price: salePrice,
           cost: sourcePrice,
-          quantity: Number(item.quantity) || 500,
-          min_quantity: 5,
+          quantity: finalStock,
+          min_quantity: Math.min(5, finalStock),
           category_id: autoCatId,
           description_ar: `${item.name} - منتج أصلي عالي الجودة متوفر للشحن السريع والتسليم الفوري.`,
           description_en: `${item.name_en || item.name} - Premium quality genuine product with fast direct delivery.`,
@@ -3190,6 +3207,9 @@ router.post("/admin/dropship/import-batch", requireAuth, requireRole("admin", "m
         existingSet.add(srcId);
         if (normImg) existingImageSet.add(normImg);
         const sourcePrice = parseFloat(item.price || item.source_price || 25) || 25;
+        const realStock = extractRealSupplierStock(item);
+        if (realStock <= 0) continue;
+
         const salePrice = Number((sourcePrice * margin).toFixed(2));
         const skuUnique = `ALI-${srcId}-${Date.now().toString(36).slice(-4)}`;
         const autoCatId = await matchCategoryId(item.name || "", null, item.category_name);
@@ -3199,8 +3219,8 @@ router.post("/admin/dropship/import-batch", requireAuth, requireRole("admin", "m
           sku: skuUnique,
           price: salePrice,
           cost: sourcePrice,
-          quantity: 999,
-          min_quantity: 5,
+          quantity: realStock,
+          min_quantity: Math.min(5, realStock),
           category_id: autoCatId,
           description_ar: `${item.name} - منتج أصلي عالي الجودة للشحن المباشر والتسليم السريع.`,
           description_en: `${item.name} - High quality product with fast direct shipping.`,
@@ -3346,7 +3366,7 @@ router.get("/admin/dropship/fetch-url", requireAuth, requireRole("admin", "manag
               name_en: apiProduct.title_en || apiProduct.product_title || `AliExpress Product ${productId}`,
               price: parseFloat(apiProduct.target_sale_price) || parseFloat(apiProduct.target_original_price) || 45,
               original_price: parseFloat(apiProduct.target_original_price) || 0,
-              quantity: parseInt(apiProduct.sales_volume) || 500,
+              quantity: extractRealSupplierStock(apiProduct),
               image: img,
               description: "منتج أصلي عالي الجودة متوفر للشحن السريع والتسليم الفوري",
               platform: "aliexpress",
@@ -3623,14 +3643,14 @@ export async function verifyAndSyncDropshipProductStock(
         const targetOrigPrice = parseFloat(aliProduct.target_original_price) || 0;
         const newSourcePrice = targetSalePrice || targetOrigPrice;
 
+        const realStock = extractRealSupplierStock(aliProduct);
         const isOutOfStock = newSourcePrice <= 0 ||
-          (aliProduct as any).stock === 0 || (aliProduct as any).stock === "0" ||
-          (aliProduct as any).inventory === 0 || (aliProduct as any).inventory === "0" ||
-          (aliProduct as any).quantity === 0 || (aliProduct as any).quantity === "0" ||
-          (aliProduct as any).product_status === "offline" || (aliProduct as any).product_status === "out_of_stock";
+          realStock <= 0 ||
+          (aliProduct as any).product_status === "offline" || 
+          (aliProduct as any).product_status === "out_of_stock";
 
         if (isOutOfStock) {
-          return await markOutOfStockAndRemove("نفدت كمية المنتج من AliExpress (المخزون 0 أو غير متوفر)");
+          return await markOutOfStockAndRemove(`نفدت كمية المنتج من AliExpress (المخزون الحقيقي ${realStock})`);
         }
 
         const margin = dp.source_price > 0 ? dp.our_price / dp.source_price : 4.0;
@@ -3644,6 +3664,7 @@ export async function verifyAndSyncDropshipProductStock(
         await db.update(products).set({
           price: newOurPrice,
           cost: newSourcePrice,
+          quantity: realStock,
           is_active: true,
         }).where(eq(products.id, productId));
 
@@ -3663,7 +3684,8 @@ export async function verifyAndSyncDropshipProductStock(
         }
         const item = items[0];
         const price = item.Offers?.Listings?.[0]?.Price?.Amount || 0;
-        if (price <= 0) {
+        const realStock = extractRealSupplierStock(item);
+        if (price <= 0 || realStock <= 0) {
           return await markOutOfStockAndRemove("نفد مخزون المنتج من أمازون");
         }
         const margin = dp.source_price > 0 ? dp.our_price / dp.source_price : 4.0;
@@ -3675,6 +3697,7 @@ export async function verifyAndSyncDropshipProductStock(
         await db.update(products).set({
           price: newOurPrice,
           cost: price,
+          quantity: realStock,
           is_active: true,
         }).where(eq(products.id, productId));
         const res = { available: true, newPrice: newOurPrice };
@@ -3926,14 +3949,17 @@ router.post("/admin/dropship/import", requireAuth, requireRole("admin", "manager
     const b = req.body;
     const skuUnique = `DS-${b.source_id?.slice(-6) || Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 6)}`;
     const matchedCatId = await matchCategoryId(`${b.name || ""} ${b.description || ""}`, b.category_id);
+    const realStock = extractRealSupplierStock(b);
+    const finalStock = Number(b.quantity) > 0 ? Number(b.quantity) : (realStock > 0 ? realStock : 20);
+
     const [newProduct] = await db.insert(products).values({
       name_ar: b.name || "منتج دروبشيبينغ",
       name_en: b.name || "Dropshipping Product",
       sku: skuUnique,
       price: b.our_price || b.source_price || 50,
       cost: b.source_price || 0,
-      quantity: 999,
-      min_quantity: 0,
+      quantity: finalStock,
+      min_quantity: Math.min(5, finalStock),
       category_id: matchedCatId,
       description_ar: sanitizeText(b.description || "منتج عالي الجودة"),
       description_en: sanitizeText(b.description || "High quality product"),
@@ -4021,16 +4047,14 @@ export async function syncAllDropshipPricesAndStock() {
           const targetSalePrice = parseFloat(aliProd?.target_sale_price || "") || 0;
           const targetOrigPrice = parseFloat(aliProd?.target_original_price || "") || 0;
           const newSourcePrice = targetSalePrice || targetOrigPrice;
-
+          const realStock = aliProd ? extractRealSupplierStock(aliProd) : 0;
           const isOutOfStock = !aliProd || 
             newSourcePrice <= 0 ||
-            (aliProd as any).stock === 0 || (aliProd as any).stock === "0" ||
-            (aliProd as any).inventory === 0 || (aliProd as any).inventory === "0" ||
-            (aliProd as any).quantity === 0 || (aliProd as any).quantity === "0" ||
+            realStock <= 0 ||
             (aliProd as any).product_status === "offline" || (aliProd as any).product_status === "out_of_stock";
 
           if (isOutOfStock) {
-            logger.info({ productId: dp.product_id, sourceId: dp.source_id }, "AliExpress product is out of stock / 0 stock. Permanently deleting from database...");
+            logger.info({ productId: dp.product_id, sourceId: dp.source_id, realStock }, "AliExpress product is out of stock / 0 stock. Permanently deleting from database...");
             if (dp.product_id) {
               await purgeProductById(dp.product_id);
             }
@@ -4038,8 +4062,6 @@ export async function syncAllDropshipPricesAndStock() {
           } else {
             const margin = dp.source_price > 0 ? dp.our_price / dp.source_price : 4.0;
             const newOurPrice = parseFloat((newSourcePrice * margin).toFixed(2));
-            const rawStock = (aliProd as any).stock ?? (aliProd as any).inventory ?? (aliProd as any).quantity;
-            const liveStock = rawStock !== undefined && rawStock !== null && !isNaN(Number(rawStock)) ? Math.max(1, Number(rawStock)) : 500;
             await db.update(dropship_products).set({
               source_price: newSourcePrice,
               our_price: newOurPrice,
@@ -4048,7 +4070,7 @@ export async function syncAllDropshipPricesAndStock() {
             await db.update(products).set({
               price: newOurPrice,
               cost: newSourcePrice,
-              quantity: liveStock,
+              quantity: realStock,
               is_active: true,
             }).where(eq(products.id, dp.product_id!));
             synced++;
@@ -4199,6 +4221,12 @@ export async function runAutoImportCycle(targetCount = 500): Promise<{ imported:
         if (normImg) existingImageSet.add(normImg);
 
         const sourcePrice = parsePrice(p.target_sale_price || p.target_original_price, 25);
+        const realStock = extractRealSupplierStock(p);
+        if (realStock <= 0) {
+          totalSkipped++;
+          continue;
+        }
+
         const salePrice = Number((sourcePrice * margin).toFixed(2));
         const skuUnique = `ALI-${srcId}-${Date.now().toString(36).slice(-4)}`;
         const autoCatId = await matchCategoryId(p.product_title, null, p.first_level_category_name);
@@ -4209,8 +4237,8 @@ export async function runAutoImportCycle(targetCount = 500): Promise<{ imported:
           sku: skuUnique,
           price: salePrice,
           cost: sourcePrice,
-          quantity: 500 + ((parseInt(srcId.slice(-4)) || 100) % 1500),
-          min_quantity: 5,
+          quantity: realStock,
+          min_quantity: Math.min(5, realStock),
           category_id: autoCatId,
           description_ar: `${p.product_title} - منتج أصلي عالي الجودة متوفر للشحن السريع والتسليم الفوري عبر عماد اكسبرس.`,
           description_en: `${p.product_title} - Premium quality genuine product with fast direct delivery via Emad Express.`,
@@ -4618,6 +4646,9 @@ router.post("/admin/dropship/aliexpress-import", requireAuth, requireRole("admin
     if (!product) return res.status(404).json({ success: false, message: "المنتج غير موجود في علي إكسبرس" });
 
     const sourcePrice = parseFloat(product.target_sale_price) || parseFloat(product.target_original_price) || 0;
+    const realStock = extractRealSupplierStock(product);
+    if (realStock <= 0) return res.status(400).json({ success: false, message: "هذا المنتج غير متوفر حالياً عند المورد (المخزون 0)" });
+
     const ourPrice = parseFloat((sourcePrice * (1 + margin_percent / 100)).toFixed(2));
 
     // Check if product already exists
@@ -4630,8 +4661,8 @@ router.post("/admin/dropship/aliexpress-import", requireAuth, requireRole("admin
       sku: `ALI-${source_id}`,
       price: ourPrice,
       cost: sourcePrice,
-      quantity: 999,
-      min_quantity: 0,
+      quantity: realStock,
+      min_quantity: Math.min(5, realStock),
       category_id: null,
       description_ar: `منتج من علي إكسبرس - ${product.shop_name} - تصنيف: ${product.first_level_category_name}`,
       description_en: `Product from AliExpress - ${product.shop_name} - Category: ${product.first_level_category_name}`,
@@ -4808,6 +4839,9 @@ router.post("/admin/dropship/amazon-import", requireAuth, requireRole("admin", "
     const [existing] = await db.select().from(dropship_products).where(eq(dropship_products.source_id, source_id));
     if (existing) return res.status(409).json({ success: false, message: "هذا المنتج مستورد مسبقاً", data: existing });
 
+    const realStock = extractRealSupplierStock(product);
+    if (product.price <= 0 || realStock <= 0) return res.status(400).json({ success: false, message: "هذا المنتج غير متوفر حالياً عند أمازون (المخزون 0)" });
+
     const ourPrice = parseFloat((product.price * (1 + margin_percent / 100)).toFixed(2));
 
     const [newProduct] = await db.insert(products).values({
@@ -4816,8 +4850,8 @@ router.post("/admin/dropship/amazon-import", requireAuth, requireRole("admin", "
       sku: `AMZ-${product.asin}`,
       price: ourPrice,
       cost: product.price,
-      quantity: 999,
-      min_quantity: 0,
+      quantity: realStock,
+      min_quantity: Math.min(5, realStock),
       category_id: null,
       description_ar: `منتج من أمازون - ${product.brand || "Amazon"} - التصنيف: ${product.category || "General"}`,
       description_en: `Product from Amazon - ${product.brand || "Amazon"} - Category: ${product.category || "General"}`,
@@ -4922,6 +4956,9 @@ router.post("/admin/dropship/alibaba-import", requireAuth, requireRole("admin", 
     if (existing) return res.status(409).json({ success: false, message: "هذا المنتج مستورد مسبقاً", data: existing });
 
     const salePrice = product.salePrice || parseFloat(product.price) || 0;
+    const realStock = extractRealSupplierStock(product);
+    if (salePrice <= 0 || realStock <= 0) return res.status(400).json({ success: false, message: "هذا المنتج غير متوفر حالياً عند علي بابا (المخزون 0)" });
+
     const ourPrice = parseFloat((salePrice * (1 + margin_percent / 100)).toFixed(2));
     const title = product.productTitle || product.subject || "Alibaba Product";
 
@@ -4931,8 +4968,8 @@ router.post("/admin/dropship/alibaba-import", requireAuth, requireRole("admin", 
       sku: `ALB-${product.productId.slice(-12)}`,
       price: ourPrice,
       cost: salePrice,
-      quantity: 999,
-      min_quantity: parseInt(product.minOrderQuantity) || 0,
+      quantity: realStock,
+      min_quantity: parseInt(product.minOrderQuantity) || Math.min(5, realStock),
       category_id: null,
       description_ar: `منتج من علي بابا - ${product.supplierName} - التصنيف: ${product.categoryName || "General"}`,
       description_en: `Product from Alibaba - ${product.supplierName} - Category: ${product.categoryName || "General"}`,
