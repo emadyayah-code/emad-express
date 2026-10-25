@@ -153,12 +153,14 @@ const I18nContext = createContext<I18nContextType | null>(null);
 
 export function I18nProvider({ children }: { children: React.ReactNode }) {
   const [language, setLanguageState] = useState<Language>(() => {
-    return (localStorage.getItem("admin_lang") as Language) || "ar";
+    return (localStorage.getItem("app_lang") || localStorage.getItem("site_lang") || localStorage.getItem("admin_lang") || "ar") as Language;
   });
 
   const setLanguage = (lang: Language) => {
     setLanguageState(lang);
     localStorage.setItem("admin_lang", lang);
+    localStorage.setItem("app_lang", lang);
+    localStorage.setItem("site_lang", lang);
   };
 
   const toggleLanguage = () => {
@@ -191,7 +193,7 @@ export function useI18n() {
 }
 
 const AR_EN_DICT: Record<string, string> = {
-  "ساعات": "Watch",
+  "ساعات": "Watches",
   "ساعة": "Watch",
   "ذكية": "Smart",
   "ذكي": "Smart",
@@ -203,6 +205,25 @@ const AR_EN_DICT: Record<string, string> = {
   "طقم": "Set",
   "مجموعة": "Kit",
   "فولاذ": "Steel",
+  "أعلام": "Flags",
+  "علم": "Flag",
+  "لافتات": "Banners",
+  "ملونة": "Color",
+  "شاطئ": "Beach",
+  "خياطة": "Sewing",
+  "تطريز": "Embroidery",
+  "حرف": "Craft",
+  "أكريليك": "Acrylic",
+  "مسطرة": "Ruler",
+  "شفرة": "Blade",
+  "شفرات": "Blades",
+  "حصيرة": "Mat",
+  "قص": "Cutting",
+  "أمان": "Safety",
+  "قفل": "Lock",
+  "سكين": "Knife",
+  "قاطع": "Cutter",
+  "مقص": "Scissors",
   "ألمنيوم": "Aluminum",
   "جلد": "Leather",
   "سيارات": "Car",

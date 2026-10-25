@@ -10,47 +10,65 @@ import {
   ChevronRight, ChevronLeft, ArrowRight, Layers, Tag, Check, Filter,
   Clock, X, Plus, Minus, MessageCircle, Heart, Share2, Award, Zap
 } from "lucide-react";
+import { useI18n, getProductLocalizedName, getProductLocalizedDesc } from "@/lib/i18n";
 
 const HERO_SLIDES = [
   {
     id: 1,
-    badge: "🔥 أقوى عروض التخفيضات الكبرى العالمية",
-    title: "تخفيضات عماد اكسبرس الكبرى بخصومات تصل حتى 70%!",
-    desc: "استيراد مباشر وفوري من المصانع العالمية مع ضمان الجودة، فحص المخزون الفوري وشحن سريع ومباشر لباب منزلك.",
+    badgeAr: "🔥 أقوى عروض التخفيضات الكبرى العالمية",
+    badgeEn: "🔥 Massive Global Super Deals",
+    titleAr: "تخفيضات عماد اكسبرس الكبرى بخصومات تصل حتى 70%!",
+    titleEn: "Emad Express Super Sale with up to 70% OFF!",
+    descAr: "استيراد مباشر وفوري من المصانع العالمية مع ضمان الجودة، فحص المخزون الفوري وشحن سريع ومباشر لباب منزلك.",
+    descEn: "Direct import from verified international suppliers with quality guarantee, live stock check and express home delivery.",
     bg: "from-amber-600 via-amber-500 to-yellow-500",
     textColor: "text-black",
-    tag: "صفقات سوبر حصرية",
+    tagAr: "صفقات سوبر حصرية",
+    tagEn: "Exclusive Deals",
   },
   {
     id: 2,
-    badge: "⚡ شحن عالمي مباشر وسريع",
-    title: "أحدث الإلكترونيات والهواتف الذكية بأسعار الجملة المباشرة!",
-    desc: "سماعات بلوتوث، ساعات ذكية، ملحقات الهواتف وأجهزة المنزل الذكي مع ضمان الاستبدال والاسترجاع.",
+    badgeAr: "⚡ شحن عالمي مباشر وسريع",
+    badgeEn: "⚡ Fast Global Direct Shipping",
+    titleAr: "أحدث الإلكترونيات والهواتف الذكية بأسعار الجملة المباشرة!",
+    titleEn: "Latest Electronics & Smart Tech at Wholesale Prices!",
+    descAr: "سماعات بلوتوث، ساعات ذكية، ملحقات الهواتف وأجهزة المنزل الذكي مع ضمان الاستبدال والاسترجاع.",
+    descEn: "Bluetooth earbuds, smartwatches, phone accessories, and smart devices with full warranty.",
     bg: "from-blue-700 via-indigo-600 to-amber-500",
     textColor: "text-white",
-    tag: "تكنولوجيا وإلكترونيات",
+    tagAr: "تكنولوجيا وإلكترونيات",
+    tagEn: "Tech & Gadgets",
   },
   {
     id: 3,
-    badge: "✨ أحدث صيحات الموضة 2026",
-    title: "أزياء نسائية ورجالية وإكسسوارات راقية بأسعار استثنائية!",
-    desc: "تشكيلة واسعة من الملابس، الحقائب، والأحذية الرياضية المنتقاة بعناية وبأفضل جودة تصنيع عالمية.",
+    badgeAr: "✨ أحدث صيحات الموضة 2026",
+    badgeEn: "✨ Trendy Fashion 2026",
+    titleAr: "أزياء نسائية ورجالية وإكسسوارات راقية بأسعار استثنائية!",
+    titleEn: "Men's & Women's Fashion & Accessories at Unbeatable Prices!",
+    descAr: "تشكيلة واسعة من الملابس، الحقائب، والأحذية الرياضية المنتقاة بعناية وبأفضل جودة تصنيع عالمية.",
+    descEn: "Curated collection of clothing, luxury bags, and sneakers with premium manufacturing standards.",
     bg: "from-purple-800 via-pink-700 to-amber-500",
     textColor: "text-white",
-    tag: "موضة وأزياء فاخرة",
+    tagAr: "موضة وأزياء فاخرة",
+    tagEn: "Fashion & Style",
   },
   {
     id: 4,
-    badge: "🚀 منصة الدروب شيبينغ الرسمية",
-    title: "عماد إكسبرس - مزامنة لحظية لملايين المنتجات!",
-    desc: "تسوق بكل ثقة وأمان عبر بوابتنا الرسمية مع دعم كامل لخيارات الدفع السريع وخدمة عملاء على مدار الساعة.",
+    badgeAr: "🚀 منصة الدروب شيبينغ الرسمية",
+    badgeEn: "🚀 Official Dropshipping Platform",
+    titleAr: "عماد إكسبرس - مزامنة لحظية لملايين المنتجات!",
+    titleEn: "Emad Express - Real-Time Sync of Millions of Products!",
+    descAr: "تسوق بكل ثقة وأمان عبر بوابتنا الرسمية مع دعم كامل لخيارات الدفع السريع وخدمة عملاء على مدار الساعة.",
+    descEn: "Shop with confidence through our verified platform with fast express checkout and 24/7 dedicated support.",
     bg: "from-emerald-700 via-teal-600 to-amber-500",
     textColor: "text-white",
-    tag: "خدمة موثوقة 100%",
+    tagAr: "خدمة موثوقة 100%",
+    tagEn: "100% Reliable",
   },
 ];
 
 export default function StoreHome() {
+  const { language, t, dir } = useI18n();
   const [, setLocation] = useLocation();
   const searchParams = new URLSearchParams(window.location.search);
   const [selectedCategory, setSelectedCategory] = useState<string>(searchParams.get("category") || "");
@@ -96,17 +114,17 @@ export default function StoreHome() {
 
   // Fetch real-time categories from database (Identical to Mobile App)
   const { data: categoriesData, isLoading: loadingCategories } = useQuery({
-    queryKey: ["store-categories"],
-    queryFn: () => api.get("/categories"),
+    queryKey: ["store-categories", language],
+    queryFn: () => api.get(`/categories?lang=${language}`),
     staleTime: 60000,
     refetchInterval: 60000,
   });
 
   // Fetch store products dynamically
   const { data: productsData, isLoading: loadingProducts } = useQuery({
-    queryKey: ["store-products", selectedCategory, searchQuery],
+    queryKey: ["store-products", selectedCategory, searchQuery, language],
     queryFn: async () => {
-      let url = `/products?limit=80`;
+      let url = `/products?limit=80&lang=${language}`;
       if (selectedCategory) url += `&category_id=${selectedCategory}`;
       if (searchQuery) url += `&search=${encodeURIComponent(searchQuery)}`;
       return api.get(url);
@@ -118,11 +136,9 @@ export default function StoreHome() {
 
   // Fetch categorized feed for multi-shelf display (Identical to Mobile App)
   const { data: homeFeed } = useQuery({
-    queryKey: ["store-home-feed"],
-    queryFn: () => api.get("/home-feed?lang=ar"),
-    staleTime: 10000,
-    refetchInterval: 30000,
-    refetchOnWindowFocus: true,
+    queryKey: ["store-home-feed", language],
+    queryFn: () => api.get(`/home-feed?lang=${language}`),
+    staleTime: 60000,
   });
 
   const categoriesList: any[] = Array.isArray(categoriesData)
@@ -207,9 +223,12 @@ export default function StoreHome() {
   };
 
   const currentSlideData = HERO_SLIDES[currentSlide];
+  const slideBadge = language === "en" ? currentSlideData.badgeEn : currentSlideData.badgeAr;
+  const slideTitle = language === "en" ? currentSlideData.titleEn : currentSlideData.titleAr;
+  const slideDesc = language === "en" ? currentSlideData.descEn : currentSlideData.descAr;
 
   return (
-    <div className="min-h-screen bg-[#070b14] text-slate-100 flex flex-col font-sans relative selection:bg-amber-500 selection:text-black" dir="rtl">
+    <div className="min-h-screen bg-[#070b14] text-slate-100 flex flex-col font-sans relative selection:bg-amber-500 selection:text-black" dir={dir}>
       <StoreNavbar onSearch={(q) => setSearchQuery(q)} />
 
       {/* Floating Interactive Toast Notification */}
@@ -224,7 +243,7 @@ export default function StoreHome() {
           )}
           <div className="flex flex-col text-right">
             <span className="text-xs font-black text-amber-300 flex items-center gap-1">
-              <Check size={14} className="text-emerald-400" /> تمت الإضافة إلى السلة بنجاح!
+              <Check size={14} className="text-emerald-400" /> {language === "en" ? "Added to cart successfully!" : "تمت الإضافة إلى السلة بنجاح!"}
             </span>
             <span className="text-[11px] text-slate-300 max-w-xs truncate">{toastNotification.title}</span>
           </div>
@@ -239,10 +258,10 @@ export default function StoreHome() {
             <div className="flex items-center justify-between px-3 py-2 text-amber-400 font-black text-sm border-b border-slate-800 mb-2">
               <div className="flex items-center gap-2">
                 <Layers size={18} />
-                <span>أقسام وفئات المتجر</span>
+                <span>{language === "en" ? "Categories" : "أقسام وفئات المتجر"}</span>
               </div>
               <span className="text-[10px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full font-bold">
-                {categoriesList.length} قسم
+                {categoriesList.length} {language === "en" ? "categories" : "قسم"}
               </span>
             </div>
 
@@ -261,7 +280,7 @@ export default function StoreHome() {
               >
                 <span className="flex items-center gap-2.5">
                   <span className="text-base">🌐</span>
-                  <span>جميع الأقسام</span>
+                  <span>{language === "en" ? "All Categories" : "جميع الأقسام"}</span>
                 </span>
                 <ChevronLeft size={14} className={selectedCategory === "" ? "text-black" : "text-slate-500"} />
               </button>
@@ -284,7 +303,7 @@ export default function StoreHome() {
                   >
                     <span className="flex items-center gap-2.5 truncate">
                       <span className="text-base shrink-0 group-hover:scale-110 transition-transform">{cat.icon || "📦"}</span>
-                      <span className="truncate">{cat.name_ar || cat.name || cat.name_en}</span>
+                      <span className="truncate">{language === "en" ? (cat.name_en || cat.name || cat.name_ar) : (cat.name_ar || cat.name || cat.name_en)}</span>
                     </span>
                     <ChevronLeft size={14} className="text-slate-500 group-hover:text-amber-400 group-hover:-translate-x-1 transition-all" />
                   </button>
@@ -307,18 +326,18 @@ export default function StoreHome() {
               {/* Slide Top Badge & App Logo Showcase */}
               <div className="relative z-10 flex items-center justify-between gap-4">
                 <span className="inline-flex items-center gap-2 bg-black/85 text-amber-400 font-black text-xs px-4 py-1.5 rounded-full shadow-lg border border-amber-500/30">
-                  <Sparkles size={14} /> {currentSlideData.badge}
+                  <Sparkles size={14} /> {slideBadge}
                 </span>
 
                 {/* Official Luxury Logo Badge inside Banner */}
                 <div className="hidden sm:flex items-center gap-2.5 bg-black/60 backdrop-blur-md px-3.5 py-1.5 rounded-2xl border border-white/20">
                   <img
                     src="/app-logo.png"
-                    alt="عماد إكسبرس"
+                    alt="Emad Express"
                     className="w-8 h-8 rounded-xl object-cover ring-2 ring-amber-400/60"
                   />
                   <div className="flex flex-col text-right">
-                    <span className="text-xs font-black text-white">عماد إكسبرس</span>
+                    <span className="text-xs font-black text-white">{language === "en" ? "Emad Express" : "عماد إكسبرس"}</span>
                     <span className="text-[9px] text-amber-300 font-bold">EMAD EXPRESS</span>
                   </div>
                 </div>
@@ -327,10 +346,10 @@ export default function StoreHome() {
               {/* Slide Text Content */}
               <div className="relative z-10 max-w-xl space-y-3.5 my-4">
                 <h1 className={`text-2xl sm:text-4xl lg:text-5xl font-black tracking-tight leading-tight ${currentSlideData.textColor}`}>
-                  {currentSlideData.title}
+                  {slideTitle}
                 </h1>
                 <p className={`text-xs sm:text-sm font-bold opacity-90 leading-relaxed ${currentSlideData.textColor}`}>
-                  {currentSlideData.desc}
+                  {slideDesc}
                 </p>
               </div>
 
@@ -347,7 +366,7 @@ export default function StoreHome() {
                     className="bg-black hover:bg-slate-900 text-amber-400 font-black text-sm px-7 py-3.5 rounded-2xl shadow-xl transition-all hover:scale-105 active:scale-95 cursor-pointer flex items-center gap-2"
                   >
                     <ShoppingBag size={18} />
-                    <span>تصفح العروض الآن</span>
+                    <span>{language === "en" ? "Browse Deals Now" : "تصفح العروض الآن"}</span>
                   </button>
 
                   <button
@@ -360,7 +379,7 @@ export default function StoreHome() {
                     }}
                     className="bg-white/25 hover:bg-white text-black font-black text-xs sm:text-sm px-5 py-3.5 rounded-2xl backdrop-blur-md transition-all shadow-md flex items-center gap-2 cursor-pointer hover:scale-105 active:scale-95"
                   >
-                    <span>أقوى الأقسام المميزة</span>
+                    <span>{language === "en" ? "Top Categories" : "أقوى الأقسام المميزة"}</span>
                     <ArrowRight size={16} />
                   </button>
                 </div>
@@ -406,8 +425,8 @@ export default function StoreHome() {
                   <Truck size={20} />
                 </div>
                 <div>
-                  <h4 className="text-xs font-bold text-white">شحن وتوصيل فوري</h4>
-                  <p className="text-[11px] text-slate-400">تتبع مباشر لكل شحنة</p>
+                  <h4 className="text-xs font-bold text-white">{language === "en" ? "Express Shipping" : "شحن وتوصيل فوري"}</h4>
+                  <p className="text-[11px] text-slate-400">{language === "en" ? "Live tracking for all orders" : "تتبع مباشر لكل شحنة"}</p>
                 </div>
               </div>
 
@@ -416,8 +435,8 @@ export default function StoreHome() {
                   <ShieldCheck size={20} />
                 </div>
                 <div>
-                  <h4 className="text-xs font-bold text-white">ضمان وأمان الدفع 100%</h4>
-                  <p className="text-[11px] text-slate-400">حماية كاملة للمشتريات</p>
+                  <h4 className="text-xs font-bold text-white">{language === "en" ? "100% Secure Payment" : "ضمان وأمان الدفع 100%"}</h4>
+                  <p className="text-[11px] text-slate-400">{language === "en" ? "Full purchase protection" : "حماية كاملة للمشتريات"}</p>
                 </div>
               </div>
 
@@ -426,8 +445,8 @@ export default function StoreHome() {
                   <Star size={20} />
                 </div>
                 <div>
-                  <h4 className="text-xs font-bold text-white">موردون موثوقون ومعتمدون</h4>
-                  <p className="text-[11px] text-slate-400">تقييمات عالية وضمان الجودة</p>
+                  <h4 className="text-xs font-bold text-white">{language === "en" ? "Verified Suppliers" : "موردون موثوقون ومعتمدون"}</h4>
+                  <p className="text-[11px] text-slate-400">{language === "en" ? "Top ratings & quality check" : "تقييمات عالية وضمان الجودة"}</p>
                 </div>
               </div>
             </div>
@@ -450,7 +469,7 @@ export default function StoreHome() {
             }`}
           >
             <span>🌐</span>
-            <span>جميع المنتجات ({productsList.length})</span>
+            <span>{language === "en" ? `All Products (${productsList.length})` : `جميع المنتجات (${productsList.length})`}</span>
           </button>
 
           {categoriesList.map((cat: any) => (
@@ -462,7 +481,7 @@ export default function StoreHome() {
               className="px-4 py-2 rounded-2xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5 shrink-0 bg-slate-900/90 text-slate-300 border border-slate-800 hover:border-amber-500/50 hover:text-white"
             >
               <span>{cat.icon || "📦"}</span>
-              <span>{cat.name_ar || cat.name || cat.name_en}</span>
+              <span>{language === "en" ? (cat.name_en || cat.name || cat.name_ar) : (cat.name_ar || cat.name || cat.name_en)}</span>
             </button>
           ))}
         </div>
@@ -478,19 +497,19 @@ export default function StoreHome() {
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <h2 className="text-xl font-black text-white">عروض الصفقات الخاطفة (Super Deals)</h2>
+                  <h2 className="text-xl font-black text-white">{language === "en" ? "Flash Super Deals" : "عروض الصفقات الخاطفة (Super Deals)"}</h2>
                   <span className="bg-red-500/20 text-red-400 text-[10px] font-black px-2.5 py-0.5 rounded-full border border-red-500/30">
-                    خصم حتى 70%
+                    {language === "en" ? "Up to 70% OFF" : "خصم حتى 70%"}
                   </span>
                 </div>
-                <p className="text-xs text-slate-400 mt-0.5">صفقات محدودة الوقت يتم تجديدها كل ساعة مباشرة من عماد اكسبرس</p>
+                <p className="text-xs text-slate-400 mt-0.5">{language === "en" ? "Limited time offers updated hourly from Emad Express" : "صفقات محدودة الوقت يتم تجديدها كل ساعة مباشرة من عماد اكسبرس"}</p>
               </div>
             </div>
 
             {/* Live LCD Countdown Timer */}
             <div className="flex items-center gap-2 self-start sm:self-auto">
               <span className="text-xs font-bold text-slate-300 flex items-center gap-1">
-                <Clock size={14} className="text-amber-400" /> ينتهي العرض خلال:
+                <Clock size={14} className="text-amber-400" /> {language === "en" ? "Deals end in:" : "ينتهي العرض خلال:"}
               </span>
               <div className="flex items-center gap-1 font-mono text-sm font-black">
                 <div className="bg-slate-950 text-amber-400 px-2.5 py-1 rounded-xl border border-amber-500/40 shadow-inner">
@@ -535,16 +554,16 @@ export default function StoreHome() {
                 <div className="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold">
                   <Sparkles size={18} />
                 </div>
-                <h2 className="text-xl font-black text-white">المنتجات المميزة (Featured)</h2>
+                <h2 className="text-xl font-black text-white">{language === "en" ? "Featured Products" : "المنتجات المميزة (Featured)"}</h2>
                 <span className="text-xs font-bold text-amber-400/90 bg-amber-400/10 px-2.5 py-0.5 rounded-full border border-amber-400/20">
-                  مختارة بعناية
+                  {language === "en" ? "Handpicked" : "مختارة بعناية"}
                 </span>
               </div>
               <a
                 href="#products-catalog"
                 className="text-xs font-bold text-amber-400 hover:text-amber-300 flex items-center gap-1 cursor-pointer hover:underline"
               >
-                <span>تصفح الكل</span>
+                <span>{language === "en" ? "View All" : "تصفح الكل"}</span>
                 <ChevronLeft size={14} />
               </a>
             </div>
@@ -576,16 +595,16 @@ export default function StoreHome() {
                 <div className="w-8 h-8 rounded-xl bg-red-500/20 text-red-400 flex items-center justify-center font-bold">
                   <Flame size={18} />
                 </div>
-                <h2 className="text-xl font-black text-white">الأكثر طلباً ومبيعاً (Best Sellers)</h2>
+                <h2 className="text-xl font-black text-white">{language === "en" ? "Best Sellers" : "الأكثر طلباً ومبيعاً (Best Sellers)"}</h2>
                 <span className="text-xs font-bold text-red-400/90 bg-red-400/10 px-2.5 py-0.5 rounded-full border border-red-400/20">
-                  الأعلى تقييماً
+                  {language === "en" ? "Top Rated" : "الأعلى تقييماً"}
                 </span>
               </div>
               <a
                 href="#products-catalog"
                 className="text-xs font-bold text-amber-400 hover:text-amber-300 flex items-center gap-1 cursor-pointer hover:underline"
               >
-                <span>تصفح الكل</span>
+                <span>{language === "en" ? "View All" : "تصفح الكل"}</span>
                 <ChevronLeft size={14} />
               </a>
             </div>
@@ -619,9 +638,11 @@ export default function StoreHome() {
                   className="flex items-center gap-2.5 group cursor-pointer"
                 >
                   <span className="text-2xl group-hover:scale-110 transition-transform">{sec.icon || "📦"}</span>
-                  <h2 className="text-xl font-black text-white group-hover:text-amber-400 transition-colors">{sec.name_ar || sec.name || sec.name_en}</h2>
+                  <h2 className="text-xl font-black text-white group-hover:text-amber-400 transition-colors">
+                    {language === "en" ? (sec.name_en || sec.name || sec.name_ar) : (sec.name_ar || sec.name || sec.name_en)}
+                  </h2>
                   <span className="text-xs font-bold text-amber-400/90 bg-amber-400/10 px-2.5 py-0.5 rounded-full border border-amber-400/20">
-                    رائج ومطلوب
+                    {language === "en" ? "Trending" : "رائج ومطلوب"}
                   </span>
                 </Link>
                 <button
@@ -630,7 +651,7 @@ export default function StoreHome() {
                   }}
                   className="text-xs font-bold text-amber-400 hover:text-amber-300 flex items-center gap-1 cursor-pointer hover:underline"
                 >
-                  <span>عرض منتجات القسم بالكامل</span>
+                  <span>{language === "en" ? "View Full Category" : "عرض منتجات القسم بالكامل"}</span>
                   <ChevronLeft size={14} />
                 </button>
               </div>
@@ -662,13 +683,13 @@ export default function StoreHome() {
             <Flame className="text-amber-500 animate-pulse" size={24} />
             <h2 className="text-2xl font-black text-white">
               {searchQuery
-                ? `نتائج البحث عن: "${searchQuery}"`
+                ? (language === "en" ? `Search results for: "${searchQuery}"` : `نتائج البحث عن: "${searchQuery}"`)
                 : activeCategoryObj
-                ? `منتجات قسم: ${activeCategoryObj.name_ar || activeCategoryObj.name}`
-                : "جميع المنتجات الأكثر طلباً في المتجر"}
+                ? (language === "en" ? `Category: ${activeCategoryObj.name_en || activeCategoryObj.name || activeCategoryObj.name_ar}` : `منتجات قسم: ${activeCategoryObj.name_ar || activeCategoryObj.name}`)
+                : (language === "en" ? "All Top-Selling Products" : "جميع المنتجات الأكثر طلباً في المتجر")}
             </h2>
             <span className="text-xs bg-slate-800 text-slate-300 px-3 py-1 rounded-full font-bold">
-              {productsList.length} منتج
+              {productsList.length} {language === "en" ? "products" : "منتج"}
             </span>
           </div>
 
@@ -680,7 +701,7 @@ export default function StoreHome() {
               }}
               className="text-xs font-bold text-amber-400 hover:underline cursor-pointer self-start sm:self-auto"
             >
-              عرض كافة المنتجات
+              {language === "en" ? "View All Products" : "عرض كافة المنتجات"}
             </button>
           )}
         </div>
@@ -694,8 +715,8 @@ export default function StoreHome() {
         ) : productsList.length === 0 ? (
           <div className="text-center py-20 bg-slate-900/40 border border-slate-800 rounded-3xl p-8 max-w-md mx-auto">
             <ShoppingBag size={48} className="mx-auto text-amber-400/40 mb-3" />
-            <h3 className="text-lg font-bold text-white">لم يتم العثور على منتجات مطابقة</h3>
-            <p className="text-xs text-slate-400 mt-1">جرب البحث بكلمة أخرى أو اختر قسماً مختلفاً من القائمة</p>
+            <h3 className="text-lg font-bold text-white">{language === "en" ? "No matching products found" : "لم يتم العثور على منتجات مطابقة"}</h3>
+            <p className="text-xs text-slate-400 mt-1">{language === "en" ? "Try searching with different keywords or select another category" : "جرب البحث بكلمة أخرى أو اختر قسماً مختلفاً من القائمة"}</p>
             <button
               onClick={() => {
                 setSelectedCategory("");
@@ -703,7 +724,7 @@ export default function StoreHome() {
               }}
               className="mt-4 bg-amber-500 hover:bg-amber-600 text-black font-bold text-xs px-5 py-2.5 rounded-xl transition-all cursor-pointer"
             >
-              العودة لكافة المنتجات
+              {language === "en" ? "Back to All Products" : "العودة لكافة المنتجات"}
             </button>
           </div>
         ) : (
@@ -726,7 +747,7 @@ export default function StoreHome() {
 
       {/* Interactive Quick View Modal (AliExpress Style) */}
       {quickViewProduct && typeof document !== "undefined" && createPortal(
-        <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-200" dir="rtl">
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-200" dir={dir}>
           <div className="bg-slate-900 border border-amber-500/40 rounded-3xl max-w-2xl w-full overflow-hidden shadow-2xl relative flex flex-col md:flex-row">
             {/* Close Button */}
             <button
@@ -741,14 +762,14 @@ export default function StoreHome() {
               {quickViewProduct.image ? (
                 <img
                   src={quickViewProduct.image}
-                  alt={quickViewProduct.name_ar || quickViewProduct.name}
+                  alt={getProductLocalizedName(quickViewProduct, language)}
                   className="w-full h-full object-cover"
                 />
               ) : (
-                <div className="text-slate-600 text-sm">صورة المنتج</div>
+                <div className="text-slate-600 text-sm">{language === "en" ? "Product Image" : "صورة المنتج"}</div>
               )}
               <span className="absolute top-3 right-3 bg-red-600 text-white font-black text-xs px-3 py-1 rounded-xl shadow-lg">
-                خصم حصري
+                {language === "en" ? "Exclusive Deal" : "خصم حصري"}
               </span>
             </div>
 
@@ -756,11 +777,11 @@ export default function StoreHome() {
             <div className="p-6 md:w-1/2 flex flex-col justify-between gap-4">
               <div className="space-y-3">
                 <span className="text-[11px] font-bold text-amber-400 bg-amber-400/10 px-2.5 py-0.5 rounded-md border border-amber-400/20">
-                  كود الصنف: #{quickViewProduct.id}
+                  {language === "en" ? `SKU: #${quickViewProduct.id}` : `كود الصنف: #${quickViewProduct.id}`}
                 </span>
 
                 <h3 className="text-base font-black text-white leading-relaxed">
-                  {quickViewProduct.name_ar || quickViewProduct.name}
+                  {getProductLocalizedName(quickViewProduct, language)}
                 </h3>
 
                 <div className="flex items-center gap-2">
@@ -771,35 +792,37 @@ export default function StoreHome() {
                     <Star size={14} className="fill-amber-400" />
                     <Star size={14} className="fill-amber-400" />
                   </div>
-                  <span className="text-xs text-slate-400 font-semibold">(4.9/5 • مورد موثوق)</span>
+                  <span className="text-xs text-slate-400 font-semibold">
+                    {language === "en" ? "(4.9/5 • Verified Supplier)" : "(4.9/5 • مورد موثوق)"}
+                  </span>
                 </div>
 
                 <div className="flex items-baseline gap-3 pt-1">
                   <span className="text-2xl font-black text-amber-400">
-                    {(Number(quickViewProduct.price) || 0).toLocaleString()} ر.س
+                    {(Number(quickViewProduct.price) || 0).toLocaleString()} {language === "en" ? "SAR" : "ر.س"}
                   </span>
                   {quickViewProduct.cost && (
                     <span className="text-xs text-slate-500 line-through">
-                      {(Number(quickViewProduct.cost) * 5).toLocaleString()} ر.س
+                      {(Number(quickViewProduct.cost) * 5).toLocaleString()} {language === "en" ? "SAR" : "ر.س"}
                     </span>
                   )}
                 </div>
 
                 <p className="text-xs text-slate-400 leading-relaxed">
-                  {quickViewProduct.description_ar || quickViewProduct.description || "منتج عالي الجودة مستورد وموثق من عماد اكسبرس مع فحص المخزون الفوري والضمان الشامل."}
+                  {getProductLocalizedDesc(quickViewProduct, language)}
                 </p>
 
                 {/* Stock Indicator */}
                 <div className="flex items-center gap-2 text-xs text-emerald-400 font-bold bg-emerald-950/40 border border-emerald-500/20 p-2.5 rounded-xl">
                   <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-                  <span>متوفر في المستودع الرئيسي - جاهز للشحن السريع</span>
+                  <span>{language === "en" ? "In Stock at Central Hub - Ready for Dispatch" : "متوفر في المستودع الرئيسي - جاهز للشحن السريع"}</span>
                 </div>
               </div>
 
               {/* Quantity Picker & Add to Cart */}
               <div className="space-y-3 pt-2 border-t border-slate-800">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-slate-300">الكمية:</span>
+                  <span className="text-xs font-bold text-slate-300">{language === "en" ? "Quantity:" : "الكمية:"}</span>
                   <div className="flex items-center gap-3 bg-slate-950 border border-slate-800 rounded-xl p-1">
                     <button
                       onClick={() => setQuickViewQty((q) => Math.max(1, q - 1))}
@@ -826,17 +849,19 @@ export default function StoreHome() {
                     className="flex-1 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-black text-xs py-3 rounded-xl transition-all shadow-lg shadow-amber-500/20 flex items-center justify-center gap-1.5 cursor-pointer"
                   >
                     <ShoppingBag size={16} />
-                    <span>أضف إلى السلة ({quickViewQty})</span>
+                    <span>{language === "en" ? `Add to Cart (${quickViewQty})` : `أضف إلى السلة (${quickViewQty})`}</span>
                   </button>
 
                   <a
                     href={`https://wa.me/967772223645?text=${encodeURIComponent(
-                      `مرحباً عماد إكسبرس، أود طلب المنتج: "${quickViewProduct.name_ar || quickViewProduct.name}" (كود: ${quickViewProduct.id}) بسعر: ${quickViewProduct.price} ر.س`
+                      language === "en"
+                        ? `Hello Emad Express, I'd like to order: "${getProductLocalizedName(quickViewProduct, "en")}" (SKU: ${quickViewProduct.id}) for ${quickViewProduct.price} SAR`
+                        : `مرحباً عماد إكسبرس، أود طلب المنتج: "${quickViewProduct.name_ar || quickViewProduct.name}" (كود: ${quickViewProduct.id}) بسعر: ${quickViewProduct.price} ر.س`
                     )}`}
                     target="_blank"
                     rel="noreferrer"
                     className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs p-3 rounded-xl transition-all shadow-md flex items-center justify-center gap-1.5"
-                    title="طلب فوري عبر واتساب"
+                    title={language === "en" ? "Order via WhatsApp" : "طلب فوري عبر واتساب"}
                   >
                     <MessageCircle size={16} />
                   </a>
@@ -849,7 +874,7 @@ export default function StoreHome() {
       )}
 
       {/* Floating Customer Support WhatsApp Button with Glowing Pulse */}
-      <aside aria-label="الدعم الفني السريع" className="fixed bottom-6 left-6 z-40 flex items-center gap-3">
+      <aside aria-label="WhatsApp Support" className="fixed bottom-6 left-6 z-40 flex items-center gap-3">
         <a
           href="https://wa.me/967772223645?text=%D9%85%D8%B1%D8%AD%D8%A8%D8%A7%20%D8%B9%D9%85%D8%A7%D8%AF%20%D8%A5%D9%83%D8%B3%D8%A8%D8%B1%D8%B3%D8%8C%20%D9%84%D8%AF%D9%8A%20%D8%A7%D8%B3%D8%AA%D9%81%D8%B3%D8%A7%D8%B1%20%D8%B9%D9%86%20%D8%B7%D9%84%D8%A8%D9%8A"
           target="_blank"
@@ -858,7 +883,7 @@ export default function StoreHome() {
         >
           <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-amber-400 rounded-full animate-ping pointer-events-none" />
           <MessageCircle size={20} className="text-white" />
-          <span className="hidden sm:inline font-black">مساعدة واتساب فوري</span>
+          <span className="hidden sm:inline font-black">{language === "en" ? "WhatsApp Support" : "مساعدة واتساب فوري"}</span>
         </a>
       </aside>
 
@@ -878,9 +903,12 @@ function ProductCard({
   onQuickView: (p: any) => void;
   isAdded?: boolean;
 }) {
+  const { language } = useI18n();
   const price = Number(product.price) || 0;
   const originalPrice = product.cost ? Number((product.cost * 5).toFixed(2)) : price * 1.4;
   const discountPercent = Math.min(70, Math.max(15, Math.round(((originalPrice - price) / originalPrice) * 100)));
+  const displayName = getProductLocalizedName(product, language);
+  const currency = language === "en" ? "SAR" : "ر.س";
 
   return (
     <div className="bg-slate-900/90 border border-slate-800 hover:border-amber-500/60 rounded-3xl overflow-hidden flex flex-col justify-between group transition-all duration-300 hover:shadow-2xl hover:shadow-amber-500/15 hover:-translate-y-1">
@@ -889,7 +917,7 @@ function ProductCard({
         {product.image ? (
           <img
             src={product.image}
-            alt={product.name_ar || product.name}
+            alt={displayName}
             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out"
             referrerPolicy="no-referrer"
             loading="lazy"
@@ -899,7 +927,7 @@ function ProductCard({
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-slate-700 text-xs">
-            صورة المنتج
+            {language === "en" ? "Product Image" : "صورة المنتج"}
           </div>
         )}
 
@@ -914,13 +942,13 @@ function ProductCard({
         <button
           onClick={() => onQuickView(product)}
           className="absolute top-2.5 left-2.5 bg-black/70 hover:bg-amber-500 text-white hover:text-black p-2 rounded-xl backdrop-blur-md opacity-0 group-hover:opacity-100 transition-all duration-300 cursor-pointer shadow-lg"
-          title="معاينة سريعة"
+          title={language === "en" ? "Quick View" : "معاينة سريعة"}
         >
           <Eye size={15} />
         </button>
 
         <span className="absolute bottom-2.5 right-2.5 bg-black/80 backdrop-blur-sm text-amber-300 font-bold text-[9px] px-2 py-0.5 rounded-md flex items-center gap-1 border border-amber-500/20">
-          <Truck size={10} /> توصيل سريع
+          <Truck size={10} /> {language === "en" ? "Fast Shipping" : "توصيل سريع"}
         </span>
       </div>
 
@@ -929,24 +957,26 @@ function ProductCard({
         <div>
           <h3
             className="text-xs font-semibold text-slate-200 line-clamp-2 leading-relaxed group-hover:text-amber-300 transition-colors"
-            title={product.name_ar || product.name}
+            title={displayName}
           >
-            {product.name_ar || product.name || product.name_en}
+            {displayName}
           </h3>
 
-          {/* AliExpress Rating Star */}
+          {/* Rating Star */}
           <div className="flex items-center gap-1.5 mt-1.5">
             <div className="flex items-center text-amber-400 text-[10px]">
               <Star size={11} className="fill-amber-400" />
             </div>
-            <span className="text-[10px] text-slate-400 font-bold">4.8 (850+ بيع)</span>
+            <span className="text-[10px] text-slate-400 font-bold">
+              {language === "en" ? "4.8 (850+ sold)" : "4.8 (850+ بيع)"}
+            </span>
           </div>
 
           <div className="flex items-baseline gap-2 mt-2">
-            <span className="text-base font-black text-amber-400">{price.toLocaleString()} ر.س</span>
+            <span className="text-base font-black text-amber-400">{price.toLocaleString()} {currency}</span>
             {originalPrice > price && (
               <span className="text-[11px] text-slate-500 line-through">
-                {originalPrice.toLocaleString()} ر.س
+                {originalPrice.toLocaleString()} {currency}
               </span>
             )}
           </div>
@@ -965,12 +995,12 @@ function ProductCard({
             {isAdded ? (
               <>
                 <Check size={14} />
-                <span>تمت الإضافة!</span>
+                <span>{language === "en" ? "Added!" : "تمت الإضافة!"}</span>
               </>
             ) : (
               <>
                 <ShoppingBag size={14} />
-                <span>أضف للسلة</span>
+                <span>{language === "en" ? "Add to Cart" : "أضف للسلة"}</span>
               </>
             )}
           </button>
@@ -978,7 +1008,7 @@ function ProductCard({
           <button
             onClick={() => onQuickView(product)}
             className="p-2.5 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-amber-400 border border-slate-700 transition-all cursor-pointer"
-            title="معاينة الصنف"
+            title={language === "en" ? "Quick View" : "معاينة الصنف"}
           >
             <Eye size={15} />
           </button>

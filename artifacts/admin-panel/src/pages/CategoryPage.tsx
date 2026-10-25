@@ -24,12 +24,14 @@ import {
 import { StoreNavbar, StoreFooter } from "@/components/StoreNavbar";
 import { useCart } from "@/context/CartContext";
 import { api } from "@/lib/api";
+import { useI18n, getProductLocalizedName, getProductLocalizedDesc } from "@/lib/i18n";
 
 export default function CategoryPage() {
   const [, params] = useRoute("/category/:id");
   const [, setLocation] = useLocation();
   const categoryId = params?.id || "";
 
+  const { t, language, dir } = useI18n();
   const { addToCart } = useCart();
   const [searchInCat, setSearchInCat] = useState("");
   const [sortBy, setSortBy] = useState<"default" | "price-asc" | "price-desc" | "discount">("default");
@@ -44,8 +46,8 @@ export default function CategoryPage() {
 
   // Fetch all categories for header pills and name lookup
   const { data: categoriesData, isLoading: loadingCategories } = useQuery({
-    queryKey: ["store-categories"],
-    queryFn: () => api.get("/categories"),
+    queryKey: ["store-categories", language],
+    queryFn: () => api.get(`/categories?lang=${language}`),
   });
 
   const categoriesList: any[] = useMemo(() => {
@@ -60,10 +62,10 @@ export default function CategoryPage() {
 
   // Fetch products for this specific category
   const { data: productsData, isLoading: loadingProducts } = useQuery({
-    queryKey: ["category-products", categoryId],
+    queryKey: ["category-products", categoryId, language],
     queryFn: async () => {
       if (!categoryId) return [];
-      return api.get(`/products?category_id=${categoryId}&limit=100`);
+      return api.get(`/products?category_id=${categoryId}&limit=100&lang=${language}`);
     },
     enabled: Boolean(categoryId),
     staleTime: 10000,
@@ -109,18 +111,21 @@ export default function CategoryPage() {
     setAddedNotice(product.id);
     setTimeout(() => setAddedNotice(null), 1800);
 
+    const displayName = getProductLocalizedName(product, language);
     setToastNotification({
-      title: `تمت إضافة "${product.name_ar || product.name}" إلى السلة بنجاح!`,
+      title: language === "en" ? `Added "${displayName}" to cart successfully!` : `تمت إضافة "${displayName}" إلى السلة بنجاح!`,
       image: product.image,
     });
     setTimeout(() => setToastNotification(null), 3500);
   };
 
-  const catName = currentCategory?.name_ar || currentCategory?.name || currentCategory?.name_en || "القسم المختار";
+  const catName = language === "en"
+    ? (currentCategory?.name_en || currentCategory?.name || currentCategory?.name_ar || "Category")
+    : (currentCategory?.name_ar || currentCategory?.name || currentCategory?.name_en || "القسم المختار");
   const catIcon = currentCategory?.icon || "📦";
 
   return (
-    <div className="min-h-screen bg-[#070b14] text-slate-100 flex flex-col selection:bg-amber-500 selection:text-black" dir="rtl">
+    <div className="min-h-screen bg-[#070b14] text-slate-100 flex flex-col selection:bg-amber-500 selection:text-black" dir={dir}>
       {/* Top Navbar */}
       <StoreNavbar />
 
@@ -135,7 +140,7 @@ export default function CategoryPage() {
             </div>
           )}
           <div className="flex flex-col">
-            <span className="text-xs font-bold text-amber-300">سلة التسوق</span>
+            <span className="text-xs font-bold text-amber-300">{language === "en" ? "Shopping Cart" : "سلة التسوق"}</span>
             <span className="text-[11px] text-slate-300 max-w-xs truncate">{toastNotification.title}</span>
           </div>
         </div>
@@ -147,10 +152,10 @@ export default function CategoryPage() {
           <div className="flex items-center gap-2">
             <Link href="/" className="hover:text-amber-400 transition-colors flex items-center gap-1">
               <Home size={14} />
-              <span>الرئيسية</span>
+              <span>{language === "en" ? "Home" : "الرئيسية"}</span>
             </Link>
             <ChevronLeft size={13} className="text-slate-600" />
-            <span className="text-slate-500">الأقسام والفئات</span>
+            <span className="text-slate-500">{language === "en" ? "Categories" : "الأقسام والفئات"}</span>
             <ChevronLeft size={13} className="text-slate-600" />
             <span className="text-amber-400 font-bold flex items-center gap-1.5">
               <span>{catIcon}</span>
@@ -160,7 +165,7 @@ export default function CategoryPage() {
 
           <Link href="/" className="hover:text-amber-300 transition-colors flex items-center gap-1 text-[11px]">
             <ArrowRight size={13} />
-            <span>العودة للرئيسية</span>
+            <span>{language === "en" ? "Back to Home" : "العودة للرئيسية"}</span>
           </Link>
         </div>
       </div>
@@ -171,7 +176,7 @@ export default function CategoryPage() {
           <div className="space-y-3">
             <div className="inline-flex items-center gap-2 bg-amber-500/10 text-amber-400 border border-amber-500/20 px-3 py-1 rounded-full text-xs font-bold">
               <Sparkles size={13} />
-              <span>قسم رسمي معتمد • عماد إكسبرس</span>
+              <span>{language === "en" ? "Verified Official Category • Emad Express" : "قسم رسمي معتمد • عماد إكسبرس"}</span>
             </div>
 
             <div className="flex items-center gap-4">
@@ -182,11 +187,13 @@ export default function CategoryPage() {
                 <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight flex items-center gap-3">
                   <span>{catName}</span>
                   <span className="text-xs bg-slate-800 text-slate-300 font-bold px-3 py-1 rounded-full border border-slate-700">
-                    {rawProducts.length} منتج متوفر
+                    {rawProducts.length} {language === "en" ? "products available" : "منتج متوفر"}
                   </span>
                 </h1>
                 <p className="text-xs sm:text-sm text-slate-400 mt-1 max-w-2xl leading-relaxed">
-                  تصفح تشكيلة منتجات قسم {catName} الحصرية مع فحص الجودة الفوري والشحن السريع لباب منزلك وبأفضل أسعار الجملة.
+                  {language === "en"
+                    ? `Browse exclusive ${catName} products with live quality inspection, fast shipping, and direct factory pricing.`
+                    : `تصفح تشكيلة منتجات قسم ${catName} الحصرية مع فحص الجودة الفوري والشحن السريع لباب منزلك وبأفضل أسعار الجملة.`}
                 </p>
               </div>
             </div>
@@ -197,15 +204,15 @@ export default function CategoryPage() {
             <div className="bg-slate-900/80 border border-slate-800 rounded-2xl px-4 py-2.5 flex items-center gap-3">
               <Truck size={18} className="text-amber-400" />
               <div className="text-right">
-                <span className="text-[10px] text-slate-400 block">التوصيل</span>
-                <span className="text-xs font-bold text-slate-200">شحن دولي مباشر</span>
+                <span className="text-[10px] text-slate-400 block">{language === "en" ? "Shipping" : "التوصيل"}</span>
+                <span className="text-xs font-bold text-slate-200">{language === "en" ? "Express Direct" : "شحن دولي مباشر"}</span>
               </div>
             </div>
             <div className="bg-slate-900/80 border border-slate-800 rounded-2xl px-4 py-2.5 flex items-center gap-3">
               <ShieldCheck size={18} className="text-emerald-400" />
               <div className="text-right">
-                <span className="text-[10px] text-slate-400 block">الضمان</span>
-                <span className="text-xs font-bold text-slate-200">حماية المشتري 100%</span>
+                <span className="text-[10px] text-slate-400 block">{language === "en" ? "Warranty" : "الضمان"}</span>
+                <span className="text-xs font-bold text-slate-200">{language === "en" ? "100% Protection" : "حماية المشتري 100%"}</span>
               </div>
             </div>
           </div>
@@ -217,9 +224,9 @@ export default function CategoryPage() {
         <div className="flex items-center justify-between mb-2">
           <span className="text-xs font-bold text-slate-400 flex items-center gap-1.5">
             <Layers size={14} className="text-amber-400" />
-            <span>تنقل سريع بين كافة أقسام المتجر:</span>
+            <span>{language === "en" ? "Quick Category Navigation:" : "تنقل سريع بين كافة أقسام المتجر:"}</span>
           </span>
-          <span className="text-[11px] text-slate-500 font-medium">({categoriesList.length} قسم)</span>
+          <span className="text-[11px] text-slate-500 font-medium">({categoriesList.length} {language === "en" ? "categories" : "قسم"})</span>
         </div>
 
         <div className="flex items-center gap-2 overflow-x-auto pb-3 scrollbar-none">
@@ -228,7 +235,7 @@ export default function CategoryPage() {
             className="px-4 py-2 rounded-2xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5 shrink-0 bg-slate-900/90 text-slate-300 border border-slate-800 hover:border-slate-700 hover:text-white"
           >
             <span>🌐</span>
-            <span>الرئيسية وكل الأقسام</span>
+            <span>{language === "en" ? "Home & All Categories" : "الرئيسية وكل الأقسام"}</span>
           </Link>
 
           {loadingCategories ? (
@@ -249,7 +256,7 @@ export default function CategoryPage() {
                   }`}
                 >
                   <span className="text-sm">{cat.icon || "📦"}</span>
-                  <span>{cat.name_ar || cat.name || cat.name_en}</span>
+                  <span>{language === "en" ? (cat.name_en || cat.name || cat.name_ar) : (cat.name_ar || cat.name || cat.name_en)}</span>
                 </button>
               );
             })
@@ -266,7 +273,7 @@ export default function CategoryPage() {
             <Search size={16} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
             <input
               type="text"
-              placeholder={`ابحث داخل ${catName}...`}
+              placeholder={language === "en" ? `Search in ${catName}...` : `ابحث داخل ${catName}...`}
               value={searchInCat}
               onChange={(e) => setSearchInCat(e.target.value)}
               className="w-full bg-slate-950/80 border border-slate-800 text-white rounded-xl pr-10 pl-8 py-2 text-xs focus:outline-none focus:border-amber-500/60 placeholder:text-slate-500"
@@ -285,7 +292,7 @@ export default function CategoryPage() {
           <div className="flex items-center justify-between sm:justify-end gap-3 w-full sm:w-auto">
             <span className="text-xs text-slate-400 font-medium flex items-center gap-1.5 shrink-0">
               <ArrowUpDown size={14} className="text-amber-400" />
-              <span>ترتيب حسب:</span>
+              <span>{language === "en" ? "Sort by:" : "ترتيب حسب:"}</span>
             </span>
 
             <select
@@ -293,10 +300,10 @@ export default function CategoryPage() {
               onChange={(e: any) => setSortBy(e.target.value)}
               className="bg-slate-950/80 border border-slate-800 text-white text-xs rounded-xl px-3 py-2 focus:outline-none focus:border-amber-500/60 cursor-pointer"
             >
-              <option value="default">الافتراضي (الأحدث)</option>
-              <option value="price-asc">الأقل سعراً أولاً</option>
-              <option value="price-desc">الأعلى سعراً أولاً</option>
-              <option value="discount">أعلى نسبة تخفيض</option>
+              <option value="default">{language === "en" ? "Default (Latest)" : "الافتراضي (الأحدث)"}</option>
+              <option value="price-asc">{language === "en" ? "Price: Low to High" : "الأقل سعراً أولاً"}</option>
+              <option value="price-desc">{language === "en" ? "Price: High to Low" : "الأعلى سعراً أولاً"}</option>
+              <option value="discount">{language === "en" ? "Biggest Discount" : "أعلى نسبة تخفيض"}</option>
             </select>
           </div>
         </div>
@@ -322,10 +329,14 @@ export default function CategoryPage() {
               {catIcon}
             </div>
             <h3 className="text-lg font-bold text-white">
-              {searchInCat ? `لا توجد نتائج مطابقة لـ "${searchInCat}" في هذا القسم` : `لا توجد منتجات مسجلة في هذا القسم حالياً`}
+              {searchInCat
+                ? (language === "en" ? `No results matching "${searchInCat}" in this category` : `لا توجد نتائج مطابقة لـ "${searchInCat}" في هذا القسم`)
+                : (language === "en" ? "No products in this category currently" : "لا توجد منتجات مسجلة في هذا القسم حالياً")}
             </h3>
             <p className="text-xs text-slate-400 max-w-md mx-auto">
-              يمكنك تجربة البحث بكلمات أخرى أو استعراض باقي أقسام المتجر المتوفرة.
+              {language === "en"
+                ? "Try searching with other keywords or browse our other available categories."
+                : "يمكنك تجربة البحث بكلمات أخرى أو استعراض باقي أقسام المتجر المتوفرة."}
             </p>
             <div className="flex items-center justify-center gap-3 pt-2">
               {searchInCat && (
@@ -333,14 +344,14 @@ export default function CategoryPage() {
                   onClick={() => setSearchInCat("")}
                   className="bg-slate-800 hover:bg-slate-700 text-slate-200 px-5 py-2.5 rounded-xl text-xs font-bold transition-all"
                 >
-                  مسح البحث
+                  {language === "en" ? "Clear Search" : "مسح البحث"}
                 </button>
               )}
               <Link
                 href="/"
                 className="bg-amber-500 hover:bg-amber-400 text-black px-6 py-2.5 rounded-xl text-xs font-black shadow-lg shadow-amber-500/20 transition-all flex items-center gap-1.5"
               >
-                <span>تصفح الصفحة الرئيسية</span>
+                <span>{language === "en" ? "Browse Homepage" : "تصفح الصفحة الرئيسية"}</span>
                 <ChevronLeft size={14} />
               </Link>
             </div>
@@ -366,7 +377,7 @@ export default function CategoryPage() {
 
       {/* Interactive Quick View Modal */}
       {quickViewProduct && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200" dir={dir}>
           <div className="bg-slate-900 border border-slate-700 rounded-3xl max-w-2xl w-full overflow-hidden shadow-2xl relative text-right flex flex-col md:flex-row">
             <button
               onClick={() => setQuickViewProduct(null)}
@@ -380,14 +391,14 @@ export default function CategoryPage() {
               {quickViewProduct.image ? (
                 <img
                   src={quickViewProduct.image}
-                  alt={quickViewProduct.name_ar || quickViewProduct.name}
+                  alt={getProductLocalizedName(quickViewProduct, language)}
                   className="w-full h-full object-cover"
                 />
               ) : (
-                <div className="text-slate-600 text-sm">صورة المنتج غير متوفرة</div>
+                <div className="text-slate-600 text-sm">{language === "en" ? "Product Image" : "صورة المنتج غير متوفرة"}</div>
               )}
               <div className="absolute top-4 right-4 bg-amber-500 text-black font-black text-xs px-2.5 py-1 rounded-lg shadow-lg">
-                شحن مباشر سريع ⚡
+                {language === "en" ? "Express Direct Shipping ⚡" : "شحن مباشر سريع ⚡"}
               </div>
             </div>
 
@@ -399,35 +410,35 @@ export default function CategoryPage() {
                 </span>
 
                 <h2 className="text-base font-bold text-white leading-snug">
-                  {quickViewProduct.name_ar || quickViewProduct.name || quickViewProduct.name_en}
+                  {getProductLocalizedName(quickViewProduct, language)}
                 </h2>
 
                 <div className="flex items-center gap-3">
                   <span className="text-2xl font-black text-amber-400">
-                    {Number(quickViewProduct.price).toLocaleString()} ر.س
+                    {Number(quickViewProduct.price).toLocaleString()} {language === "en" ? "SAR" : "ر.س"}
                   </span>
                   {quickViewProduct.cost && (
                     <span className="text-xs text-slate-500 line-through">
-                      {(Number(quickViewProduct.cost) * 5).toLocaleString()} ر.س
+                      {(Number(quickViewProduct.cost) * 5).toLocaleString()} {language === "en" ? "SAR" : "ر.س"}
                     </span>
                   )}
                 </div>
 
                 <p className="text-xs text-slate-400 leading-relaxed max-h-24 overflow-y-auto">
-                  {quickViewProduct.description_ar || quickViewProduct.description || "منتج عالي الجودة مستورد وموثق من عماد اكسبرس مع فحص المخزون الفوري والضمان الشامل."}
+                  {getProductLocalizedDesc(quickViewProduct, language)}
                 </p>
 
                 {/* Stock Indicator */}
                 <div className="flex items-center gap-2 text-xs text-emerald-400 font-bold bg-emerald-950/40 border border-emerald-500/20 p-2.5 rounded-xl">
                   <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-                  <span>متوفر في المستودع الرئيسي - جاهز للشحن السريع</span>
+                  <span>{language === "en" ? "In Stock at Central Hub - Ready for Dispatch" : "متوفر في المستودع الرئيسي - جاهز للشحن السريع"}</span>
                 </div>
               </div>
 
               {/* Quantity Selector & Add to Cart Action */}
               <div className="space-y-3 pt-3 border-t border-slate-800">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-slate-300">الكمية المطلوبة:</span>
+                  <span className="text-xs font-bold text-slate-300">{language === "en" ? "Quantity:" : "الكمية المطلوبة:"}</span>
                   <div className="flex items-center border border-slate-700 bg-slate-950 rounded-xl overflow-hidden">
                     <button
                       onClick={() => setQuickViewQty(Math.max(1, quickViewQty - 1))}
@@ -453,7 +464,7 @@ export default function CategoryPage() {
                   className="w-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-black text-xs py-3.5 rounded-2xl shadow-xl shadow-amber-500/20 flex items-center justify-center gap-2 cursor-pointer transition-all"
                 >
                   <ShoppingCart size={16} />
-                  <span>إضافة إلى سلة المشتريات ({Number(quickViewProduct.price * quickViewQty).toLocaleString()} ر.س)</span>
+                  <span>{language === "en" ? `Add to Cart (${Number(quickViewProduct.price * quickViewQty).toLocaleString()} SAR)` : `إضافة إلى سلة المشتريات (${Number(quickViewProduct.price * quickViewQty).toLocaleString()} ر.س)`}</span>
                 </button>
               </div>
             </div>
@@ -478,9 +489,12 @@ function ProductCard({
   onQuickView: (p: any) => void;
   isAdded?: boolean;
 }) {
+  const { language } = useI18n();
   const price = Number(product.price) || 0;
   const originalPrice = product.cost ? Number((product.cost * 5).toFixed(2)) : price * 1.4;
   const discountPercent = Math.min(70, Math.max(15, Math.round(((originalPrice - price) / originalPrice) * 100)));
+  const displayName = getProductLocalizedName(product, language);
+  const currency = language === "en" ? "SAR" : "ر.س";
 
   return (
     <div className="bg-slate-900/90 border border-slate-800 hover:border-amber-500/60 rounded-3xl overflow-hidden flex flex-col justify-between group transition-all duration-300 hover:shadow-2xl hover:shadow-amber-500/15 hover:-translate-y-1">
@@ -489,7 +503,7 @@ function ProductCard({
         {product.image ? (
           <img
             src={product.image}
-            alt={product.name_ar || product.name}
+            alt={displayName}
             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out"
             referrerPolicy="no-referrer"
             loading="lazy"
@@ -499,7 +513,7 @@ function ProductCard({
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-slate-700 text-xs">
-            صورة المنتج
+            {language === "en" ? "Product Image" : "صورة المنتج"}
           </div>
         )}
 
@@ -514,13 +528,13 @@ function ProductCard({
         <button
           onClick={() => onQuickView(product)}
           className="absolute top-2.5 left-2.5 bg-black/70 hover:bg-amber-500 text-white hover:text-black p-2 rounded-xl backdrop-blur-md opacity-0 group-hover:opacity-100 transition-all duration-300 cursor-pointer shadow-lg"
-          title="معاينة سريعة"
+          title={language === "en" ? "Quick View" : "معاينة سريعة"}
         >
           <Eye size={15} />
         </button>
 
         <span className="absolute bottom-2.5 right-2.5 bg-black/80 backdrop-blur-sm text-amber-300 font-bold text-[9px] px-2 py-0.5 rounded-md flex items-center gap-1 border border-amber-500/20">
-          <Truck size={10} /> توصيل سريع
+          <Truck size={10} /> {language === "en" ? "Fast Shipping" : "توصيل سريع"}
         </span>
       </div>
 
@@ -529,23 +543,25 @@ function ProductCard({
         <div>
           <h3
             className="text-xs font-semibold text-slate-200 line-clamp-2 leading-relaxed group-hover:text-amber-300 transition-colors"
-            title={product.name_ar || product.name}
+            title={displayName}
           >
-            {product.name_ar || product.name || product.name_en}
+            {displayName}
           </h3>
 
           <div className="flex items-center gap-1.5 mt-1.5">
             <div className="flex items-center text-amber-400 text-[10px]">
               <Star size={11} className="fill-amber-400" />
             </div>
-            <span className="text-[10px] text-slate-400 font-bold">4.8 (850+ بيع)</span>
+            <span className="text-[10px] text-slate-400 font-bold">
+              {language === "en" ? "4.8 (850+ sold)" : "4.8 (850+ بيع)"}
+            </span>
           </div>
 
           <div className="flex items-baseline gap-2 mt-2">
-            <span className="text-base font-black text-amber-400">{price.toLocaleString()} ر.س</span>
+            <span className="text-base font-black text-amber-400">{price.toLocaleString()} {currency}</span>
             {originalPrice > price && (
               <span className="text-[11px] text-slate-500 line-through">
-                {originalPrice.toLocaleString()} ر.س
+                {originalPrice.toLocaleString()} {currency}
               </span>
             )}
           </div>
@@ -564,12 +580,12 @@ function ProductCard({
             {isAdded ? (
               <>
                 <Check size={14} />
-                <span>تمت الإضافة!</span>
+                <span>{language === "en" ? "Added!" : "تمت الإضافة!"}</span>
               </>
             ) : (
               <>
                 <ShoppingCart size={14} />
-                <span>أضف للسلة</span>
+                <span>{language === "en" ? "Add to Cart" : "أضف للسلة"}</span>
               </>
             )}
           </button>

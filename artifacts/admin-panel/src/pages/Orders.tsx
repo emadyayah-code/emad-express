@@ -2,24 +2,65 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { Search, Eye, X, Truck, CheckCircle, Package, ExternalLink, Trash2, AlertTriangle } from "lucide-react";
+import { useI18n } from "@/lib/i18n";
 
-const statusMap: Record<string, { label: string; cls: string }> = {
-  pending: { label: "قيد الانتظار", cls: "bg-yellow-100 text-yellow-700" },
-  processing: { label: "قيد المعالجة", cls: "bg-blue-100 text-blue-700" },
-  shipped: { label: "تم الشحن", cls: "bg-purple-100 text-purple-700" },
-  delivered: { label: "تم التسليم", cls: "bg-green-100 text-green-700" },
-  cancelled: { label: "ملغي", cls: "bg-red-100 text-red-700" },
+const statusClasses: Record<string, string> = {
+  pending: "bg-yellow-100 text-yellow-700",
+  processing: "bg-blue-100 text-blue-700",
+  shipped: "bg-purple-100 text-purple-700",
+  delivered: "bg-green-100 text-green-700",
+  cancelled: "bg-red-100 text-red-700",
 };
 
-const fulfillMap: Record<string, { label: string; cls: string; icon: string }> = {
-  unfulfilled: { label: "لم يُشحن", cls: "bg-gray-100 text-gray-600", icon: "📦" },
-  processing: { label: "عند المورد", cls: "bg-blue-100 text-blue-700", icon: "🏭" },
-  shipped: { label: "في الطريق", cls: "bg-purple-100 text-purple-700", icon: "🚚" },
-  delivered: { label: "تم التسليم", cls: "bg-green-100 text-green-700", icon: "✅" },
+const fulfillClasses: Record<string, { cls: string; icon: string }> = {
+  unfulfilled: { cls: "bg-gray-100 text-gray-600", icon: "📦" },
+  processing: { cls: "bg-blue-100 text-blue-700", icon: "🏭" },
+  shipped: { cls: "bg-purple-100 text-purple-700", icon: "🚚" },
+  delivered: { cls: "bg-green-100 text-green-700", icon: "✅" },
 };
 
-const payMap: Record<string, string> = {
-  paid: "مدفوع", pending: "غير مدفوع", refunded: "مسترجع",
+const getStatusLabel = (s: string, lang: string) => {
+  const mapAr: Record<string, string> = {
+    pending: "قيد الانتظار",
+    processing: "قيد المعالجة",
+    shipped: "تم الشحن",
+    delivered: "تم التسليم",
+    cancelled: "ملغي",
+  };
+  const mapEn: Record<string, string> = {
+    pending: "Pending",
+    processing: "Processing",
+    shipped: "Shipped",
+    delivered: "Delivered",
+    cancelled: "Cancelled",
+  };
+  return (lang === "en" ? mapEn[s] : mapAr[s]) || s;
+};
+
+const getFulfillLabel = (f: string, lang: string) => {
+  const mapAr: Record<string, string> = {
+    unfulfilled: "لم يُشحن",
+    processing: "عند المورد",
+    shipped: "في الطريق",
+    delivered: "تم التسليم",
+  };
+  const mapEn: Record<string, string> = {
+    unfulfilled: "Unfulfilled",
+    processing: "With Supplier",
+    shipped: "In Transit",
+    delivered: "Delivered",
+  };
+  return (lang === "en" ? mapEn[f] : mapAr[f]) || f;
+};
+
+const getPayLabel = (p: string, lang: string) => {
+  const mapAr: Record<string, string> = {
+    paid: "مدفوع", pending: "غير مدفوع", refunded: "مسترجع",
+  };
+  const mapEn: Record<string, string> = {
+    paid: "Paid", pending: "Unpaid", refunded: "Refunded",
+  };
+  return (lang === "en" ? mapEn[p] : mapAr[p]) || p;
 };
 
 const PLATFORM_NAMES: Record<string, string> = {
@@ -29,6 +70,7 @@ const PLATFORM_NAMES: Record<string, string> = {
 };
 
 export default function Orders() {
+  const { t, language } = useI18n();
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
@@ -86,8 +128,8 @@ export default function Orders() {
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-800">الطلبات</h1>
-        <span className="text-sm text-gray-500">{data?.total || 0} طلب</span>
+        <h1 className="text-2xl font-bold text-gray-800">{language === "en" ? "Orders & Sales" : "الطلبات"}</h1>
+        <span className="text-sm text-gray-500">{data?.total || 0} {language === "en" ? "orders" : "طلب"}</span>
       </div>
 
       {deleteSuccess && (
@@ -100,11 +142,22 @@ export default function Orders() {
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 flex flex-wrap gap-3">
         <div className="relative">
           <Search size={16} className="absolute top-2.5 right-3 text-gray-400" />
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="بحث برقم الطلب..." className="border border-gray-200 rounded-lg pr-9 pl-3 py-2 text-sm outline-none focus:ring-2 focus:ring-amber-400 w-48" />
+          <input
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder={language === "en" ? "Search by order #..." : "بحث برقم الطلب..."}
+            className="border border-gray-200 rounded-lg pr-9 pl-3 py-2 text-sm outline-none focus:ring-2 focus:ring-amber-400 w-48"
+          />
         </div>
-        <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className="border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-amber-400">
-          <option value="">كل الحالات</option>
-          {Object.entries(statusMap).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
+        <select
+          value={filterStatus}
+          onChange={e => setFilterStatus(e.target.value)}
+          className="border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-amber-400"
+        >
+          <option value="">{language === "en" ? "All Statuses" : "كل الحالات"}</option>
+          {["pending", "processing", "shipped", "delivered", "cancelled"].map(k => (
+            <option key={k} value={k}>{getStatusLabel(k, language)}</option>
+          ))}
         </select>
       </div>
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
@@ -113,15 +166,21 @@ export default function Orders() {
             <table className="w-full text-sm">
               <thead className="bg-gray-50 border-b border-gray-100">
                 <tr>
-                  {["رقم الطلب", "العميل", "التاريخ", "الإجمالي", "الدفع", "الحالة", "الشحن", "تحديث", "الإجراءات"].map(h => (
+                  {(language === "en"
+                    ? ["Order #", "Customer", "Date", "Total", "Payment", "Status", "Fulfillment", "Update", "Actions"]
+                    : ["رقم الطلب", "العميل", "التاريخ", "الإجمالي", "الدفع", "الحالة", "الشحن", "تحديث", "الإجراءات"]
+                  ).map(h => (
                     <th key={h} className="text-right px-4 py-3 font-medium text-gray-600 whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {orders.map((o: any) => {
-                  const s = statusMap[o.status] || { label: o.status, cls: "bg-gray-100 text-gray-600" };
-                  const f = fulfillMap[o.fulfillment_status || "unfulfilled"] || fulfillMap.unfulfilled;
+                  const sLabel = getStatusLabel(o.status, language);
+                  const sCls = statusClasses[o.status] || "bg-gray-100 text-gray-600";
+                  const fKey = o.fulfillment_status || "unfulfilled";
+                  const fLabel = getFulfillLabel(fKey, language);
+                  const fMeta = fulfillClasses[fKey] || fulfillClasses.unfulfilled;
                   return (
                     <tr key={o.id} className="border-b border-gray-50 hover:bg-gray-50/50">
                       <td className="px-4 py-3 font-mono text-xs text-gray-800 font-medium">{o.order_number}</td>
@@ -129,14 +188,18 @@ export default function Orders() {
                         <p className="font-medium text-gray-800">{o.customer_name}</p>
                         <p className="text-xs text-gray-400">{o.customer_phone}</p>
                       </td>
-                      <td className="px-4 py-3 text-gray-500 text-xs">{new Date(o.order_date).toLocaleDateString("ar-SA")}</td>
-                      <td className="px-4 py-3 font-semibold text-gray-800">{o.total.toLocaleString()} ر</td>
-                      <td className="px-4 py-3 text-xs text-gray-600">{payMap[o.payment_status] || o.payment_status}</td>
-                      <td className="px-4 py-3"><span className={`text-xs px-2 py-1 rounded-full font-medium ${s.cls}`}>{s.label}</span></td>
+                      <td className="px-4 py-3 text-gray-500 text-xs">
+                        {new Date(o.order_date).toLocaleDateString(language === "en" ? "en-US" : "ar-SA")}
+                      </td>
+                      <td className="px-4 py-3 font-semibold text-gray-800">
+                        {o.total.toLocaleString()} {language === "en" ? "SAR" : "ر.س"}
+                      </td>
+                      <td className="px-4 py-3 text-xs text-gray-600">{getPayLabel(o.payment_status, language)}</td>
+                      <td className="px-4 py-3"><span className={`text-xs px-2 py-1 rounded-full font-medium ${sCls}`}>{sLabel}</span></td>
                       <td className="px-4 py-3">
                         <div className="flex flex-col gap-1">
-                          <span className={`text-xs px-2 py-1 rounded-full font-medium w-fit ${f.cls}`}>
-                            {f.icon} {f.label}
+                          <span className={`text-xs px-2 py-1 rounded-full font-medium w-fit ${fMeta.cls}`}>
+                            {fMeta.icon} {fLabel}
                           </span>
                           {o.supplier_tracking && (
                             <span className="text-xs text-purple-600 font-mono">{o.supplier_tracking}</span>
@@ -146,14 +209,14 @@ export default function Orders() {
                               onClick={() => setFulfillModal(o)}
                               className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-2 py-1 rounded w-fit transition-colors"
                             >
-                              <Truck size={11} /> إرسال للمورد
+                              <Truck size={11} /> {language === "en" ? "Dispatch to Supplier" : "إرسال للمورد"}
                             </button>
                           ) : o.fulfillment_status === "processing" ? (
                             <button
                               onClick={() => { setTrackingModal(o); setTrackingInput(o.supplier_tracking || ""); }}
                               className="flex items-center gap-1 text-xs text-purple-600 hover:text-purple-800 bg-purple-50 hover:bg-purple-100 px-2 py-1 rounded w-fit transition-colors"
                             >
-                              <Package size={11} /> أدخل رقم التتبع
+                              <Package size={11} /> {language === "en" ? "Add Tracking Number" : "أدخل رقم التتبع"}
                             </button>
                           ) : null}
                         </div>
@@ -164,15 +227,25 @@ export default function Orders() {
                           onChange={e => statusMut.mutate({ id: o.id, status: e.target.value })}
                           className="border border-gray-200 rounded px-2 py-1 text-xs outline-none focus:ring-1 focus:ring-amber-400"
                         >
-                          {Object.entries(statusMap).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
+                          {["pending", "processing", "shipped", "delivered", "cancelled"].map(k => (
+                            <option key={k} value={k}>{getStatusLabel(k, language)}</option>
+                          ))}
                         </select>
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
-                          <button onClick={() => setViewOrder(o)} className="text-blue-500 hover:text-blue-700 p-1.5 rounded-lg hover:bg-blue-50 transition-colors cursor-pointer" title="عرض التفاصيل">
+                          <button
+                            onClick={() => setViewOrder(o)}
+                            className="text-blue-500 hover:text-blue-700 p-1.5 rounded-lg hover:bg-blue-50 transition-colors cursor-pointer"
+                            title={language === "en" ? "View Details" : "عرض التفاصيل"}
+                          >
                             <Eye size={16} />
                           </button>
-                          <button onClick={() => setDeleteModalOrder(o)} className="text-red-500 hover:text-red-700 p-1.5 rounded-lg hover:bg-red-50 transition-colors cursor-pointer" title="حذف الطلب">
+                          <button
+                            onClick={() => setDeleteModalOrder(o)}
+                            className="text-red-500 hover:text-red-700 p-1.5 rounded-lg hover:bg-red-50 transition-colors cursor-pointer"
+                            title={language === "en" ? "Delete Order" : "حذف الطلب"}
+                          >
                             <Trash2 size={16} />
                           </button>
                         </div>
@@ -191,34 +264,36 @@ export default function Orders() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between p-5 border-b">
-              <h3 className="font-semibold text-gray-800">تفاصيل الطلب #{viewOrder.order_number}</h3>
+              <h3 className="font-semibold text-gray-800">
+                {language === "en" ? `Order Details #${viewOrder.order_number}` : `تفاصيل الطلب #${viewOrder.order_number}`}
+              </h3>
               <button onClick={() => setViewOrder(null)}><X size={18} className="text-gray-400" /></button>
             </div>
             <div className="p-5 space-y-4">
               <div className="grid grid-cols-2 gap-3 text-sm">
-                <div><p className="text-gray-500">العميل</p><p className="font-medium">{viewOrder.customer_name}</p></div>
-                <div><p className="text-gray-500">الهاتف</p><p className="font-medium">{viewOrder.customer_phone}</p></div>
-                <div className="col-span-2"><p className="text-gray-500">العنوان</p><p className="font-medium">{viewOrder.shipping_address}</p></div>
-                <div><p className="text-gray-500">طريقة الدفع</p><p className="font-medium">{viewOrder.payment_method}</p></div>
-                <div><p className="text-gray-500">حالة الدفع</p><p className="font-medium">{payMap[viewOrder.payment_status]}</p></div>
-                {viewOrder.fulfillment_platform && <div><p className="text-gray-500">منصة الشحن</p><p className="font-medium">{PLATFORM_NAMES[viewOrder.fulfillment_platform] || viewOrder.fulfillment_platform}</p></div>}
-                {viewOrder.supplier_tracking && <div><p className="text-gray-500">رقم التتبع</p><p className="font-mono font-medium text-purple-700">{viewOrder.supplier_tracking}</p></div>}
+                <div><p className="text-gray-500">{language === "en" ? "Customer" : "العميل"}</p><p className="font-medium">{viewOrder.customer_name}</p></div>
+                <div><p className="text-gray-500">{language === "en" ? "Phone" : "الهاتف"}</p><p className="font-medium">{viewOrder.customer_phone}</p></div>
+                <div className="col-span-2"><p className="text-gray-500">{language === "en" ? "Address" : "العنوان"}</p><p className="font-medium">{viewOrder.shipping_address}</p></div>
+                <div><p className="text-gray-500">{language === "en" ? "Payment Method" : "طريقة الدفع"}</p><p className="font-medium">{viewOrder.payment_method}</p></div>
+                <div><p className="text-gray-500">{language === "en" ? "Payment Status" : "حالة الدفع"}</p><p className="font-medium">{getPayLabel(viewOrder.payment_status, language)}</p></div>
+                {viewOrder.fulfillment_platform && <div><p className="text-gray-500">{language === "en" ? "Fulfillment Platform" : "منصة الشحن"}</p><p className="font-medium">{PLATFORM_NAMES[viewOrder.fulfillment_platform] || viewOrder.fulfillment_platform}</p></div>}
+                {viewOrder.supplier_tracking && <div><p className="text-gray-500">{language === "en" ? "Tracking Number" : "رقم التتبع"}</p><p className="font-mono font-medium text-purple-700">{viewOrder.supplier_tracking}</p></div>}
               </div>
               <div>
-                <p className="text-sm font-medium text-gray-700 mb-2">المنتجات</p>
+                <p className="text-sm font-medium text-gray-700 mb-2">{language === "en" ? "Products" : "المنتجات"}</p>
                 <div className="border border-gray-100 rounded-lg overflow-hidden">
                   <table className="w-full text-sm">
                     <thead className="bg-gray-50"><tr>
-                      <th className="text-right p-3 font-medium text-gray-600">المنتج</th>
-                      <th className="text-right p-3 font-medium text-gray-600">الكمية</th>
-                      <th className="text-right p-3 font-medium text-gray-600">الإجمالي</th>
+                      <th className="text-right p-3 font-medium text-gray-600">{language === "en" ? "Product" : "المنتج"}</th>
+                      <th className="text-right p-3 font-medium text-gray-600">{language === "en" ? "Qty" : "الكمية"}</th>
+                      <th className="text-right p-3 font-medium text-gray-600">{language === "en" ? "Total" : "الإجمالي"}</th>
                     </tr></thead>
                     <tbody>
                       {(viewOrder.items || []).map((item: any, i: number) => (
                         <tr key={i} className="border-t border-gray-50">
                           <td className="p-3">{item.product_name}</td>
                           <td className="p-3">{item.quantity}</td>
-                          <td className="p-3">{item.total.toLocaleString()} ر</td>
+                          <td className="p-3">{item.total.toLocaleString()} {language === "en" ? "SAR" : "ر.س"}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -226,11 +301,11 @@ export default function Orders() {
                 </div>
               </div>
               <div className="border-t pt-3 text-sm space-y-1">
-                <div className="flex justify-between"><span className="text-gray-500">المجموع الفرعي</span><span>{viewOrder.subtotal.toLocaleString()} ر</span></div>
-                {viewOrder.discount > 0 && <div className="flex justify-between text-green-600"><span>الخصم</span><span>- {viewOrder.discount.toLocaleString()} ر</span></div>}
-                <div className="flex justify-between"><span className="text-gray-500">الضريبة (15%)</span><span>{viewOrder.tax.toLocaleString()} ر</span></div>
-                <div className="flex justify-between"><span className="text-gray-500">الشحن</span><span>{viewOrder.shipping.toLocaleString()} ر</span></div>
-                <div className="flex justify-between font-bold text-gray-900 pt-1 border-t"><span>الإجمالي</span><span>{viewOrder.total.toLocaleString()} ر</span></div>
+                <div className="flex justify-between"><span className="text-gray-500">{language === "en" ? "Subtotal" : "المجموع الفرعي"}</span><span>{viewOrder.subtotal.toLocaleString()} {language === "en" ? "SAR" : "ر.س"}</span></div>
+                {viewOrder.discount > 0 && <div className="flex justify-between text-green-600"><span>{language === "en" ? "Discount" : "الخصم"}</span><span>- {viewOrder.discount.toLocaleString()} {language === "en" ? "SAR" : "ر.س"}</span></div>}
+                <div className="flex justify-between"><span className="text-gray-500">{language === "en" ? "Tax (15%)" : "الضريبة (15%)"}</span><span>{viewOrder.tax.toLocaleString()} {language === "en" ? "SAR" : "ر.س"}</span></div>
+                <div className="flex justify-between"><span className="text-gray-500">{language === "en" ? "Shipping" : "الشحن"}</span><span>{viewOrder.shipping.toLocaleString()} {language === "en" ? "SAR" : "ر.س"}</span></div>
+                <div className="flex justify-between font-bold text-gray-900 pt-1 border-t"><span>{language === "en" ? "Total" : "الإجمالي"}</span><span>{viewOrder.total.toLocaleString()} {language === "en" ? "SAR" : "ر.س"}</span></div>
               </div>
               <div className="pt-3 border-t flex items-center justify-between gap-3">
                 <button
@@ -241,14 +316,14 @@ export default function Orders() {
                   }}
                   className="flex items-center gap-1.5 px-3.5 py-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg text-xs font-bold transition-colors cursor-pointer"
                 >
-                  <Trash2 size={14} /> حذف الطلب نهائياً
+                  <Trash2 size={14} /> {language === "en" ? "Delete Order" : "حذف الطلب نهائياً"}
                 </button>
                 {(!viewOrder.fulfillment_status || viewOrder.fulfillment_status === "unfulfilled") && (
                   <button
                     onClick={() => { setViewOrder(null); setFulfillModal(viewOrder); }}
                     className="flex-1 flex items-center justify-center gap-2 bg-blue-500 hover:bg-blue-600 text-white py-2 rounded-lg text-xs font-bold transition-colors cursor-pointer"
                   >
-                    <Truck size={14} /> إرسال للمورد (شحن دروبشيبينغ)
+                    <Truck size={14} /> {language === "en" ? "Dispatch to Supplier" : "إرسال للمورد (شحن دروبشيبينغ)"}
                   </button>
                 )}
               </div>
@@ -262,22 +337,24 @@ export default function Orders() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
             <div className="flex items-center justify-between p-5 border-b">
-              <h3 className="font-semibold text-gray-800 flex items-center gap-2"><Truck size={16} className="text-blue-500" /> إرسال للمورد</h3>
+              <h3 className="font-semibold text-gray-800 flex items-center gap-2">
+                <Truck size={16} className="text-blue-500" /> {language === "en" ? "Dispatch to Supplier" : "إرسال للمورد"}
+              </h3>
               <button onClick={() => setFulfillModal(null)}><X size={18} className="text-gray-400" /></button>
             </div>
             <div className="p-5 space-y-4">
               <div className="bg-gray-50 rounded-lg p-3 text-sm">
-                <p className="font-medium text-gray-800 mb-1">طلب: {fulfillModal.order_number}</p>
-                <p className="text-gray-600">العميل: {fulfillModal.customer_name}</p>
+                <p className="font-medium text-gray-800 mb-1">{language === "en" ? `Order: ${fulfillModal.order_number}` : `طلب: ${fulfillModal.order_number}`}</p>
+                <p className="text-gray-600">{language === "en" ? `Customer: ${fulfillModal.customer_name}` : `العميل: ${fulfillModal.customer_name}`}</p>
                 <p className="text-gray-600">📍 {fulfillModal.shipping_address}</p>
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-700 mb-2 block">اختر منصة الشحن</label>
+                <label className="text-sm font-medium text-gray-700 mb-2 block">{language === "en" ? "Select Fulfillment Platform" : "اختر منصة الشحن"}</label>
                 <div className="grid grid-cols-3 gap-2">
                   {[
-                    { id: "aliexpress", name: "عماد اكسبرس", flag: "🚀" },
-                    { id: "amazon", name: "أمازون", flag: "🛒" },
-                    { id: "alibaba", name: "علي بابا", flag: "🏪" },
+                    { id: "aliexpress", name: language === "en" ? "Emad Express" : "عماد اكسبرس", flag: "🚀" },
+                    { id: "amazon", name: language === "en" ? "Amazon" : "أمازون", flag: "🛒" },
+                    { id: "alibaba", name: language === "en" ? "Alibaba" : "علي بابا", flag: "🏪" },
                   ].map(plt => (
                     <button
                       key={plt.id}
@@ -292,7 +369,9 @@ export default function Orders() {
                 </div>
               </div>
               <p className="text-xs text-gray-400 text-center">
-                سيتم تحديث حالة الطلب وستظهر روابط المنتجات عند المورد لتتمكن من إكمال الطلب يدوياً
+                {language === "en"
+                  ? "Order status will be updated with supplier links to fulfill the order."
+                  : "سيتم تحديث حالة الطلب وستظهر روابط المنتجات عند المورد لتتمكن من إكمال الطلب يدوياً"}
               </p>
             </div>
           </div>
@@ -304,26 +383,30 @@ export default function Orders() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm">
             <div className="flex items-center justify-between p-5 border-b">
-              <h3 className="font-semibold text-gray-800 flex items-center gap-2"><Package size={16} className="text-purple-500" /> رقم تتبع الشحنة</h3>
+              <h3 className="font-semibold text-gray-800 flex items-center gap-2"><Package size={16} className="text-purple-500" /> {language === "en" ? "Shipment Tracking Number" : "رقم تتبع الشحنة"}</h3>
               <button onClick={() => setTrackingModal(null)}><X size={18} className="text-gray-400" /></button>
             </div>
             <div className="p-5 space-y-3">
-              <p className="text-sm text-gray-600">طلب: {trackingModal.order_number} — {trackingModal.customer_name}</p>
+              <p className="text-sm text-gray-600">
+                {language === "en" ? `Order: ${trackingModal.order_number} — ${trackingModal.customer_name}` : `طلب: ${trackingModal.order_number} — ${trackingModal.customer_name}`}
+              </p>
               <input
                 value={trackingInput}
                 onChange={e => setTrackingInput(e.target.value)}
-                placeholder="أدخل رقم التتبع من المورد..."
+                placeholder={language === "en" ? "Enter tracking number from supplier..." : "أدخل رقم التتبع من المورد..."}
                 className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-purple-400"
                 dir="ltr"
               />
               <div className="flex gap-2">
-                <button onClick={() => setTrackingModal(null)} className="flex-1 border border-gray-200 text-gray-600 py-2 rounded-lg text-sm">إلغاء</button>
+                <button onClick={() => setTrackingModal(null)} className="flex-1 border border-gray-200 text-gray-600 py-2 rounded-lg text-sm">
+                  {language === "en" ? "Cancel" : "إلغاء"}
+                </button>
                 <button
                   disabled={!trackingInput.trim() || trackingMut.isPending}
                   onClick={() => trackingMut.mutate({ id: trackingModal.id, tracking: trackingInput })}
                   className="flex-1 bg-purple-500 hover:bg-purple-600 text-white py-2 rounded-lg text-sm font-medium disabled:opacity-50 flex items-center justify-center gap-2"
                 >
-                  {trackingMut.isPending ? "جارٍ الحفظ..." : <><CheckCircle size={14} /> حفظ</>}
+                  {trackingMut.isPending ? (language === "en" ? "Saving..." : "جارٍ الحفظ...") : <><CheckCircle size={14} /> {language === "en" ? "Save" : "حفظ"}</>}
                 </button>
               </div>
             </div>
@@ -338,11 +421,23 @@ export default function Orders() {
             <div className="w-12 h-12 rounded-full bg-red-100 text-red-600 flex items-center justify-center mx-auto mb-4">
               <AlertTriangle size={24} />
             </div>
-            <h3 className="text-lg font-bold text-gray-900 text-center mb-2">تأكيد حذف الطلب</h3>
+            <h3 className="text-lg font-bold text-gray-900 text-center mb-2">
+              {language === "en" ? "Confirm Order Deletion" : "تأكيد حذف الطلب"}
+            </h3>
             <p className="text-sm text-gray-600 text-center mb-6 leading-relaxed">
-              هل أنت متأكد من رغبتك في حذف الطلب رقم <span className="font-mono font-bold text-gray-900">#{deleteModalOrder.order_number}</span> للعميل <span className="font-bold text-gray-900">{deleteModalOrder.customer_name}</span> نهائياً؟
-              <br />
-              <span className="text-xs text-red-500 font-medium mt-1 block">سيتم مسح سجل الطلب وبيانات الشحن والدفع المرتبطة به نهائياً.</span>
+              {language === "en" ? (
+                <>
+                  Are you sure you want to permanently delete order <span className="font-mono font-bold text-gray-900">#{deleteModalOrder.order_number}</span> for customer <span className="font-bold text-gray-900">{deleteModalOrder.customer_name}</span>?
+                  <br />
+                  <span className="text-xs text-red-500 font-medium mt-1 block">This will permanently delete the order record and all associated shipment and payment records.</span>
+                </>
+              ) : (
+                <>
+                  هل أنت متأكد من رغبتك في حذف الطلب رقم <span className="font-mono font-bold text-gray-900">#{deleteModalOrder.order_number}</span> للعميل <span className="font-bold text-gray-900">{deleteModalOrder.customer_name}</span> نهائياً؟
+                  <br />
+                  <span className="text-xs text-red-500 font-medium mt-1 block">سيتم مسح سجل الطلب وبيانات الشحن والدفع المرتبطة به نهائياً.</span>
+                </>
+              )}
             </p>
             <div className="flex items-center justify-center gap-3">
               <button
@@ -350,14 +445,14 @@ export default function Orders() {
                 disabled={deleteMut.isPending}
                 className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2.5 px-4 rounded-xl text-sm font-bold transition-all shadow-md cursor-pointer disabled:opacity-50"
               >
-                {deleteMut.isPending ? "جارٍ الحذف..." : "نعم، حذف الطلب"}
+                {deleteMut.isPending ? (language === "en" ? "Deleting..." : "جارٍ الحذف...") : (language === "en" ? "Yes, Delete Order" : "نعم، حذف الطلب")}
               </button>
               <button
                 onClick={() => setDeleteModalOrder(null)}
                 disabled={deleteMut.isPending}
                 className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-2.5 px-4 rounded-xl text-sm font-bold transition-all cursor-pointer"
               >
-                إلغاء
+                {language === "en" ? "Cancel" : "إلغاء"}
               </button>
             </div>
           </div>

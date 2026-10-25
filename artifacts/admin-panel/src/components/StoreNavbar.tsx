@@ -6,8 +6,10 @@ import { useCart } from "@/context/CartContext";
 import { useCustomerAuth } from "@/context/CustomerAuthContext";
 import { CheckoutModal } from "@/components/CheckoutModal";
 import { CustomerAuthModal } from "@/components/CustomerAuthModal";
+import { useI18n } from "@/lib/i18n";
 
 export function StoreNavbar({ onSearch }: { onSearch?: (q: string) => void }) {
+  const { language, toggleLanguage, dir } = useI18n();
   const [query, setQuery] = useState("");
   const [, setLocation] = useLocation();
   const { totalItems, items, subtotal, removeFromCart, updateQuantity } = useCart();
@@ -27,28 +29,40 @@ export function StoreNavbar({ onSearch }: { onSearch?: (q: string) => void }) {
   };
 
   return (
-    <header className="sticky top-0 z-50 bg-[#0b0f19]/95 backdrop-blur-md border-b border-amber-500/20 text-white shadow-xl" dir="rtl">
+    <header className="sticky top-0 z-50 bg-[#0b0f19]/95 backdrop-blur-md border-b border-amber-500/20 text-white shadow-xl" dir={dir}>
       {/* Top micro bar */}
       <div className="bg-gradient-to-r from-amber-600/30 via-slate-900 to-amber-600/30 text-amber-300 text-xs py-1.5 px-4 border-b border-amber-500/10">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-4">
             <span className="flex items-center gap-1.5">
               <Zap size={13} className="text-amber-400" />
-              <span>شحن سريع ومباشر | استيراد رسمي وضمان الجودة 100%</span>
+              <span>{language === "ar" ? "شحن سريع ومباشر | استيراد رسمي وضمان الجودة 100%" : "Fast Direct Shipping | Official Verified & 100% Quality Guarantee"}</span>
             </span>
           </div>
 
           <div className="flex items-center gap-3">
+            {/* Language Switcher Pill */}
+            <button
+              onClick={toggleLanguage}
+              className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-500/15 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 transition-all font-bold text-[11px] cursor-pointer"
+              title={language === "ar" ? "Switch store to English" : "تحويل المتجر للعربية"}
+            >
+              <Globe size={11} className="text-amber-400" />
+              <span>{language === "ar" ? "🇺🇸 English" : "🇸🇦 العربية"}</span>
+            </button>
+
+            <span className="text-slate-600">|</span>
+
             {customer ? (
               <div className="flex items-center gap-2 text-xs">
-                <span className="text-slate-300">مرحباً، <strong className="text-amber-300">{customer.name}</strong></span>
+                <span className="text-slate-300">{language === "ar" ? "مرحباً، " : "Hi, "}<strong className="text-amber-300">{customer.name}</strong></span>
                 <button
                   onClick={logout}
                   className="text-red-400 hover:text-red-300 transition-colors inline-flex items-center gap-1 cursor-pointer"
-                  title="تسجيل الخروج"
+                  title={language === "ar" ? "تسجيل الخروج" : "Logout"}
                 >
                   <LogOut size={12} />
-                  <span>خروج</span>
+                  <span>{language === "ar" ? "خروج" : "Logout"}</span>
                 </button>
               </div>
             ) : (
@@ -57,20 +71,20 @@ export function StoreNavbar({ onSearch }: { onSearch?: (q: string) => void }) {
                   onClick={openLoginModal}
                   className="text-amber-300 hover:text-amber-200 font-bold transition-colors cursor-pointer"
                 >
-                  تسجيل الدخول
+                  {language === "ar" ? "تسجيل الدخول" : "Sign In"}
                 </button>
                 <span className="text-slate-600">|</span>
                 <button
                   onClick={openRegisterModal}
                   className="text-amber-300 hover:text-amber-200 font-bold transition-colors cursor-pointer"
                 >
-                  إنشاء حساب جديد
+                  {language === "ar" ? "إنشاء حساب جديد" : "Register"}
                 </button>
               </div>
             )}
             <span className="text-slate-600">|</span>
             <Link href="/privacy-policy" className="hover:text-amber-200 transition-colors">
-              سياسة الخصوصية
+              {language === "ar" ? "سياسة الخصوصية" : "Privacy Policy"}
             </Link>
           </div>
         </div>

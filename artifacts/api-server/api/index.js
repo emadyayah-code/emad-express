@@ -94789,6 +94789,151 @@ function toOptimizedThumb(url2) {
   }
   return s;
 }
+var AR_TO_EN_PRODUCT_DICT = {
+  "\u0633\u0627\u0639\u0627\u062A": "Watches",
+  "\u0633\u0627\u0639\u0629": "Watch",
+  "\u0630\u0643\u064A\u0629": "Smart",
+  "\u0630\u0643\u064A": "Smart",
+  "\u064A\u062F": "Wrist",
+  "\u0641\u0627\u062E\u0631\u0629": "Luxury",
+  "\u0641\u0627\u062E\u0631": "Luxury",
+  "\u0631\u062C\u0627\u0644": "Men",
+  "\u0631\u062C\u0627\u0644\u064A": "Men's",
+  "\u0631\u062C\u0627\u0644\u064A\u0629": "Men's",
+  "\u0646\u0633\u0627\u0621": "Women",
+  "\u0646\u0633\u0627\u0626\u064A": "Women's",
+  "\u0646\u0633\u0627\u0626\u064A\u0629": "Women's",
+  "\u0647\u0627\u062A\u0641": "Phone",
+  "\u062C\u0648\u0627\u0644": "Mobile",
+  "\u0634\u0627\u062D\u0646": "Charger",
+  "\u0643\u0627\u0628\u0644": "Cable",
+  "\u0633\u0644\u0643": "Cord",
+  "\u0633\u0645\u0627\u0639\u0627\u062A": "Earbuds",
+  "\u0633\u0645\u0627\u0639\u0629": "Headphones",
+  "\u0628\u0644\u0648\u062A\u0648\u062B": "Bluetooth",
+  "\u0644\u0627\u0633\u0644\u0643\u064A": "Wireless",
+  "\u0644\u0627\u0633\u0644\u0643\u064A\u0629": "Wireless",
+  "\u062D\u0627\u0641\u0638\u0629": "Case",
+  "\u062C\u0631\u0627\u0628": "Cover",
+  "\u063A\u0637\u0627\u0621": "Cover",
+  "\u062D\u0645\u0627\u064A\u0629": "Protection",
+  "\u0634\u0627\u0634\u0629": "Screen",
+  "\u0632\u062C\u0627\u062C": "Glass",
+  "\u0645\u0642\u0627\u0648\u0645": "Waterproof",
+  "\u0644\u0644\u0645\u0627\u0621": "Waterproof",
+  "\u0645\u0642\u0627\u0648\u0645\u0629": "Waterproof",
+  "\u062D\u0642\u064A\u0628\u0629": "Bag",
+  "\u062D\u0642\u0627\u0626\u0628": "Bags",
+  "\u0638\u0647\u0631": "Backpack",
+  "\u0633\u0641\u0631": "Travel",
+  "\u064A\u062F\u0648\u064A\u0629": "Handbag",
+  "\u062D\u0630\u0627\u0621": "Shoes",
+  "\u0623\u062D\u0630\u064A\u0629": "Shoes",
+  "\u0631\u064A\u0627\u0636\u064A": "Sport",
+  "\u0631\u064A\u0627\u0636\u064A\u0629": "Sneakers",
+  "\u062C\u0644\u062F": "Leather",
+  "\u0637\u0628\u064A\u0639\u064A": "Genuine",
+  "\u0645\u0644\u0627\u0628\u0633": "Clothing",
+  "\u0642\u0645\u064A\u0635": "Shirt",
+  "\u062A\u064A\u0634\u064A\u0631\u062A": "T-Shirt",
+  "\u0628\u0646\u0637\u0644\u0648\u0646": "Pants",
+  "\u062C\u0627\u0643\u064A\u062A": "Jacket",
+  "\u0641\u0633\u062A\u0627\u0646": "Dress",
+  "\u0623\u0637\u0641\u0627\u0644": "Kids",
+  "\u0637\u0641\u0644": "Baby",
+  "\u0644\u0639\u0628\u0629": "Toy",
+  "\u0623\u0644\u0639\u0627\u0628": "Toys",
+  "\u0633\u064A\u0627\u0631\u0629": "Car",
+  "\u0633\u064A\u0627\u0631\u0627\u062A": "Auto",
+  "\u0625\u0644\u0643\u062A\u0631\u0648\u0646\u064A\u0627\u062A": "Electronics",
+  "\u0643\u0645\u0628\u064A\u0648\u062A\u0631": "Computer",
+  "\u0644\u0627\u0628\u062A\u0648\u0628": "Laptop",
+  "\u0641\u0623\u0631\u0629": "Mouse",
+  "\u0644\u0648\u062D\u0629": "Keyboard",
+  "\u0645\u0641\u0627\u062A\u064A\u062D": "Keyboard",
+  "\u0645\u0646\u0632\u0644": "Home",
+  "\u0645\u0637\u0628\u062E": "Kitchen",
+  "\u0623\u062F\u0648\u0627\u062A": "Tools",
+  "\u0623\u062F\u0627\u0629": "Tool",
+  "\u0637\u0642\u0645": "Set",
+  "\u0645\u062C\u0645\u0648\u0639\u0629": "Kit",
+  "\u0633\u0643\u064A\u0646": "Knife",
+  "\u0642\u0627\u0637\u0639": "Cutter",
+  "\u0645\u0642\u0635": "Scissors",
+  "\u0625\u0636\u0627\u0621\u0629": "Lighting",
+  "\u0645\u0635\u0628\u0627\u062D": "Lamp",
+  "\u0643\u0627\u0645\u064A\u0631\u0627": "Camera",
+  "\u062F\u0631\u0648\u0646": "Drone",
+  "\u0637\u0627\u0626\u0631\u0629": "Drone",
+  "\u062A\u0635\u0648\u064A\u0631": "Photography",
+  "\u062A\u062C\u0645\u064A\u0644": "Beauty",
+  "\u0639\u0646\u0627\u064A\u0629": "Care",
+  "\u0628\u0634\u0631\u0629": "Skin",
+  "\u0634\u0639\u0631": "Hair",
+  "\u0645\u0627\u0643\u064A\u0646\u0629": "Trimmer",
+  "\u062D\u0644\u0627\u0642\u0629": "Shaver",
+  "\u0645\u062C\u0648\u0647\u0631\u0627\u062A": "Jewelry",
+  "\u062E\u0627\u062A\u0645": "Ring",
+  "\u0633\u0644\u0633\u0627\u0644": "Necklace",
+  "\u0642\u0644\u0627\u062F\u0629": "Pendant",
+  "\u0633\u0648\u0627\u0631": "Bracelet",
+  "\u0639\u0637\u0631": "Perfume",
+  "\u0646\u0638\u0627\u0631\u0627\u062A": "Glasses",
+  "\u0634\u0645\u0633\u064A\u0629": "Sunglasses",
+  "\u0623\u0639\u0644\u0627\u0645": "Flags",
+  "\u0639\u0644\u0645": "Flag",
+  "\u0644\u0627\u0641\u062A\u0627\u062A": "Banners",
+  "\u0645\u0644\u0648\u0646\u0629": "Color",
+  "\u0634\u0627\u0637\u0626": "Beach",
+  "\u062E\u064A\u0627\u0637\u0629": "Sewing",
+  "\u062A\u0637\u0631\u064A\u0632": "Embroidery",
+  "\u062D\u0631\u0641": "Craft",
+  "\u064A\u062F\u0648\u064A": "Handmade",
+  "\u0623\u0643\u0631\u064A\u0644\u064A\u0643": "Acrylic",
+  "\u0645\u0633\u0637\u0631\u0629": "Ruler",
+  "\u0634\u0641\u0631\u0629": "Blade",
+  "\u0634\u0641\u0631\u0627\u062A": "Blades",
+  "\u062D\u0635\u064A\u0631\u0629": "Mat",
+  "\u0642\u0635": "Cutting",
+  "\u0623\u0645\u0627\u0646": "Safety",
+  "\u0642\u0641\u0644": "Lock"
+};
+function isArabicText(t) {
+  return /[\u0600-\u06FF]/.test(t || "");
+}
+function localizeProductName(p, lang) {
+  if (lang === "en") {
+    if (p.name_en && !isArabicText(p.name_en)) {
+      return p.name_en.trim();
+    }
+    const raw = (p.name_ar || p.name || p.name_en || "").trim();
+    if (!raw) return `AliExpress Verified Item (${p.sku || "PROD"})`;
+    const tokens = raw.split(/[\s,،\-–—._/()+]+/);
+    const words = [];
+    for (const t of tokens) {
+      if (!t) continue;
+      if (/^[a-zA-Z0-9]+$/.test(t)) {
+        words.push(t);
+      } else if (AR_TO_EN_PRODUCT_DICT[t]) {
+        words.push(AR_TO_EN_PRODUCT_DICT[t]);
+      }
+    }
+    if (words.length >= 2) {
+      return words.slice(0, 10).join(" ") + " (Pro Edition)";
+    }
+    return `AliExpress Official Verified Product (${p.sku || "PROD"})`;
+  }
+  if (p.name_ar && isArabicText(p.name_ar)) return p.name_ar.trim();
+  return p.name_ar || p.name || p.name_en || "\u0645\u0646\u062A\u062C \u0631\u0633\u0645\u064A \u0639\u0627\u0644\u064A \u0627\u0644\u062C\u0648\u062F\u0629 \u0645\u0646 \u0639\u0644\u064A \u0625\u0643\u0633\u0628\u0631\u0633";
+}
+function localizeProductDesc(p, lang) {
+  if (lang === "en") {
+    if (p.description_en && !isArabicText(p.description_en)) return p.description_en.trim();
+    return `Authentic AliExpress verified item (SKU: ${p.sku || "\u2014"}). High quality standards, official warranty, and express international shipping.`;
+  }
+  if (p.description_ar && isArabicText(p.description_ar)) return p.description_ar.trim();
+  return p.description_ar || p.description || p.description_en || "\u0645\u0646\u062A\u062C \u0623\u0635\u0644\u064A \u0639\u0627\u0644\u064A \u0627\u0644\u062C\u0648\u062F\u0629 \u0648\u0645\u0636\u0645\u0648\u0646 100% \u0645\u0646 \u0627\u0644\u0645\u0648\u0631\u062F \u0627\u0644\u0645\u0639\u062A\u0645\u062F \u0645\u0639 \u0634\u062D\u0646 \u0633\u0631\u064A\u0639 \u0648\u0645\u0628\u0627\u0634\u0631.";
+}
 function setCachedProducts(key, data, ttlSec = 600) {
   if (productsApiCache.size > 1e3) {
     const first = productsApiCache.keys().next().value;
@@ -94837,13 +94982,17 @@ router2.get("/products", async (req, res, next) => {
       image: products.image,
       is_active: products.is_active
     }).from(products).where(and(...conds)).orderBy(desc(products.id)).limit(defaultLimit).offset((p - 1) * defaultLimit);
-    const data = rawData.map((p2) => ({
-      ...p2,
-      name: requestLang === "en" ? p2.name_en || p2.name || p2.name_ar : p2.name_ar || p2.name || p2.name_en,
-      image: toOptimizedThumb(p2.image),
-      description: ""
-      // Full description fetched only on product details page
-    }));
+    const data = rawData.map((p2) => {
+      const locName = localizeProductName(p2, requestLang);
+      return {
+        ...p2,
+        name: locName,
+        name_en: requestLang === "en" ? locName : p2.name_en && !isArabicText(p2.name_en) ? p2.name_en : locName,
+        name_ar: p2.name_ar || locName,
+        image: toOptimizedThumb(p2.image),
+        description: ""
+      };
+    });
     const result = { success: true, data, total: data.length, page: p, limit: defaultLimit };
     setCachedProducts(cacheKey, result, 600);
     res.setHeader("X-Cache", "MISS");
@@ -94861,7 +95010,7 @@ router2.get("/products/:id", validateParams(idParamSchema), async (req, res, nex
     if (!isNaN(pId)) {
       const stockStatus = await verifyAndSyncDropshipProductStock(pId).catch(() => ({ available: true }));
       if (!stockStatus.available) {
-        return res.status(404).json({ success: false, message: "\u0639\u0630\u0631\u0627\u064B\u060C \u0647\u0630\u0627 \u0627\u0644\u0645\u0646\u062A\u062C \u0646\u0641\u062F \u0645\u0646 \u0627\u0644\u0645\u0635\u062F\u0631 \u0648\u062A\u0645 \u062D\u0630\u0641\u0647 \u0645\u0646 \u0627\u0644\u0645\u062A\u062C\u0631" });
+        return res.status(404).json({ success: false, message: requestLang === "en" ? "Sorry, this product is out of stock at supplier" : "\u0639\u0630\u0631\u0627\u064B\u060C \u0647\u0630\u0627 \u0627\u0644\u0645\u0646\u062A\u062C \u0646\u0641\u062F \u0645\u0646 \u0627\u0644\u0645\u0635\u062F\u0631 \u0648\u062A\u0645 \u062D\u0630\u0641\u0647 \u0645\u0646 \u0627\u0644\u0645\u062A\u062C\u0631" });
       }
     }
     const [product] = await db.select().from(products).where(and(eq(products.id, pId), eq(products.is_active, true), isNull(products.deleted_at), sql`${products.quantity} > 0`));
@@ -94869,12 +95018,18 @@ router2.get("/products/:id", validateParams(idParamSchema), async (req, res, nex
       if (product) {
         await purgeProductById(product.id);
       }
-      return res.status(404).json({ success: false, message: "\u0639\u0630\u0631\u0627\u064B\u060C \u0647\u0630\u0627 \u0627\u0644\u0645\u0646\u062A\u062C \u0646\u0641\u062F \u0645\u0646 \u0627\u0644\u0645\u062E\u0632\u0648\u0646 \u0648\u062A\u0645 \u062D\u0630\u0641\u0647 \u0645\u0646 \u0627\u0644\u0645\u062A\u062C\u0631" });
+      return res.status(404).json({ success: false, message: requestLang === "en" ? "Sorry, this product is out of stock" : "\u0639\u0630\u0631\u0627\u064B\u060C \u0647\u0630\u0627 \u0627\u0644\u0645\u0646\u062A\u062C \u0646\u0641\u062F \u0645\u0646 \u0627\u0644\u0645\u062E\u0632\u0648\u0646 \u0648\u062A\u0645 \u062D\u0630\u0641\u0647 \u0645\u0646 \u0627\u0644\u0645\u062A\u062C\u0631" });
     }
+    const locName = localizeProductName(product, requestLang);
+    const locDesc = localizeProductDesc(product, requestLang);
     const localized = {
       ...product,
-      name: requestLang === "en" ? product.name_en || product.name || product.name_ar : product.name_ar || product.name || product.name_en,
-      description: requestLang === "en" ? product.description_en || product.description || product.description_ar : product.description_ar || product.description || product.description_en
+      name: locName,
+      name_en: requestLang === "en" ? locName : product.name_en && !isArabicText(product.name_en) ? product.name_en : locName,
+      name_ar: product.name_ar || locName,
+      description: locDesc,
+      description_en: requestLang === "en" ? locDesc : product.description_en && !isArabicText(product.description_en) ? product.description_en : locDesc,
+      description_ar: product.description_ar || locDesc
     };
     return res.json({
       success: true,
@@ -94885,16 +95040,23 @@ router2.get("/products/:id", validateParams(idParamSchema), async (req, res, nex
     next(err);
   }
 });
-router2.get("/categories", async (_req, res, next) => {
+router2.get("/categories", async (req, res, next) => {
   try {
-    const cacheKey = "cached_categories_all";
+    const { lang } = req.query;
+    const requestLang = lang || (req.headers["accept-language"]?.includes("en") ? "en" : "ar");
+    const cacheKey = `cached_categories_${requestLang}`;
     const cached = getCachedProducts(cacheKey);
     if (cached) {
       res.setHeader("X-Cache", "HIT");
       res.setHeader("Cache-Control", "public, max-age=300, stale-while-revalidate=600");
       return res.json(cached);
     }
-    const data = await db.select().from(categories).where(and(eq(categories.is_active, true), isNull(categories.deleted_at))).orderBy(categories.id);
+    const rawData = await db.select().from(categories).where(and(eq(categories.is_active, true), isNull(categories.deleted_at))).orderBy(categories.id);
+    const data = rawData.map((c) => ({
+      ...c,
+      name: requestLang === "en" ? c.name_en || c.name_ar : c.name_ar || c.name_en,
+      description: requestLang === "en" ? c.description_en || c.description_ar : c.description_ar || c.description_en
+    }));
     const result = { success: true, data };
     setCachedProducts(cacheKey, result, 600);
     res.setHeader("X-Cache", "MISS");
@@ -94933,15 +95095,20 @@ router2.get("/home-feed", async (req, res, next) => {
       if (!prodMap.has(cid)) prodMap.set(cid, []);
       const list = prodMap.get(cid);
       if (list.length < 5) {
+        const locName = localizeProductName(p, requestLang);
         list.push({
           ...p,
-          name: requestLang === "en" ? p.name_en || p.name || p.name_ar : p.name_ar || p.name || p.name_en,
+          name: locName,
+          name_en: requestLang === "en" ? locName : p.name_en && !isArabicText(p.name_en) ? p.name_en : locName,
+          name_ar: p.name_ar || locName,
           image: toOptimizedThumb(p.image)
         });
       }
     }
     const sections = allCats.map((cat) => ({
       ...cat,
+      name: requestLang === "en" ? cat.name_en || cat.name_ar : cat.name_ar || cat.name_en,
+      description: requestLang === "en" ? cat.description_en || cat.description_ar : cat.description_ar || cat.description_en,
       products: prodMap.get(Number(cat.id)) || []
     })).filter((c) => c.products.length > 0);
     const result = { success: true, sections };
