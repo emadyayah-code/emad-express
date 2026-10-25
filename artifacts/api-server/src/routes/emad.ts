@@ -69,8 +69,8 @@ const upload = multerFn({
 
 const router = Router();
 
-let lastOpportunisticSync = 0;
-let lastOpportunisticImport = 0;
+let lastOpportunisticSync = Date.now();
+let lastOpportunisticImport = Date.now();
 
 // Automatic self-sustaining background triggers for Serverless & persistent environments
 router.use((_req, _res, next) => {

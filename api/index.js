@@ -93785,8 +93785,8 @@ var upload = multerFn({
   }
 });
 var router2 = (0, import_express2.Router)();
-var lastOpportunisticSync = 0;
-var lastOpportunisticImport = 0;
+var lastOpportunisticSync = Date.now();
+var lastOpportunisticImport = Date.now();
 router2.use((_req, _res, next) => {
   const now = Date.now();
   if (now - lastOpportunisticSync > 10 * 60 * 1e3) {
