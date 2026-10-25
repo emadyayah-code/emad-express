@@ -11,6 +11,7 @@ import { useCart } from "@/context/CartContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { useCurrency } from "@/context/CurrencyContext";
 import { useFavorites } from "@/context/FavoritesContext";
+import { getProductLocalizedName, getCategoryLocalizedName } from "@/lib/i18n";
 
 // Highly responsive memoized Product Grid Item
 const ProductGridItem = React.memo(function ProductGridItem({
@@ -30,7 +31,7 @@ const ProductGridItem = React.memo(function ProductGridItem({
   const { addItem } = useCart();
   const { isFavorite, toggleFavorite } = useFavorites() as any;
   const isFav = isFavorite(item.id);
-  const displayName = language === "ar" ? (item.name_ar || item.name) : (item.name_en || item.name);
+  const displayName = getProductLocalizedName(item, language);
 
   return (
     <TouchableOpacity
@@ -133,7 +134,7 @@ export default function ProductsScreen() {
 
   const filtered = search
     ? categoryMatched.filter((p: any) => {
-        const name = (language === "ar" ? (p.name_ar || p.name) : (p.name_en || p.name)).toLowerCase();
+        const name = getProductLocalizedName(p, language).toLowerCase();
         return name.includes(search.toLowerCase());
       })
     : categoryMatched;
@@ -170,7 +171,7 @@ export default function ProductsScreen() {
             </Text>
           </TouchableOpacity>
           {categoriesList.map((c: any) => {
-            const catName = language === "ar" ? (c.name_ar || c.name) : (c.name_en || c.name);
+            const catName = getCategoryLocalizedName(c, language);
             return (
               <TouchableOpacity
                 key={c.id}

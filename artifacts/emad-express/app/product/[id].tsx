@@ -11,6 +11,7 @@ import { useCart } from "@/context/CartContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { useCurrency } from "@/context/CurrencyContext";
 import { useFavorites } from "@/context/FavoritesContext";
+import { getProductLocalizedName, getProductLocalizedDesc, UI_LABELS } from "@/lib/i18n";
 
 export default function ProductDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -94,7 +95,7 @@ export default function ProductDetailScreen() {
         <View style={[styles.content, { backgroundColor: colors.background }]}>
           <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
             <Text style={[styles.productName, { color: colors.foreground, flex: 1, textAlign: language === "ar" ? "right" : "left" }]}>
-              {language === "ar" ? (product.name_ar || product.name) : (product.name_en || product.name)}
+              {getProductLocalizedName(product, language)}
             </Text>
             <View style={[styles.stockBadge, { backgroundColor: product.quantity > 0 ? "#d1fae5" : "#fee2e2" }]}>
               <Text style={{ color: product.quantity > 0 ? "#059669" : "#dc2626", fontSize: 12, fontWeight: "600" }}>
@@ -110,16 +111,16 @@ export default function ProductDetailScreen() {
             {t.product.description}
           </Text>
           <Text style={[styles.description, { color: colors.mutedForeground, textAlign: language === "ar" ? "right" : "left" }]}>
-            {language === "ar" ? (product.description_ar || product.description) : (product.description_en || product.description)}
+            {getProductLocalizedDesc(product, language)}
           </Text>
           <View style={[styles.infoRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <View style={styles.infoItem}>
-              <Text style={{ color: colors.mutedForeground, fontSize: 12 }}>{language === "ar" ? "كود المنتج" : "SKU"}</Text>
+              <Text style={{ color: colors.mutedForeground, fontSize: 12 }}>{(UI_LABELS.sku as any)[language] || UI_LABELS.sku.en}</Text>
               <Text style={{ color: colors.foreground, fontSize: 14, fontWeight: "600" }}>{product.sku || product.id}</Text>
             </View>
             <View style={[styles.infoDivider, { backgroundColor: colors.border }]} />
             <View style={styles.infoItem}>
-              <Text style={{ color: colors.mutedForeground, fontSize: 12 }}>{language === "ar" ? "الكمية المتاحة" : "Available Stock"}</Text>
+              <Text style={{ color: colors.mutedForeground, fontSize: 12 }}>{(UI_LABELS.stock as any)[language] || UI_LABELS.stock.en}</Text>
               <Text style={{ color: colors.foreground, fontSize: 14, fontWeight: "600" }}>{product.quantity}</Text>
             </View>
           </View>
@@ -136,17 +137,17 @@ export default function ProductDetailScreen() {
             >
               <Feather name="shopping-cart" size={18} color={colors.foreground} />
               <Text style={{ color: colors.foreground, fontWeight: "700", fontSize: 15 }}>
-                {language === "ar" ? `في السلة (${inCart.quantity})` : `In Cart (${inCart.quantity})`}
+                {`${(UI_LABELS.inCart as any)[language] || UI_LABELS.inCart.en} (${inCart.quantity})`}
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
               activeOpacity={0.7}
               style={[styles.cartBtn, { backgroundColor: colors.primary, flex: 1 }]}
-              onPress={() => addItem({ id: product.id, name: language === "ar" ? (product.name_ar || product.name) : (product.name_en || product.name), price: product.price, image: product.image })}
+              onPress={() => addItem({ id: product.id, name: getProductLocalizedName(product, language), price: product.price, image: product.image })}
             >
               <Feather name="plus" size={18} color="#000" />
               <Text style={{ color: "#000", fontWeight: "700", fontSize: 15 }}>
-                {language === "ar" ? "إضافة أخرى" : "Add More"}
+                {(UI_LABELS.addMore as any)[language] || UI_LABELS.addMore.en}
               </Text>
             </TouchableOpacity>
           </View>
@@ -154,7 +155,7 @@ export default function ProductDetailScreen() {
           <TouchableOpacity
             activeOpacity={0.75}
             style={[styles.cartBtn, { backgroundColor: colors.primary }]}
-            onPress={() => addItem({ id: product.id, name: language === "ar" ? (product.name_ar || product.name) : (product.name_en || product.name), price: product.price, image: product.image })}
+            onPress={() => addItem({ id: product.id, name: getProductLocalizedName(product, language), price: product.price, image: product.image })}
             disabled={product.quantity === 0}
           >
             <Feather name="shopping-cart" size={18} color="#000" />

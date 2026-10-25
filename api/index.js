@@ -94789,6 +94789,16 @@ function toOptimizedThumb(url2) {
   }
   return s;
 }
+function normalizeRequestLang(langParam, acceptHeader) {
+  const p = (langParam || "").toLowerCase().trim();
+  if (p === "ar" || p === "en" || p === "fr" || p === "tr" || p === "zh") return p;
+  const h = (acceptHeader || "").toLowerCase();
+  if (h.includes("zh")) return "zh";
+  if (h.includes("fr")) return "fr";
+  if (h.includes("tr")) return "tr";
+  if (h.includes("en")) return "en";
+  return "ar";
+}
 var AR_TO_EN_PRODUCT_DICT = {
   "\u0633\u0627\u0639\u0627\u062A": "Watches",
   "\u0633\u0627\u0639\u0629": "Watch",
@@ -94898,31 +94908,424 @@ var AR_TO_EN_PRODUCT_DICT = {
   "\u0623\u0645\u0627\u0646": "Safety",
   "\u0642\u0641\u0644": "Lock"
 };
+var AR_TO_FR_PRODUCT_DICT = {
+  "\u0633\u0627\u0639\u0627\u062A": "Montres",
+  "\u0633\u0627\u0639\u0629": "Montre",
+  "\u0630\u0643\u064A\u0629": "Intelligente",
+  "\u0630\u0643\u064A": "Intelligent",
+  "\u064A\u062F": "Poignet",
+  "\u0641\u0627\u062E\u0631\u0629": "Luxe",
+  "\u0641\u0627\u062E\u0631": "Luxe",
+  "\u0631\u062C\u0627\u0644": "Hommes",
+  "\u0631\u062C\u0627\u0644\u064A": "Homme",
+  "\u0631\u062C\u0627\u0644\u064A\u0629": "Homme",
+  "\u0646\u0633\u0627\u0621": "Femmes",
+  "\u0646\u0633\u0627\u0626\u064A": "Femme",
+  "\u0646\u0633\u0627\u0626\u064A\u0629": "Femme",
+  "\u0647\u0627\u062A\u0641": "T\xE9l\xE9phone",
+  "\u062C\u0648\u0627\u0644": "Mobile",
+  "\u0634\u0627\u062D\u0646": "Chargeur",
+  "\u0643\u0627\u0628\u0644": "C\xE2ble",
+  "\u0633\u0644\u0643": "Cordon",
+  "\u0633\u0645\u0627\u0639\u0627\u062A": "\xC9couteurs",
+  "\u0633\u0645\u0627\u0639\u0629": "Casque",
+  "\u0628\u0644\u0648\u062A\u0648\u062B": "Bluetooth",
+  "\u0644\u0627\u0633\u0644\u0643\u064A": "Sans Fil",
+  "\u0644\u0627\u0633\u0644\u0643\u064A\u0629": "Sans Fil",
+  "\u062D\u0627\u0641\u0638\u0629": "\xC9tui",
+  "\u062C\u0631\u0627\u0628": "Housse",
+  "\u063A\u0637\u0627\u0621": "Coque",
+  "\u062D\u0645\u0627\u064A\u0629": "Protection",
+  "\u0634\u0627\u0634\u0629": "\xC9cran",
+  "\u0632\u062C\u0627\u062C": "Verre",
+  "\u0645\u0642\u0627\u0648\u0645": "\xC9tanche",
+  "\u0644\u0644\u0645\u0627\u0621": "\xC9tanche",
+  "\u0645\u0642\u0627\u0648\u0645\u0629": "\xC9tanche",
+  "\u062D\u0642\u064A\u0628\u0629": "Sac",
+  "\u062D\u0642\u0627\u0626\u0628": "Sacs",
+  "\u0638\u0647\u0631": "Dos",
+  "\u0633\u0641\u0631": "Voyage",
+  "\u064A\u062F\u0648\u064A\u0629": "Main",
+  "\u062D\u0630\u0627\u0621": "Chaussures",
+  "\u0623\u062D\u0630\u064A\u0629": "Chaussures",
+  "\u0631\u064A\u0627\u0636\u064A": "Sport",
+  "\u0631\u064A\u0627\u0636\u064A\u0629": "Baskets",
+  "\u062C\u0644\u062F": "Cuir",
+  "\u0637\u0628\u064A\u0639\u064A": "V\xE9ritable",
+  "\u0645\u0644\u0627\u0628\u0633": "V\xEAtements",
+  "\u0642\u0645\u064A\u0635": "Chemise",
+  "\u062A\u064A\u0634\u064A\u0631\u062A": "T-Shirt",
+  "\u0628\u0646\u0637\u0644\u0648\u0646": "Pantalon",
+  "\u062C\u0627\u0643\u064A\u062A": "Veste",
+  "\u0641\u0633\u062A\u0627\u0646": "Robe",
+  "\u0623\u0637\u0641\u0627\u0644": "Enfants",
+  "\u0637\u0641\u0644": "B\xE9b\xE9",
+  "\u0644\u0639\u0628\u0629": "Jouet",
+  "\u0623\u0644\u0639\u0627\u0628": "Jouets",
+  "\u0633\u064A\u0627\u0631\u0629": "Voiture",
+  "\u0633\u064A\u0627\u0631\u0627\u062A": "Auto",
+  "\u0625\u0644\u0643\u062A\u0631\u0648\u0646\u064A\u0627\u062A": "\xC9lectronique",
+  "\u0643\u0645\u0628\u064A\u0648\u062A\u0631": "Ordinateur",
+  "\u0644\u0627\u0628\u062A\u0648\u0628": "Portable",
+  "\u0641\u0623\u0631\u0629": "Souris",
+  "\u0644\u0648\u062D\u0629": "Clavier",
+  "\u0645\u0641\u0627\u062A\u064A\u062D": "Clavier",
+  "\u0645\u0646\u0632\u0644": "Maison",
+  "\u0645\u0637\u0628\u062E": "Cuisine",
+  "\u0623\u062F\u0648\u0627\u062A": "Outils",
+  "\u0623\u062F\u0627\u0629": "Outil",
+  "\u0637\u0642\u0645": "Ensemble",
+  "\u0645\u062C\u0645\u0648\u0639\u0629": "Kit",
+  "\u0633\u0643\u064A\u0646": "Couteau",
+  "\u0642\u0627\u0637\u0639": "Coupeur",
+  "\u0645\u0642\u0635": "Ciseaux",
+  "\u0625\u0636\u0627\u0621\u0629": "\xC9clairage",
+  "\u0645\u0635\u0628\u0627\u062D": "Lampe",
+  "\u0643\u0627\u0645\u064A\u0631\u0627": "Appareil Photo",
+  "\u062F\u0631\u0648\u0646": "Drone",
+  "\u0637\u0627\u0626\u0631\u0629": "Drone",
+  "\u062A\u0635\u0648\u064A\u0631": "Photographie",
+  "\u062A\u062C\u0645\u064A\u0644": "Beaut\xE9",
+  "\u0639\u0646\u0627\u064A\u0629": "Soin",
+  "\u0628\u0634\u0631\u0629": "Peau",
+  "\u0634\u0639\u0631": "Cheveux",
+  "\u0645\u0627\u0643\u064A\u0646\u0629": "Tondeuse",
+  "\u062D\u0644\u0627\u0642\u0629": "Rasoir",
+  "\u0645\u062C\u0648\u0647\u0631\u0627\u062A": "Bijoux",
+  "\u062E\u0627\u062A\u0645": "Bague",
+  "\u0633\u0644\u0633\u0627\u0644": "Collier",
+  "\u0642\u0644\u0627\u062F\u0629": "Pendentif",
+  "\u0633\u0648\u0627\u0631": "Bracelet",
+  "\u0639\u0637\u0631": "Parfum",
+  "\u0646\u0638\u0627\u0631\u0627\u062A": "Lunettes",
+  "\u0634\u0645\u0633\u064A\u0629": "Soleil",
+  "\u0623\u0639\u0644\u0627\u0645": "Drapeaux",
+  "\u0639\u0644\u0645": "Drapeau",
+  "\u0644\u0627\u0641\u062A\u0627\u062A": "Banni\xE8res",
+  "\u0645\u0644\u0648\u0646\u0629": "Couleur",
+  "\u0634\u0627\u0637\u0626": "Plage",
+  "\u062E\u064A\u0627\u0637\u0629": "Couture",
+  "\u062A\u0637\u0631\u064A\u0632": "Broderie",
+  "\u062D\u0631\u0641": "Artisanat",
+  "\u064A\u062F\u0648\u064A": "Fait Main",
+  "\u0623\u0643\u0631\u064A\u0644\u064A\u0643": "Acrylique",
+  "\u0645\u0633\u0637\u0631\u0629": "R\xE8gle",
+  "\u0634\u0641\u0631\u0629": "Lame",
+  "\u0634\u0641\u0631\u0627\u062A": "Lames",
+  "\u062D\u0635\u064A\u0631\u0629": "Tapis",
+  "\u0642\u0635": "D\xE9coupe",
+  "\u0623\u0645\u0627\u0646": "S\xE9curit\xE9",
+  "\u0642\u0641\u0644": "Serrure"
+};
+var AR_TO_TR_PRODUCT_DICT = {
+  "\u0633\u0627\u0639\u0627\u062A": "Saatler",
+  "\u0633\u0627\u0639\u0629": "Saat",
+  "\u0630\u0643\u064A\u0629": "Ak\u0131ll\u0131",
+  "\u0630\u0643\u064A": "Ak\u0131ll\u0131",
+  "\u064A\u062F": "Kol",
+  "\u0641\u0627\u062E\u0631\u0629": "L\xFCks",
+  "\u0641\u0627\u062E\u0631": "L\xFCks",
+  "\u0631\u062C\u0627\u0644": "Erkekler",
+  "\u0631\u062C\u0627\u0644\u064A": "Erkek",
+  "\u0631\u062C\u0627\u0644\u064A\u0629": "Erkek",
+  "\u0646\u0633\u0627\u0621": "Kad\u0131nlar",
+  "\u0646\u0633\u0627\u0626\u064A": "Kad\u0131n",
+  "\u0646\u0633\u0627\u0626\u064A\u0629": "Kad\u0131n",
+  "\u0647\u0627\u062A\u0641": "Telefon",
+  "\u062C\u0648\u0627\u0644": "Mobil",
+  "\u0634\u0627\u062D\u0646": "\u015Earj Cihaz\u0131",
+  "\u0643\u0627\u0628\u0644": "Kablo",
+  "\u0633\u0644\u0643": "Kordon",
+  "\u0633\u0645\u0627\u0639\u0627\u062A": "Kulakl\u0131k",
+  "\u0633\u0645\u0627\u0639\u0629": "Kulakl\u0131k",
+  "\u0628\u0644\u0648\u062A\u0648\u062B": "Bluetooth",
+  "\u0644\u0627\u0633\u0644\u0643\u064A": "Kablosuz",
+  "\u0644\u0627\u0633\u0644\u0643\u064A\u0629": "Kablosuz",
+  "\u062D\u0627\u0641\u0638\u0629": "K\u0131l\u0131f",
+  "\u062C\u0631\u0627\u0628": "Kapak",
+  "\u063A\u0637\u0627\u0621": "Koruyucu",
+  "\u062D\u0645\u0627\u064A\u0629": "Koruma",
+  "\u0634\u0627\u0634\u0629": "Ekran",
+  "\u0632\u062C\u0627\u062C": "Cam",
+  "\u0645\u0642\u0627\u0648\u0645": "Su Ge\xE7irmez",
+  "\u0644\u0644\u0645\u0627\u0621": "Su Ge\xE7irmez",
+  "\u0645\u0642\u0627\u0648\u0645\u0629": "Su Ge\xE7irmez",
+  "\u062D\u0642\u064A\u0628\u0629": "\xC7anta",
+  "\u062D\u0642\u0627\u0626\u0628": "\xC7antalar",
+  "\u0638\u0647\u0631": "S\u0131rt",
+  "\u0633\u0641\u0631": "Seyahat",
+  "\u064A\u062F\u0648\u064A\u0629": "El \xC7antas\u0131",
+  "\u062D\u0630\u0627\u0621": "Ayakkab\u0131",
+  "\u0623\u062D\u0630\u064A\u0629": "Ayakkab\u0131lar",
+  "\u0631\u064A\u0627\u0636\u064A": "Spor",
+  "\u0631\u064A\u0627\u0636\u064A\u0629": "Spor Ayakkab\u0131",
+  "\u062C\u0644\u062F": "Deri",
+  "\u0637\u0628\u064A\u0639\u064A": "Hakiki",
+  "\u0645\u0644\u0627\u0628\u0633": "Giyim",
+  "\u0642\u0645\u064A\u0635": "G\xF6mlek",
+  "\u062A\u064A\u0634\u064A\u0631\u062A": "Ti\u015F\xF6rt",
+  "\u0628\u0646\u0637\u0644\u0648\u0646": "Pantolon",
+  "\u062C\u0627\u0643\u064A\u062A": "Ceket",
+  "\u0641\u0633\u062A\u0627\u0646": "Elbise",
+  "\u0623\u0637\u0641\u0627\u0644": "\xC7ocuklar",
+  "\u0637\u0641\u0644": "Bebek",
+  "\u0644\u0639\u0628\u0629": "Oyuncak",
+  "\u0623\u0644\u0639\u0627\u0628": "Oyuncaklar",
+  "\u0633\u064A\u0627\u0631\u0629": "Araba",
+  "\u0633\u064A\u0627\u0631\u0627\u062A": "Oto",
+  "\u0625\u0644\u0643\u062A\u0631\u0648\u0646\u064A\u0627\u062A": "Elektronik",
+  "\u0643\u0645\u0628\u064A\u0648\u062A\u0631": "Bilgisayar",
+  "\u0644\u0627\u0628\u062A\u0648\u0628": "Diz\xFCst\xFC",
+  "\u0641\u0623\u0631\u0629": "Fare",
+  "\u0644\u0648\u062D\u0629": "Klavye",
+  "\u0645\u0641\u0627\u062A\u064A\u062D": "Klavye",
+  "\u0645\u0646\u0632\u0644": "Ev",
+  "\u0645\u0637\u0628\u062E": "Mutfak",
+  "\u0623\u062F\u0648\u0627\u062A": "Aletler",
+  "\u0623\u062F\u0627\u0629": "Alet",
+  "\u0637\u0642\u0645": "Tak\u0131m",
+  "\u0645\u062C\u0645\u0648\u0639\u0629": "Set",
+  "\u0633\u0643\u064A\u0646": "B\u0131\xE7ak",
+  "\u0642\u0627\u0637\u0639": "Kesici",
+  "\u0645\u0642\u0635": "Makas",
+  "\u0625\u0636\u0627\u0621\u0629": "Ayd\u0131nlatma",
+  "\u0645\u0635\u0628\u0627\u062D": "Lamba",
+  "\u0643\u0627\u0645\u064A\u0631\u0627": "Kamera",
+  "\u062F\u0631\u0648\u0646": "Dron",
+  "\u0637\u0627\u0626\u0631\u0629": "Drone",
+  "\u062A\u0635\u0648\u064A\u0631": "Foto\u011Fraf\xE7\u0131l\u0131k",
+  "\u062A\u062C\u0645\u064A\u0644": "G\xFCzellik",
+  "\u0639\u0646\u0627\u064A\u0629": "Bak\u0131m",
+  "\u0628\u0634\u0631\u0629": "Cilt",
+  "\u0634\u0639\u0631": "Sa\xE7",
+  "\u0645\u0627\u0643\u064A\u0646\u0629": "T\u0131ra\u015F Makinesi",
+  "\u062D\u0644\u0627\u0642\u0629": "T\u0131ra\u015F",
+  "\u0645\u062C\u0648\u0647\u0631\u0627\u062A": "Tak\u0131",
+  "\u062E\u0627\u062A\u0645": "Y\xFCz\xFCk",
+  "\u0633\u0644\u0633\u0627\u0644": "Kolye",
+  "\u0642\u0644\u0627\u062F\u0629": "Kolye Ucu",
+  "\u0633\u0648\u0627\u0631": "Bilezik",
+  "\u0639\u0637\u0631": "Parf\xFCm",
+  "\u0646\u0638\u0627\u0631\u0627\u062A": "G\xF6zl\xFCk",
+  "\u0634\u0645\u0633\u064A\u0629": "G\xFCne\u015F G\xF6zl\xFC\u011F\xFC",
+  "\u0623\u0639\u0644\u0627\u0645": "Bayraklar",
+  "\u0639\u0644\u0645": "Bayrak",
+  "\u0644\u0627\u0641\u062A\u0627\u062A": "Pankartlar",
+  "\u0645\u0644\u0648\u0646\u0629": "Renkli",
+  "\u0634\u0627\u0637\u0626": "Plaj",
+  "\u062E\u064A\u0627\u0637\u0629": "Diki\u015F",
+  "\u062A\u0637\u0631\u064A\u0632": "Nak\u0131\u015F",
+  "\u062D\u0631\u0641": "El Sanat\u0131",
+  "\u064A\u062F\u0648\u064A": "El Yap\u0131m\u0131",
+  "\u0623\u0643\u0631\u064A\u0644\u064A\u0643": "Akrilik",
+  "\u0645\u0633\u0637\u0631\u0629": "Cetvel",
+  "\u0634\u0641\u0631\u0629": "B\u0131\xE7ak Ucu",
+  "\u0634\u0641\u0631\u0627\u062A": "B\u0131\xE7aklar",
+  "\u062D\u0635\u064A\u0631\u0629": "Mat",
+  "\u0642\u0635": "Kesim",
+  "\u0623\u0645\u0627\u0646": "G\xFCvenlik",
+  "\u0642\u0641\u0644": "Kilit"
+};
+var AR_TO_ZH_PRODUCT_DICT = {
+  "\u0633\u0627\u0639\u0627\u062A": "\u624B\u8868",
+  "\u0633\u0627\u0639\u0629": "\u624B\u8868",
+  "\u0630\u0643\u064A\u0629": "\u667A\u80FD",
+  "\u0630\u0643\u064A": "\u667A\u80FD",
+  "\u064A\u062F": "\u624B\u8155",
+  "\u0641\u0627\u062E\u0631\u0629": "\u5962\u534E",
+  "\u0641\u0627\u062E\u0631": "\u8C6A\u534E",
+  "\u0631\u062C\u0627\u0644": "\u7537\u58EB",
+  "\u0631\u062C\u0627\u0644\u064A": "\u7537\u6B3E",
+  "\u0631\u062C\u0627\u0644\u064A\u0629": "\u7537\u58EB",
+  "\u0646\u0633\u0627\u0621": "\u5973\u58EB",
+  "\u0646\u0633\u0627\u0626\u064A": "\u5973\u6B3E",
+  "\u0646\u0633\u0627\u0626\u064A\u0629": "\u5973\u58EB",
+  "\u0647\u0627\u062A\u0641": "\u624B\u673A",
+  "\u062C\u0648\u0627\u0644": "\u624B\u673A",
+  "\u0634\u0627\u062D\u0646": "\u5145\u7535\u5668",
+  "\u0643\u0627\u0628\u0644": "\u6570\u636E\u7EBF",
+  "\u0633\u0644\u0643": "\u8FDE\u63A5\u7EBF",
+  "\u0633\u0645\u0627\u0639\u0627\u062A": "\u8033\u673A",
+  "\u0633\u0645\u0627\u0639\u0629": "\u8033\u673A",
+  "\u0628\u0644\u0648\u062A\u0648\u062B": "\u84DD\u7259",
+  "\u0644\u0627\u0633\u0644\u0643\u064A": "\u65E0\u7EBF",
+  "\u0644\u0627\u0633\u0644\u0643\u064A\u0629": "\u65E0\u7EBF",
+  "\u062D\u0627\u0641\u0638\u0629": "\u4FDD\u62A4\u5957",
+  "\u062C\u0631\u0627\u0628": "\u4FDD\u62A4\u58F3",
+  "\u063A\u0637\u0627\u0621": "\u5916\u58F3",
+  "\u062D\u0645\u0627\u064A\u0629": "\u9632\u62A4",
+  "\u0634\u0627\u0634\u0629": "\u5C4F\u5E55",
+  "\u0632\u062C\u0627\u062C": "\u94A2\u5316\u819C",
+  "\u0645\u0642\u0627\u0648\u0645": "\u9632\u6C34",
+  "\u0644\u0644\u0645\u0627\u0621": "\u9632\u6C34",
+  "\u0645\u0642\u0627\u0648\u0645\u0629": "\u9632\u6C34",
+  "\u062D\u0642\u064A\u0628\u0629": "\u5305",
+  "\u062D\u0642\u0627\u0626\u0628": "\u7BB1\u5305",
+  "\u0638\u0647\u0631": "\u53CC\u80A9\u5305",
+  "\u0633\u0641\u0631": "\u65C5\u884C",
+  "\u064A\u062F\u0648\u064A\u0629": "\u624B\u63D0\u5305",
+  "\u062D\u0630\u0627\u0621": "\u978B",
+  "\u0623\u062D\u0630\u064A\u0629": "\u978B\u9774",
+  "\u0631\u064A\u0627\u0636\u064A": "\u8FD0\u52A8",
+  "\u0631\u064A\u0627\u0636\u064A\u0629": "\u8FD0\u52A8\u978B",
+  "\u062C\u0644\u062F": "\u771F\u76AE",
+  "\u0637\u0628\u064A\u0639\u064A": "\u6B63\u54C1",
+  "\u0645\u0644\u0627\u0628\u0633": "\u670D\u88C5",
+  "\u0642\u0645\u064A\u0635": "\u886C\u886B",
+  "\u062A\u064A\u0634\u064A\u0631\u062A": "T\u6064",
+  "\u0628\u0646\u0637\u0644\u0648\u0646": "\u88E4\u5B50",
+  "\u062C\u0627\u0643\u064A\u062A": "\u5916\u5957",
+  "\u0641\u0633\u062A\u0627\u0646": "\u8FDE\u8863\u88D9",
+  "\u0623\u0637\u0641\u0627\u0644": "\u513F\u7AE5",
+  "\u0637\u0641\u0644": "\u5A74\u513F",
+  "\u0644\u0639\u0628\u0629": "\u73A9\u5177",
+  "\u0623\u0644\u0639\u0627\u0628": "\u73A9\u5177",
+  "\u0633\u064A\u0627\u0631\u0629": "\u6C7D\u8F66",
+  "\u0633\u064A\u0627\u0631\u0627\u062A": "\u8F66\u8F7D",
+  "\u0625\u0644\u0643\u062A\u0631\u0648\u0646\u064A\u0627\u062A": "\u6570\u7801\u7535\u5B50",
+  "\u0643\u0645\u0628\u064A\u0648\u062A\u0631": "\u7535\u8111",
+  "\u0644\u0627\u0628\u062A\u0648\u0628": "\u7B14\u8BB0\u672C",
+  "\u0641\u0623\u0631\u0629": "\u9F20\u6807",
+  "\u0644\u0648\u062D\u0629": "\u952E\u76D8",
+  "\u0645\u0641\u0627\u062A\u064A\u062D": "\u952E\u76D8",
+  "\u0645\u0646\u0632\u0644": "\u5BB6\u5C45",
+  "\u0645\u0637\u0628\u062E": "\u53A8\u623F",
+  "\u0623\u062F\u0648\u0627\u062A": "\u5DE5\u5177",
+  "\u0623\u062F\u0627\u0629": "\u5DE5\u5177",
+  "\u0637\u0642\u0645": "\u5957\u88C5",
+  "\u0645\u062C\u0645\u0648\u0639\u0629": "\u7EC4\u5408",
+  "\u0633\u0643\u064A\u0646": "\u5200\u5177",
+  "\u0642\u0627\u0637\u0639": "\u5207\u5272\u5668",
+  "\u0645\u0642\u0635": "\u526A\u5200",
+  "\u0625\u0636\u0627\u0621\u0629": "\u7167\u660E",
+  "\u0645\u0635\u0628\u0627\u062D": "\u53F0\u706F",
+  "\u0643\u0627\u0645\u064A\u0631\u0627": "\u76F8\u673A",
+  "\u062F\u0631\u0648\u0646": "\u65E0\u4EBA\u673A",
+  "\u0637\u0627\u0626\u0631\u0629": "\u822A\u62CD\u673A",
+  "\u062A\u0635\u0648\u064A\u0631": "\u6444\u5F71",
+  "\u062A\u062C\u0645\u064A\u0644": "\u7F8E\u5986",
+  "\u0639\u0646\u0627\u064A\u0629": "\u62A4\u7406",
+  "\u0628\u0634\u0631\u0629": "\u62A4\u80A4",
+  "\u0634\u0639\u0631": "\u7F8E\u53D1",
+  "\u0645\u0627\u0643\u064A\u0646\u0629": "\u7406\u53D1\u5668",
+  "\u062D\u0644\u0627\u0642\u0629": "\u5243\u987B\u5200",
+  "\u0645\u062C\u0648\u0647\u0631\u0627\u062A": "\u9996\u9970",
+  "\u062E\u0627\u062A\u0645": "\u6212\u6307",
+  "\u0633\u0644\u0633\u0627\u0644": "\u9879\u94FE",
+  "\u0642\u0644\u0627\u062F\u0629": "\u540A\u5760",
+  "\u0633\u0648\u0627\u0631": "\u624B\u956F",
+  "\u0639\u0637\u0631": "\u9999\u6C34",
+  "\u0646\u0638\u0627\u0631\u0627\u062A": "\u773C\u955C",
+  "\u0634\u0645\u0633\u064A\u0629": "\u592A\u9633\u955C",
+  "\u0623\u0639\u0644\u0627\u0645": "\u65D7\u5E1C",
+  "\u0639\u0644\u0645": "\u65D7\u5E1C",
+  "\u0644\u0627\u0641\u062A\u0627\u062A": "\u6761\u5E45",
+  "\u0645\u0644\u0648\u0646\u0629": "\u5F69\u8272",
+  "\u0634\u0627\u0637\u0626": "\u6C99\u6EE9",
+  "\u062E\u064A\u0627\u0637\u0629": "\u7F1D\u7EAB",
+  "\u062A\u0637\u0631\u064A\u0632": "\u523A\u7EE3",
+  "\u062D\u0631\u0641": "\u5DE5\u827A",
+  "\u064A\u062F\u0648\u064A": "\u624B\u5DE5",
+  "\u0623\u0643\u0631\u064A\u0644\u064A\u0643": "\u4E9A\u514B\u529B",
+  "\u0645\u0633\u0637\u0631\u0629": "\u5C3A\u5B50",
+  "\u0634\u0641\u0631\u0629": "\u5200\u7247",
+  "\u0634\u0641\u0631\u0627\u062A": "\u5200\u7247",
+  "\u062D\u0635\u064A\u0631\u0629": "\u57AB\u677F",
+  "\u0642\u0635": "\u526A\u5207",
+  "\u0623\u0645\u0627\u0646": "\u5B89\u5168",
+  "\u0642\u0641\u0644": "\u667A\u80FD\u9501"
+};
+var EN_TO_FR_DICT = {
+  "knife": "Couteau",
+  "cover": "Housse",
+  "tool": "Outil",
+  "tools": "Outils",
+  "kit": "Kit",
+  "set": "Ensemble",
+  "pro": "Pro",
+  "edition": "\xC9dition",
+  "smart": "Intelligent",
+  "watch": "Montre",
+  "phone": "T\xE9l\xE9phone",
+  "case": "Coque",
+  "cable": "C\xE2ble",
+  "charger": "Chargeur",
+  "led": "LED",
+  "lamp": "Lampe",
+  "bag": "Sac",
+  "shoes": "Chaussures",
+  "camera": "Appareil",
+  "drone": "Drone"
+};
+var EN_TO_TR_DICT = {
+  "knife": "B\u0131\xE7ak",
+  "cover": "Kapak",
+  "tool": "Alet",
+  "tools": "Aletler",
+  "kit": "Set",
+  "set": "Tak\u0131m",
+  "pro": "Pro",
+  "edition": "Seri",
+  "smart": "Ak\u0131ll\u0131",
+  "watch": "Saat",
+  "phone": "Telefon",
+  "case": "K\u0131l\u0131f",
+  "cable": "Kablo",
+  "charger": "\u015Earj",
+  "led": "LED",
+  "lamp": "Lamba",
+  "bag": "\xC7anta",
+  "shoes": "Ayakkab\u0131",
+  "camera": "Kamera",
+  "drone": "Dron"
+};
+var EN_TO_ZH_DICT = {
+  "knife": "\u5200\u5177",
+  "cover": "\u4FDD\u62A4\u5957",
+  "tool": "\u5DE5\u5177",
+  "tools": "\u5DE5\u5177\u5957\u4EF6",
+  "kit": "\u5957\u88C5",
+  "set": "\u7EC4\u5408",
+  "pro": "\u4E13\u4E1A\u7248",
+  "edition": "\u65D7\u8230\u6B3E",
+  "smart": "\u667A\u80FD",
+  "watch": "\u624B\u8868",
+  "phone": "\u624B\u673A",
+  "case": "\u4FDD\u62A4\u58F3",
+  "cable": "\u6570\u636E\u7EBF",
+  "charger": "\u5145\u7535\u5668",
+  "led": "LED",
+  "lamp": "\u53F0\u706F",
+  "bag": "\u80CC\u5305",
+  "shoes": "\u978B",
+  "camera": "\u76F8\u673A",
+  "drone": "\u65E0\u4EBA\u673A"
+};
 var CLEAN_CATEGORY_NAMES = {
-  1: { ar: "\u0625\u0644\u0643\u062A\u0631\u0648\u0646\u064A\u0627\u062A \u0648\u0623\u062C\u0647\u0632\u0629 \u0630\u0643\u064A\u0629", en: "Electronics & Smart Devices" },
-  2: { ar: "\u0623\u0632\u064A\u0627\u0621 \u0648\u0645\u0648\u0636\u0629", en: "Fashion & Style" },
-  3: { ar: "\u0647\u0648\u0627\u062A\u0641 \u0630\u0643\u064A\u0629 \u0648\u0625\u0643\u0633\u0633\u0648\u0627\u0631\u0627\u062A", en: "Smartphones & Accessories" },
-  4: { ar: "\u0633\u0627\u0639\u0627\u062A \u0648\u0645\u062C\u0648\u0647\u0631\u0627\u062A", en: "Watches & Jewelry" },
-  5: { ar: "\u0627\u0644\u0645\u0646\u0632\u0644 \u0648\u0627\u0644\u0645\u0637\u0628\u062E", en: "Home & Kitchen" },
-  6: { ar: "\u0627\u0644\u0635\u062D\u0629 \u0648\u0627\u0644\u062C\u0645\u0627\u0644", en: "Health & Beauty" },
-  7: { ar: "\u0631\u064A\u0627\u0636\u0629 \u0648\u062A\u0631\u0641\u064A\u0647", en: "Sports & Outdoors" },
-  8: { ar: "\u0623\u0644\u0639\u0627\u0628 \u0648\u0623\u0637\u0641\u0627\u0644", en: "Toys, Kids & Babies" },
-  9: { ar: "\u0633\u064A\u0627\u0631\u0627\u062A \u0648\u062F\u0631\u0627\u062C\u0627\u062A \u0646\u0627\u0631\u064A\u0629", en: "Automotive & Motorcycles" },
-  10: { ar: "\u0623\u062D\u0630\u064A\u0629 \u0648\u062D\u0642\u0627\u0626\u0628", en: "Shoes & Bags" },
-  11: { ar: "\u0643\u0645\u0628\u064A\u0648\u062A\u0631 \u0648\u0644\u0627\u0628\u062A\u0648\u0628", en: "Computers & Office" },
-  12: { ar: "\u0623\u062C\u0647\u0632\u0629 \u0625\u0644\u0643\u062A\u0631\u0648\u0646\u064A\u0629 \u0627\u0633\u062A\u0647\u0644\u0627\u0643\u064A\u0629", en: "Consumer Electronics" },
-  13: { ar: "\u0623\u0632\u064A\u0627\u0621 \u0648\u0645\u0644\u0627\u0628\u0633 \u0631\u062C\u0627\u0644\u064A\u0629", en: "Men's Fashion" },
-  14: { ar: "\u0623\u062F\u0648\u0627\u062A \u0648\u062A\u062D\u0633\u064A\u0646 \u0627\u0644\u0645\u0646\u0632\u0644", en: "Tools & Home Improvement" },
-  15: { ar: "\u0625\u0636\u0627\u0621\u0629 \u0648\u0645\u0635\u0627\u0628\u064A\u062D", en: "Lights & Lighting" },
-  16: { ar: "\u0623\u0645\u0627\u0646 \u0648\u062D\u0645\u0627\u064A\u0629 \u0630\u0643\u064A\u0629", en: "Security & Protection" },
-  17: { ar: "\u0645\u0633\u062A\u0644\u0632\u0645\u0627\u062A \u0627\u0644\u062D\u064A\u0648\u0627\u0646\u0627\u062A \u0627\u0644\u0623\u0644\u064A\u0641\u0629", en: "Pet Supplies" },
-  18: { ar: "\u0623\u062F\u0648\u0627\u062A \u0645\u0643\u062A\u0628\u064A\u0629 \u0648\u0645\u062F\u0631\u0633\u064A\u0629", en: "Office & School Supplies" },
-  19: { ar: "\u0623\u062B\u0627\u062B \u0648\u062F\u064A\u0643\u0648\u0631 \u0645\u0646\u0632\u0644\u064A", en: "Furniture & Home Decor" },
-  20: { ar: "\u0643\u0627\u0645\u064A\u0631\u0627\u062A \u0648\u0637\u0627\u0626\u0631\u0627\u062A \u062F\u0631\u0648\u0646", en: "Cameras & Drones" },
-  21: { ar: "\u0627\u0644\u0645\u0646\u0632\u0644 \u0627\u0644\u0630\u0643\u064A \u0648\u0625\u0646\u062A\u0631\u0646\u062A \u0627\u0644\u0623\u0634\u064A\u0627\u0621", en: "Smart Home & IoT" },
-  22: { ar: "\u0648\u0635\u0644\u0627\u062A \u0648\u0634\u0639\u0631 \u0645\u0633\u062A\u0639\u0627\u0631", en: "Hair Extensions & Wigs" },
-  23: { ar: "\u0645\u0633\u062A\u0644\u0632\u0645\u0627\u062A \u0627\u0644\u062D\u0641\u0644\u0627\u062A \u0648\u0627\u0644\u0645\u0646\u0627\u0633\u0628\u0627\u062A", en: "Event & Party Supplies" },
-  24: { ar: "\u0641\u0646\u0648\u0646 \u0648\u062D\u0631\u0641 \u0648\u062E\u064A\u0627\u0637\u0629", en: "Arts, Crafts & Sewing" }
+  1: { ar: "\u0625\u0644\u0643\u062A\u0631\u0648\u0646\u064A\u0627\u062A \u0648\u0623\u062C\u0647\u0632\u0629 \u0630\u0643\u064A\u0629", en: "Electronics & Smart Devices", fr: "\xC9lectronique & Appareils Intelligents", tr: "Elektronik ve Ak\u0131ll\u0131 Cihazlar", zh: "\u7535\u5B50\u4E0E\u667A\u80FD\u8BBE\u5907" },
+  2: { ar: "\u0623\u0632\u064A\u0627\u0621 \u0648\u0645\u0648\u0636\u0629", en: "Fashion & Style", fr: "Mode & Style", tr: "Moda ve Stil", zh: "\u65F6\u5C1A\u4E0E\u6F6E\u6D41" },
+  3: { ar: "\u0647\u0648\u0627\u062A\u0641 \u0630\u0643\u064A\u0629 \u0648\u0625\u0643\u0633\u0633\u0648\u0627\u0631\u0627\u062A", en: "Smartphones & Accessories", fr: "Smartphones & Accessoires", tr: "Ak\u0131ll\u0131 Telefonlar ve Aksesuarlar", zh: "\u667A\u80FD\u624B\u673A\u4E0E\u914D\u4EF6" },
+  4: { ar: "\u0633\u0627\u0639\u0627\u062A \u0648\u0645\u062C\u0648\u0647\u0631\u0627\u062A", en: "Watches & Jewelry", fr: "Montres & Bijoux", tr: "Saatler ve Tak\u0131lar", zh: "\u624B\u8868\u4E0E\u73E0\u5B9D" },
+  5: { ar: "\u0627\u0644\u0645\u0646\u0632\u0644 \u0648\u0627\u0644\u0645\u0637\u0628\u062E", en: "Home & Kitchen", fr: "Maison & Cuisine", tr: "Ev ve Mutfak", zh: "\u5BB6\u5C45\u4E0E\u53A8\u623F" },
+  6: { ar: "\u0627\u0644\u0635\u062D\u0629 \u0648\u0627\u0644\u062C\u0645\u0627\u0644", en: "Health & Beauty", fr: "Sant\xE9 & Beaut\xE9", tr: "Sa\u011Fl\u0131k ve G\xFCzellik", zh: "\u5065\u5EB7\u4E0E\u7F8E\u5BB9" },
+  7: { ar: "\u0631\u064A\u0627\u0636\u0629 \u0648\u062A\u0631\u0641\u064A\u0647", en: "Sports & Outdoors", fr: "Sports & Loisirs", tr: "Spor ve A\xE7\u0131k Hava", zh: "\u8FD0\u52A8\u4E0E\u6237\u5916" },
+  8: { ar: "\u0623\u0644\u0639\u0627\u0628 \u0648\u0623\u0637\u0641\u0627\u0644", en: "Toys, Kids & Babies", fr: "Jouets, Enfants & B\xE9b\xE9s", tr: "Oyuncak, \xC7ocuk ve Bebek", zh: "\u6BCD\u5A74\u4E0E\u73A9\u5177" },
+  9: { ar: "\u0633\u064A\u0627\u0631\u0627\u062A \u0648\u062F\u0631\u0627\u062C\u0627\u062A \u0646\u0627\u0631\u064A\u0629", en: "Automotive & Motorcycles", fr: "Automobiles & Motos", tr: "Otomotiv ve Motosiklet", zh: "\u6C7D\u8F66\u4E0E\u6469\u6258\u8F66" },
+  10: { ar: "\u0623\u062D\u0630\u064A\u0629 \u0648\u062D\u0642\u0627\u0626\u0628", en: "Shoes & Bags", fr: "Chaussures & Sacs", tr: "Ayakkab\u0131 ve \xC7antalar", zh: "\u978B\u5B50\u4E0E\u7BB1\u5305" },
+  11: { ar: "\u0643\u0645\u0628\u064A\u0648\u062A\u0631 \u0648\u0644\u0627\u0628\u062A\u0648\u0628", en: "Computers & Office", fr: "Ordinateurs & Bureautique", tr: "Bilgisayar ve Ofis", zh: "\u7535\u8111\u4E0E\u529E\u516C" },
+  12: { ar: "\u0623\u062C\u0647\u0632\u0629 \u0625\u0644\u0643\u062A\u0631\u0648\u0646\u064A\u0629 \u0627\u0633\u062A\u0647\u0644\u0627\u0643\u064A\u0629", en: "Consumer Electronics", fr: "\xC9lectronique Grand Public", tr: "T\xFCketici Elektroni\u011Fi", zh: "\u6D88\u8D39\u7C7B\u7535\u5B50\u4EA7\u54C1" },
+  13: { ar: "\u0623\u0632\u064A\u0627\u0621 \u0648\u0645\u0644\u0627\u0628\u0633 \u0631\u062C\u0627\u0644\u064A\u0629", en: "Men's Fashion", fr: "Mode Homme", tr: "Erkek Modas\u0131", zh: "\u7537\u88C5\u670D\u9970" },
+  14: { ar: "\u0623\u062F\u0648\u0627\u062A \u0648\u062A\u062D\u0633\u064A\u0646 \u0627\u0644\u0645\u0646\u0632\u0644", en: "Tools & Home Improvement", fr: "Outils & Bricolage", tr: "Aletler ve Ev Geli\u015Ftirme", zh: "\u5DE5\u5177\u4E0E\u5BB6\u88C5" },
+  15: { ar: "\u0625\u0636\u0627\u0621\u0629 \u0648\u0645\u0635\u0627\u0628\u064A\u062D", en: "Lights & Lighting", fr: "Lumi\xE8res & \xC9clairage", tr: "I\u015F\u0131klar ve Ayd\u0131nlatma", zh: "\u706F\u5177\u4E0E\u7167\u660E" },
+  16: { ar: "\u0623\u0645\u0627\u0646 \u0648\u062D\u0645\u0627\u064A\u0629 \u0630\u0643\u064A\u0629", en: "Security & Protection", fr: "S\xE9curit\xE9 & Protection", tr: "G\xFCvenlik ve Koruma", zh: "\u5B89\u9632\u4E0E\u667A\u80FD\u76D1\u63A7" },
+  17: { ar: "\u0645\u0633\u062A\u0644\u0632\u0645\u0627\u062A \u0627\u0644\u062D\u064A\u0648\u0627\u0646\u0627\u062A \u0627\u0644\u0623\u0644\u064A\u0641\u0629", en: "Pet Supplies", fr: "Animalerie", tr: "Evcil Hayvan \xDCr\xFCnleri", zh: "\u5BA0\u7269\u7528\u54C1" },
+  18: { ar: "\u0623\u062F\u0648\u0627\u062A \u0645\u0643\u062A\u0628\u064A\u0629 \u0648\u0645\u062F\u0631\u0633\u064A\u0629", en: "Office & School Supplies", fr: "Fournitures de Bureau & Scolaires", tr: "Ofis ve Okul Malzemeleri", zh: "\u529E\u516C\u4E0E\u6587\u5177\u7528\u54C1" },
+  19: { ar: "\u0623\u062B\u0627\u062B \u0648\u062F\u064A\u0643\u0648\u0631 \u0645\u0646\u0632\u0644\u064A", en: "Furniture & Home Decor", fr: "Meubles & D\xE9coration", tr: "Mobilya ve Ev Dekorasyonu", zh: "\u5BB6\u5177\u4E0E\u5BB6\u5C45\u88C5\u9970" },
+  20: { ar: "\u0643\u0627\u0645\u064A\u0631\u0627\u062A \u0648\u0637\u0627\u0626\u0631\u0627\u062A \u062F\u0631\u0648\u0646", en: "Cameras & Drones", fr: "Appareils Photo & Drones", tr: "Kameralar ve Dronlar", zh: "\u76F8\u673A\u4E0E\u65E0\u4EBA\u673A" },
+  21: { ar: "\u0627\u0644\u0645\u0646\u0632\u0644 \u0627\u0644\u0630\u0643\u064A \u0648\u0625\u0646\u062A\u0631\u0646\u062A \u0627\u0644\u0623\u0634\u064A\u0627\u0621", en: "Smart Home & IoT", fr: "Maison Intelligente & IoT", tr: "Ak\u0131ll\u0131 Ev ve IoT", zh: "\u667A\u80FD\u5BB6\u5C45\u4E0E\u7269\u8054\u7F51" },
+  22: { ar: "\u0648\u0635\u0644\u0627\u062A \u0648\u0634\u0639\u0631 \u0645\u0633\u062A\u0639\u0627\u0631", en: "Hair Extensions & Wigs", fr: "Extensions & Perruques", tr: "Sa\xE7 Kaynaklar\u0131 ve Peruklar", zh: "\u5047\u53D1\u4E0E\u63A5\u53D1" },
+  23: { ar: "\u0645\u0633\u062A\u0644\u0632\u0645\u0627\u062A \u0627\u0644\u062D\u0641\u0644\u0627\u062A \u0648\u0627\u0644\u0645\u0646\u0627\u0633\u0628\u0627\u062A", en: "Event & Party Supplies", fr: "Articles de F\xEAte", tr: "Parti ve Etkinlik Malzemeleri", zh: "\u6D3E\u5BF9\u4E0E\u8282\u65E5\u7528\u54C1" },
+  24: { ar: "\u0641\u0646\u0648\u0646 \u0648\u062D\u0631\u0641 \u0648\u062E\u064A\u0627\u0637\u0629", en: "Arts, Crafts & Sewing", fr: "Arts, Loisirs Cr\xE9atifs & Couture", tr: "Sanat, El Sanatlar\u0131 ve Diki\u015F", zh: "\u827A\u672F\u3001\u624B\u5DE5\u827A\u4E0E\u7F1D\u7EAB" }
 };
 function isValidEnglishText(t) {
   if (!t) return false;
@@ -94945,46 +95348,101 @@ function isCleanArabicText(t) {
 }
 function localizeProductName(p, lang) {
   const cat = p.category_id ? CLEAN_CATEGORY_NAMES[Number(p.category_id)] : null;
-  const catEn = cat ? cat.en : "AliExpress Verified";
-  const catAr = cat ? cat.ar : "\u0639\u0644\u064A \u0625\u0643\u0633\u0628\u0631\u0633 \u0627\u0644\u0631\u0633\u0645\u064A";
   const cleanSku = p.sku?.replace(/^ALI-/, "").slice(0, 14) || String(p.id || "PROD");
-  if (lang === "en") {
-    if (isValidEnglishText(p.name_en)) {
-      return p.name_en.trim();
-    }
+  const targetLang = normalizeRequestLang(lang);
+  if (targetLang === "ar") {
+    if (isCleanArabicText(p.name_ar)) return p.name_ar.trim();
+    const catAr = cat?.ar || "\u0639\u0644\u064A \u0625\u0643\u0633\u0628\u0631\u0633 \u0627\u0644\u0631\u0633\u0645\u064A";
+    return `${catAr} - \u0645\u0646\u062A\u062C \u0623\u0635\u0644\u064A \u0639\u0627\u0644\u064A \u0627\u0644\u062C\u0648\u062F\u0629 (${cleanSku})`;
+  }
+  if (targetLang === "en") {
+    if (isValidEnglishText(p.name_en)) return p.name_en.trim();
     const raw = (p.name_ar || p.name || p.name_en || "").trim();
     const tokens = raw.split(/[\s,،\-–—._/()+]+/);
     const words = [];
     for (const t of tokens) {
       if (!t) continue;
-      if (/^[a-zA-Z0-9]+$/.test(t)) {
-        words.push(t);
-      } else if (AR_TO_EN_PRODUCT_DICT[t]) {
-        words.push(AR_TO_EN_PRODUCT_DICT[t]);
-      }
+      if (/^[a-zA-Z0-9]+$/.test(t)) words.push(t);
+      else if (AR_TO_EN_PRODUCT_DICT[t]) words.push(AR_TO_EN_PRODUCT_DICT[t]);
     }
-    if (words.length >= 2) {
-      return words.slice(0, 8).join(" ") + " Pro Edition";
-    }
+    if (words.length >= 2) return words.slice(0, 8).join(" ") + " Pro Edition";
+    const catEn = cat?.en || "AliExpress Verified";
     return `${catEn} Premium Item (${cleanSku})`;
-  } else {
-    if (isCleanArabicText(p.name_ar)) {
-      return p.name_ar.trim();
-    }
-    return `${catAr} - \u0645\u0646\u062A\u062C \u0623\u0635\u0644\u064A \u0639\u0627\u0644\u064A \u0627\u0644\u062C\u0648\u062F\u0629 (${cleanSku})`;
   }
+  if (targetLang === "fr") {
+    const raw = (p.name_ar || p.name || p.name_en || "").trim();
+    const tokens = raw.split(/[\s,،\-–—._/()+]+/);
+    const words = [];
+    for (const t of tokens) {
+      if (!t) continue;
+      const lower = t.toLowerCase();
+      if (AR_TO_FR_PRODUCT_DICT[t]) words.push(AR_TO_FR_PRODUCT_DICT[t]);
+      else if (EN_TO_FR_DICT[lower]) words.push(EN_TO_FR_DICT[lower]);
+      else if (/^[0-9]+$/.test(t)) words.push(t);
+    }
+    if (words.length >= 2) return words.slice(0, 8).join(" ") + " \xC9dition Pro";
+    const catFr = cat?.fr || cat?.en || "AliExpress Certifi\xE9";
+    return `${catFr} Article de Qualit\xE9 (${cleanSku})`;
+  }
+  if (targetLang === "tr") {
+    const raw = (p.name_ar || p.name || p.name_en || "").trim();
+    const tokens = raw.split(/[\s,،\-–—._/()+]+/);
+    const words = [];
+    for (const t of tokens) {
+      if (!t) continue;
+      const lower = t.toLowerCase();
+      if (AR_TO_TR_PRODUCT_DICT[t]) words.push(AR_TO_TR_PRODUCT_DICT[t]);
+      else if (EN_TO_TR_DICT[lower]) words.push(EN_TO_TR_DICT[lower]);
+      else if (/^[0-9]+$/.test(t)) words.push(t);
+    }
+    if (words.length >= 2) return words.slice(0, 8).join(" ") + " \xD6zel Seri";
+    const catTr = cat?.tr || cat?.en || "AliExpress Orijinal";
+    return `${catTr} Kaliteli \xDCr\xFCn (${cleanSku})`;
+  }
+  if (targetLang === "zh") {
+    const raw = (p.name_ar || p.name || p.name_en || "").trim();
+    const tokens = raw.split(/[\s,،\-–—._/()+]+/);
+    const words = [];
+    for (const t of tokens) {
+      if (!t) continue;
+      const lower = t.toLowerCase();
+      if (AR_TO_ZH_PRODUCT_DICT[t]) words.push(AR_TO_ZH_PRODUCT_DICT[t]);
+      else if (EN_TO_ZH_DICT[lower]) words.push(EN_TO_ZH_DICT[lower]);
+      else if (/^[0-9]+$/.test(t)) words.push(t);
+    }
+    if (words.length >= 2) return words.slice(0, 8).join("") + " \u4F18\u8D28\u7248";
+    const catZh = cat?.zh || cat?.en || "\u901F\u5356\u901A\u4F18\u9009";
+    return `${catZh} \u7CBE\u54C1\u6B63\u54C1 (${cleanSku})`;
+  }
+  return p.name_ar || p.name || String(p.id);
 }
 function localizeProductDesc(p, lang) {
   const cat = p.category_id ? CLEAN_CATEGORY_NAMES[Number(p.category_id)] : null;
-  const catEn = cat ? cat.en : "AliExpress verified item";
-  const catAr = cat ? cat.ar : "\u0645\u0646\u062A\u062C \u0631\u0633\u0645\u064A \u0645\u0646 \u0639\u0644\u064A \u0625\u0643\u0633\u0628\u0631\u0633";
   const cleanSku = p.sku?.replace(/^ALI-/, "").slice(0, 14) || String(p.id || "PROD");
-  if (lang === "en") {
+  const targetLang = normalizeRequestLang(lang);
+  if (targetLang === "ar") {
+    if (isCleanArabicText(p.description_ar)) return p.description_ar.trim();
+    const catAr = cat?.ar || "\u0645\u0646\u062A\u062C \u0631\u0633\u0645\u064A \u0645\u0646 \u0639\u0644\u064A \u0625\u0643\u0633\u0628\u0631\u0633";
+    return `${catAr} \u0623\u0635\u0644\u064A \u0639\u0627\u0644\u064A \u0627\u0644\u062C\u0648\u062F\u0629 \u0648\u0645\u0636\u0645\u0648\u0646 100% \u0645\u0646 \u0627\u0644\u0645\u0648\u0631\u062F \u0627\u0644\u0645\u0639\u062A\u0645\u062F (\u0643\u0648\u062F: ${cleanSku}) \u0645\u0639 \u0634\u062D\u0646 \u0633\u0631\u064A\u0639 \u0648\u0645\u0628\u0627\u0634\u0631.`;
+  }
+  if (targetLang === "en") {
     if (isValidEnglishText(p.description_en)) return p.description_en.trim();
+    const catEn = cat?.en || "AliExpress verified item";
     return `Authentic ${catEn} (SKU: ${cleanSku}). High quality standards, official supplier warranty, and express international shipping.`;
   }
-  if (isCleanArabicText(p.description_ar)) return p.description_ar.trim();
-  return `${catAr} \u0623\u0635\u0644\u064A \u0639\u0627\u0644\u064A \u0627\u0644\u062C\u0648\u062F\u0629 \u0648\u0645\u0636\u0645\u0648\u0646 100% \u0645\u0646 \u0627\u0644\u0645\u0648\u0631\u062F \u0627\u0644\u0645\u0639\u062A\u0645\u062F (\u0643\u0648\u062F: ${cleanSku}) \u0645\u0639 \u0634\u062D\u0646 \u0633\u0631\u064A\u0639 \u0648\u0645\u0628\u0627\u0634\u0631.`;
+  if (targetLang === "fr") {
+    const catFr = cat?.fr || "Article v\xE9rifi\xE9 AliExpress";
+    return `${catFr} authentique (R\xE9f: ${cleanSku}). Normes de haute qualit\xE9 certifi\xE9es, garantie fournisseur officielle et exp\xE9dition internationale rapide.`;
+  }
+  if (targetLang === "tr") {
+    const catTr = cat?.tr || "Orijinal AliExpress \xFCr\xFCn\xFC";
+    return `Orijinal ${catTr} (Stok Kodu: ${cleanSku}). Y\xFCksek kalite standartlar\u0131, resmi tedarik\xE7i garantisi ve h\u0131zl\u0131 uluslararas\u0131 kargo.`;
+  }
+  if (targetLang === "zh") {
+    const catZh = cat?.zh || "\u5B98\u65B9\u8BA4\u8BC1\u5546\u54C1";
+    return `\u6B63\u54C1 ${catZh}\uFF08\u7F16\u53F7\uFF1A${cleanSku}\uFF09\u3002\u5B98\u65B9\u4E25\u9009\u6B63\u54C1\u4FDD\u969C\uFF0C\u9AD8\u54C1\u8D28\u5DE5\u827A\u6807\u51C6\uFF0C\u652F\u6301\u56FD\u9645\u6781\u901F\u76F4\u53D1\u3002`;
+  }
+  return p.description_ar || p.description || "";
 }
 function setCachedProducts(key, data, ttlSec = 600) {
   if (productsApiCache.size > 1e3) {
@@ -94999,7 +95457,7 @@ function clearProductsCache() {
 router2.get("/products", async (req, res, next) => {
   try {
     const { category_id, lang, page = "1", limit, search = "" } = req.query;
-    const requestLang = lang || (req.headers["accept-language"]?.includes("en") ? "en" : "ar");
+    const requestLang = normalizeRequestLang(lang, req.headers["accept-language"]);
     const p = Math.max(1, parseInt(page) || 1);
     const defaultLimit = limit ? Math.min(100, Math.max(1, parseInt(limit))) : 40;
     const cacheKey = `p_${category_id || "all"}_${requestLang}_${p}_${defaultLimit}_${search.trim().toLowerCase()}`;
@@ -95039,10 +95497,13 @@ router2.get("/products", async (req, res, next) => {
       return {
         ...p2,
         name: locName,
-        name_en: requestLang === "en" ? locName : isValidEnglishText(p2.name_en) ? p2.name_en : locName,
-        name_ar: p2.name_ar || locName,
-        image: toOptimizedThumb(p2.image),
-        description: ""
+        name_ar: localizeProductName(p2, "ar"),
+        name_en: localizeProductName(p2, "en"),
+        name_fr: localizeProductName(p2, "fr"),
+        name_tr: localizeProductName(p2, "tr"),
+        name_zh: localizeProductName(p2, "zh"),
+        description: "",
+        image: toOptimizedThumb(p2.image)
       };
     });
     const result = { success: true, data, total: data.length, page: p, limit: defaultLimit };
@@ -95057,12 +95518,13 @@ router2.get("/products", async (req, res, next) => {
 router2.get("/products/:id", validateParams(idParamSchema), async (req, res, next) => {
   try {
     const { lang } = req.query;
-    const requestLang = lang || (req.headers["accept-language"]?.includes("en") ? "en" : "ar");
+    const requestLang = normalizeRequestLang(lang, req.headers["accept-language"]);
     const pId = parseInt(String(req.params.id));
     if (!isNaN(pId)) {
       const stockStatus = await verifyAndSyncDropshipProductStock(pId).catch(() => ({ available: true }));
       if (!stockStatus.available) {
-        return res.status(404).json({ success: false, message: requestLang === "en" ? "Sorry, this product is out of stock at supplier" : "\u0639\u0630\u0631\u0627\u064B\u060C \u0647\u0630\u0627 \u0627\u0644\u0645\u0646\u062A\u062C \u0646\u0641\u062F \u0645\u0646 \u0627\u0644\u0645\u0635\u062F\u0631 \u0648\u062A\u0645 \u062D\u0630\u0641\u0647 \u0645\u0646 \u0627\u0644\u0645\u062A\u062C\u0631" });
+        const outMsg = requestLang === "ar" ? "\u0639\u0630\u0631\u0627\u064B\u060C \u0647\u0630\u0627 \u0627\u0644\u0645\u0646\u062A\u062C \u0646\u0641\u062F \u0645\u0646 \u0627\u0644\u0645\u0635\u062F\u0631 \u0648\u062A\u0645 \u062D\u0630\u0641\u0647 \u0645\u0646 \u0627\u0644\u0645\u062A\u062C\u0631" : requestLang === "fr" ? "D\xE9sol\xE9, ce produit est en rupture de stock chez le fournisseur" : requestLang === "tr" ? "\xDCzg\xFCn\xFCz, bu \xFCr\xFCn tedarik\xE7ide t\xFCkendi" : requestLang === "zh" ? "\u62B1\u6B49\uFF0C\u8BE5\u5546\u54C1\u5728\u4F9B\u5E94\u5546\u5904\u5DF2\u552E\u7F44" : "Sorry, this product is out of stock at supplier";
+        return res.status(404).json({ success: false, message: outMsg });
       }
     }
     const [product] = await db.select().from(products).where(and(eq(products.id, pId), eq(products.is_active, true), isNull(products.deleted_at), sql`${products.quantity} > 0`));
@@ -95070,18 +95532,25 @@ router2.get("/products/:id", validateParams(idParamSchema), async (req, res, nex
       if (product) {
         await purgeProductById(product.id);
       }
-      return res.status(404).json({ success: false, message: requestLang === "en" ? "Sorry, this product is out of stock" : "\u0639\u0630\u0631\u0627\u064B\u060C \u0647\u0630\u0627 \u0627\u0644\u0645\u0646\u062A\u062C \u0646\u0641\u062F \u0645\u0646 \u0627\u0644\u0645\u062E\u0632\u0648\u0646 \u0648\u062A\u0645 \u062D\u0630\u0641\u0647 \u0645\u0646 \u0627\u0644\u0645\u062A\u062C\u0631" });
+      const outMsg = requestLang === "ar" ? "\u0639\u0630\u0631\u0627\u064B\u060C \u0647\u0630\u0627 \u0627\u0644\u0645\u0646\u062A\u062C \u0646\u0641\u062F \u0645\u0646 \u0627\u0644\u0645\u062E\u0632\u0648\u0646 \u0648\u062A\u0645 \u062D\u0630\u0641\u0647 \u0645\u0646 \u0627\u0644\u0645\u062A\u062C\u0631" : requestLang === "fr" ? "D\xE9sol\xE9, ce produit est \xE9puis\xE9" : requestLang === "tr" ? "\xDCzg\xFCn\xFCz, bu \xFCr\xFCn stokta kalmad\u0131" : requestLang === "zh" ? "\u62B1\u6B49\uFF0C\u8BE5\u5546\u54C1\u5DF2\u7F3A\u8D27" : "Sorry, this product is out of stock";
+      return res.status(404).json({ success: false, message: outMsg });
     }
     const locName = localizeProductName(product, requestLang);
     const locDesc = localizeProductDesc(product, requestLang);
     const localized = {
       ...product,
       name: locName,
-      name_en: requestLang === "en" ? locName : isValidEnglishText(product.name_en) ? product.name_en : locName,
-      name_ar: product.name_ar || locName,
+      name_ar: localizeProductName(product, "ar"),
+      name_en: localizeProductName(product, "en"),
+      name_fr: localizeProductName(product, "fr"),
+      name_tr: localizeProductName(product, "tr"),
+      name_zh: localizeProductName(product, "zh"),
       description: locDesc,
-      description_en: requestLang === "en" ? locDesc : isValidEnglishText(product.description_en) ? product.description_en : locDesc,
-      description_ar: product.description_ar || locDesc
+      description_ar: localizeProductDesc(product, "ar"),
+      description_en: localizeProductDesc(product, "en"),
+      description_fr: localizeProductDesc(product, "fr"),
+      description_tr: localizeProductDesc(product, "tr"),
+      description_zh: localizeProductDesc(product, "zh")
     };
     return res.json({
       success: true,
@@ -95095,7 +95564,7 @@ router2.get("/products/:id", validateParams(idParamSchema), async (req, res, nex
 router2.get("/categories", async (req, res, next) => {
   try {
     const { lang } = req.query;
-    const requestLang = lang || (req.headers["accept-language"]?.includes("en") ? "en" : "ar");
+    const requestLang = normalizeRequestLang(lang, req.headers["accept-language"]);
     const cacheKey = `cached_categories_${requestLang}`;
     const cached = getCachedProducts(cacheKey);
     if (cached) {
@@ -95106,13 +95575,16 @@ router2.get("/categories", async (req, res, next) => {
     const rawData = await db.select().from(categories).where(and(eq(categories.is_active, true), isNull(categories.deleted_at))).orderBy(categories.id);
     const data = rawData.map((c) => {
       const cleanCat = CLEAN_CATEGORY_NAMES[Number(c.id)];
-      const name = requestLang === "en" ? cleanCat?.en || (isValidEnglishText(c.name_en) ? c.name_en : c.name_ar) : cleanCat?.ar || (isCleanArabicText(c.name_ar) ? c.name_ar : c.name_en);
+      const name = cleanCat ? cleanCat[requestLang] || cleanCat.en : c.name_ar || c.name_en;
       return {
         ...c,
         name,
-        name_en: cleanCat?.en || c.name_en,
         name_ar: cleanCat?.ar || c.name_ar,
-        description: requestLang === "en" ? c.description_en || c.description_ar : c.description_ar || c.description_en
+        name_en: cleanCat?.en || c.name_en,
+        name_fr: cleanCat?.fr || cleanCat?.en || c.name_en,
+        name_tr: cleanCat?.tr || cleanCat?.en || c.name_en,
+        name_zh: cleanCat?.zh || cleanCat?.en || c.name_en,
+        description: cleanCat ? cleanCat[requestLang] || cleanCat.en : c.description_ar || c.description_en
       };
     });
     const result = { success: true, data };
@@ -95127,7 +95599,7 @@ router2.get("/categories", async (req, res, next) => {
 router2.get("/home-feed", async (req, res, next) => {
   try {
     const { lang } = req.query;
-    const requestLang = lang || (req.headers["accept-language"]?.includes("en") ? "en" : "ar");
+    const requestLang = normalizeRequestLang(lang, req.headers["accept-language"]);
     const cacheKey = `cached_home_feed_${requestLang}`;
     const cached = getCachedProducts(cacheKey);
     if (cached) {
@@ -95157,21 +95629,27 @@ router2.get("/home-feed", async (req, res, next) => {
         list.push({
           ...p,
           name: locName,
-          name_en: requestLang === "en" ? locName : isValidEnglishText(p.name_en) ? p.name_en : locName,
-          name_ar: isCleanArabicText(p.name_ar) ? p.name_ar : locName,
+          name_ar: localizeProductName(p, "ar"),
+          name_en: localizeProductName(p, "en"),
+          name_fr: localizeProductName(p, "fr"),
+          name_tr: localizeProductName(p, "tr"),
+          name_zh: localizeProductName(p, "zh"),
           image: toOptimizedThumb(p.image)
         });
       }
     }
     const sections = allCats.map((cat) => {
       const cleanCat = CLEAN_CATEGORY_NAMES[Number(cat.id)];
-      const name = requestLang === "en" ? cleanCat?.en || (isValidEnglishText(cat.name_en) ? cat.name_en : cat.name_ar) : cleanCat?.ar || (isCleanArabicText(cat.name_ar) ? cat.name_ar : cat.name_en);
+      const name = cleanCat ? cleanCat[requestLang] || cleanCat.en : cat.name_ar || cat.name_en;
       return {
         ...cat,
         name,
-        name_en: cleanCat?.en || cat.name_en,
         name_ar: cleanCat?.ar || cat.name_ar,
-        description: requestLang === "en" ? cat.description_en || cat.description_ar : cat.description_ar || cat.description_en,
+        name_en: cleanCat?.en || cat.name_en,
+        name_fr: cleanCat?.fr || cleanCat?.en || cat.name_en,
+        name_tr: cleanCat?.tr || cleanCat?.en || cat.name_en,
+        name_zh: cleanCat?.zh || cleanCat?.en || cat.name_en,
+        description: cleanCat ? cleanCat[requestLang] || cleanCat.en : cat.description_ar || cat.description_en,
         products: prodMap.get(Number(cat.id)) || []
       };
     }).filter((c) => c.products.length > 0);

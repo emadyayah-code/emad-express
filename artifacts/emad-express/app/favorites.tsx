@@ -9,6 +9,7 @@ import { useFavorites } from "@/context/FavoritesContext";
 import { useCart } from "@/context/CartContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { useCurrency } from "@/context/CurrencyContext";
+import { getProductLocalizedName, UI_LABELS } from "@/lib/i18n";
 
 export default function FavoritesScreen() {
   const colors = useColors();
@@ -28,7 +29,9 @@ export default function FavoritesScreen() {
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
           <Feather name={isRTL ? "arrow-right" : "arrow-left"} size={22} color={colors.foreground} />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.foreground }]}>المفضلة ({favorites.length})</Text>
+        <Text style={[styles.headerTitle, { color: colors.foreground }]}>
+          {`${(UI_LABELS.favorites as any)[language] || UI_LABELS.favorites.en} (${favorites.length})`}
+        </Text>
         <View style={{ width: 38 }} />
       </View>
 
@@ -37,13 +40,21 @@ export default function FavoritesScreen() {
           <View style={[styles.emptyIcon, { backgroundColor: "#ef444415" }]}>
             <Feather name="heart" size={48} color="#ef4444" />
           </View>
-          <Text style={[styles.emptyTitle, { color: colors.foreground }]}>قائمة المفضلة فارغة</Text>
+          <Text style={[styles.emptyTitle, { color: colors.foreground }]}>
+            {(UI_LABELS.emptyFavorites as any)[language] || UI_LABELS.emptyFavorites.en}
+          </Text>
           <Text style={{ color: colors.mutedForeground, textAlign: "center", fontSize: 14, paddingHorizontal: 40 }}>
-            اضغط على أيقونة القلب على أي منتج يعجبك لحفظه هنا والرجوع إليه في أي وقت!
+            {language === "ar" ? "اضغط على أيقونة القلب على أي منتج يعجبك لحفظه هنا والرجوع إليه في أي وقت!" :
+             language === "fr" ? "Cliquez sur l'icône de cœur sur n'importe quel produit pour l'enregistrer ici !" :
+             language === "tr" ? "İstediğiniz ürünü buraya kaydetmek için kalp simgesine tıklayın!" :
+             language === "zh" ? "点击任意商品上的爱心图标即可在此保存并随时查看！" :
+             "Click the heart icon on any product to save it here and view it anytime!"}
           </Text>
           <TouchableOpacity style={[styles.shopBtn, { backgroundColor: colors.primary }]} onPress={() => router.push("/(tabs)/products")}>
             <Feather name="shopping-bag" size={18} color="#000" />
-            <Text style={styles.shopBtnText}>تصفح المنتجات الآن</Text>
+            <Text style={styles.shopBtnText}>
+              {(UI_LABELS.browseProducts as any)[language] || UI_LABELS.browseProducts.en}
+            </Text>
           </TouchableOpacity>
         </View>
       ) : (
@@ -53,7 +64,7 @@ export default function FavoritesScreen() {
           keyExtractor={(item) => "fav-" + item.id}
           contentContainerStyle={{ padding: 12, gap: 12 }}
           renderItem={({ item }) => {
-            const displayName = language === "ar" ? (item.name_ar || item.name) : (item.name_en || item.name);
+            const displayName = getProductLocalizedName(item, language);
             return (
               <TouchableOpacity
                 style={[styles.productCard, { backgroundColor: colors.card, borderColor: colors.border }]}

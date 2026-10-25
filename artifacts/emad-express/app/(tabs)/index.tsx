@@ -13,6 +13,7 @@ import { useCurrency } from "@/context/CurrencyContext";
 import { useFavorites } from "@/context/FavoritesContext";
 import { LinearGradient } from "expo-linear-gradient";
 import { AdBanner } from "@/components/AdBanner";
+import { getProductLocalizedName, getProductLocalizedDesc, getCategoryLocalizedName, UI_LABELS } from "@/lib/i18n";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const SLIDE_WIDTH = Math.min(SCREEN_WIDTH - 32, 480);
@@ -124,7 +125,7 @@ const ShowcaseCarousel = React.memo(function ShowcaseCarousel({
           index,
         })}
         renderItem={({ item }) => {
-          const displayName = language === "ar" ? (item.name_ar || item.name) : (item.name_en || item.name);
+          const displayName = getProductLocalizedName(item, language);
           return (
             <TouchableOpacity
               activeOpacity={0.85}
@@ -138,7 +139,7 @@ const ShowcaseCarousel = React.memo(function ShowcaseCarousel({
                 <View>
                   <View style={styles.showcaseBadge}>
                     <Text style={styles.showcaseBadgeText}>
-                      {language === "ar" ? "✨ منتج مميز" : "✨ Featured"}
+                      {(UI_LABELS.featured as any)[language] || UI_LABELS.featured.en}
                     </Text>
                   </View>
                   <Text style={[styles.showcaseTitle, { color: "#fff", textAlign: isRTL ? "right" : "left" }]} numberOfLines={2}>
@@ -150,7 +151,7 @@ const ShowcaseCarousel = React.memo(function ShowcaseCarousel({
                   <Text style={[styles.showcasePrice, { color: "#f59e0b" }]}>{format(item.price, language)}</Text>
                   <View style={styles.showcaseShopBtn}>
                     <Text style={styles.showcaseShopText}>
-                      {language === "ar" ? "عرض المنتج" : "View"}
+                      {(UI_LABELS.viewProduct as any)[language] || UI_LABELS.viewProduct.en}
                     </Text>
                     <Feather name={isRTL ? "arrow-left" : "arrow-right"} size={14} color="#000" />
                   </View>
@@ -209,7 +210,7 @@ const ProductCardItem = React.memo(function ProductCardItem({
   const { addItem } = useCart();
   const { isFavorite, toggleFavorite } = useFavorites();
   const isFav = isFavorite(item.id);
-  const displayName = language === "ar" ? (item.name_ar || item.name) : (item.name_en || item.name);
+  const displayName = getProductLocalizedName(item, language);
 
   return (
     <TouchableOpacity
@@ -391,7 +392,7 @@ export default function HomeScreen() {
           data={categories || []}
           keyExtractor={(item: any) => String(item.id)}
           renderItem={({ item }: { item: any }) => {
-            const catName = language === "ar" ? (item.name_ar || item.name) : (item.name_en || item.name);
+            const catName = getCategoryLocalizedName(item, language);
             return (
               <TouchableOpacity
                 activeOpacity={0.75}
@@ -454,8 +455,8 @@ export default function HomeScreen() {
         </View>
         <View style={{ paddingHorizontal: 16, gap: 10 }}>
           {topSelling.map((item: any) => {
-            const displayName = language === "ar" ? (item.name_ar || item.name) : (item.name_en || item.name);
-            const displayDesc = language === "ar" ? (item.description_ar || item.description) : (item.description_en || item.description);
+            const displayName = getProductLocalizedName(item, language);
+            const displayDesc = getProductLocalizedDesc(item, language);
             return (
               <TouchableOpacity
                 key={item.id}
@@ -483,7 +484,7 @@ export default function HomeScreen() {
 
       {/* Dynamic Category Showcase Sections (All Categories) */}
       {categoriesWithProducts.map((cat: any) => {
-        const catName = language === "ar" ? (cat.name_ar || cat.name) : (cat.name_en || cat.name);
+        const catName = getCategoryLocalizedName(cat, language);
         return (
           <View key={`cat-sec-${cat.id}`} style={styles.section}>
             <View style={[styles.sectionHeader, { flexDirection: isRTL ? "row" : "row-reverse" }]}>

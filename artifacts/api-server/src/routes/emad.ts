@@ -1255,6 +1255,17 @@ function toOptimizedThumb(url: string | null | undefined): string {
   return s;
 }
 
+function normalizeRequestLang(langParam?: string, acceptHeader?: string): "ar" | "en" | "fr" | "tr" | "zh" {
+  const p = (langParam || "").toLowerCase().trim();
+  if (p === "ar" || p === "en" || p === "fr" || p === "tr" || p === "zh") return p as any;
+  const h = (acceptHeader || "").toLowerCase();
+  if (h.includes("zh")) return "zh";
+  if (h.includes("fr")) return "fr";
+  if (h.includes("tr")) return "tr";
+  if (h.includes("en")) return "en";
+  return "ar";
+}
+
 const AR_TO_EN_PRODUCT_DICT: Record<string, string> = {
   "ساعات": "Watches", "ساعة": "Watch", "ذكية": "Smart", "ذكي": "Smart", "يد": "Wrist", "فاخرة": "Luxury", "فاخر": "Luxury",
   "رجال": "Men", "رجالي": "Men's", "رجالية": "Men's", "نساء": "Women", "نسائي": "Women's", "نسائية": "Women's",
@@ -1276,31 +1287,115 @@ const AR_TO_EN_PRODUCT_DICT: Record<string, string> = {
   "شفرات": "Blades", "حصيرة": "Mat", "قص": "Cutting", "أمان": "Safety", "قفل": "Lock"
 };
 
-const CLEAN_CATEGORY_NAMES: Record<number, { ar: string; en: string }> = {
-  1: { ar: "إلكترونيات وأجهزة ذكية", en: "Electronics & Smart Devices" },
-  2: { ar: "أزياء وموضة", en: "Fashion & Style" },
-  3: { ar: "هواتف ذكية وإكسسوارات", en: "Smartphones & Accessories" },
-  4: { ar: "ساعات ومجوهرات", en: "Watches & Jewelry" },
-  5: { ar: "المنزل والمطبخ", en: "Home & Kitchen" },
-  6: { ar: "الصحة والجمال", en: "Health & Beauty" },
-  7: { ar: "رياضة وترفيه", en: "Sports & Outdoors" },
-  8: { ar: "ألعاب وأطفال", en: "Toys, Kids & Babies" },
-  9: { ar: "سيارات ودراجات نارية", en: "Automotive & Motorcycles" },
-  10: { ar: "أحذية وحقائب", en: "Shoes & Bags" },
-  11: { ar: "كمبيوتر ولابتوب", en: "Computers & Office" },
-  12: { ar: "أجهزة إلكترونية استهلاكية", en: "Consumer Electronics" },
-  13: { ar: "أزياء وملابس رجالية", en: "Men's Fashion" },
-  14: { ar: "أدوات وتحسين المنزل", en: "Tools & Home Improvement" },
-  15: { ar: "إضاءة ومصابيح", en: "Lights & Lighting" },
-  16: { ar: "أمان وحماية ذكية", en: "Security & Protection" },
-  17: { ar: "مستلزمات الحيوانات الأليفة", en: "Pet Supplies" },
-  18: { ar: "أدوات مكتبية ومدرسية", en: "Office & School Supplies" },
-  19: { ar: "أثاث وديكور منزلي", en: "Furniture & Home Decor" },
-  20: { ar: "كاميرات وطائرات درون", en: "Cameras & Drones" },
-  21: { ar: "المنزل الذكي وإنترنت الأشياء", en: "Smart Home & IoT" },
-  22: { ar: "وصلات وشعر مستعار", en: "Hair Extensions & Wigs" },
-  23: { ar: "مستلزمات الحفلات والمناسبات", en: "Event & Party Supplies" },
-  24: { ar: "فنون وحرف وخياطة", en: "Arts, Crafts & Sewing" },
+const AR_TO_FR_PRODUCT_DICT: Record<string, string> = {
+  "ساعات": "Montres", "ساعة": "Montre", "ذكية": "Intelligente", "ذكي": "Intelligent", "يد": "Poignet", "فاخرة": "Luxe", "فاخر": "Luxe",
+  "رجال": "Hommes", "رجالي": "Homme", "رجالية": "Homme", "نساء": "Femmes", "نسائي": "Femme", "نسائية": "Femme",
+  "هاتف": "Téléphone", "جوال": "Mobile", "شاحن": "Chargeur", "كابل": "Câble", "سلك": "Cordon", "سماعات": "Écouteurs",
+  "سماعة": "Casque", "بلوتوث": "Bluetooth", "لاسلكي": "Sans Fil", "لاسلكية": "Sans Fil", "حافظة": "Étui",
+  "جراب": "Housse", "غطاء": "Coque", "حماية": "Protection", "شاشة": "Écran", "زجاج": "Verre", "مقاوم": "Étanche",
+  "للماء": "Étanche", "مقاومة": "Étanche", "حقيبة": "Sac", "حقائب": "Sacs", "ظهر": "Dos", "سفر": "Voyage",
+  "يدوية": "Main", "حذاء": "Chaussures", "أحذية": "Chaussures", "رياضي": "Sport", "رياضية": "Baskets", "جلد": "Cuir",
+  "طبيعي": "Véritable", "ملابس": "Vêtements", "قميص": "Chemise", "تيشيرت": "T-Shirt", "بنطلون": "Pantalon", "جاكيت": "Veste",
+  "فستان": "Robe", "أطفال": "Enfants", "طفل": "Bébé", "لعبة": "Jouet", "ألعاب": "Jouets", "سيارة": "Voiture", "سيارات": "Auto",
+  "إلكترونيات": "Électronique", "كمبيوتر": "Ordinateur", "لابتوب": "Portable", "فأرة": "Souris", "لوحة": "Clavier",
+  "مفاتيح": "Clavier", "منزل": "Maison", "مطبخ": "Cuisine", "أدوات": "Outils", "أداة": "Outil", "طقم": "Ensemble",
+  "مجموعة": "Kit", "سكين": "Couteau", "قاطع": "Coupeur", "مقص": "Ciseaux", "إضاءة": "Éclairage", "مصباح": "Lampe",
+  "كاميرا": "Appareil Photo", "درون": "Drone", "طائرة": "Drone", "تصوير": "Photographie", "تجميل": "Beauté", "عناية": "Soin",
+  "بشرة": "Peau", "شعر": "Cheveux", "ماكينة": "Tondeuse", "حلاقة": "Rasoir", "مجوهرات": "Bijoux", "خاتم": "Bague",
+  "سلسال": "Collier", "قلادة": "Pendentif", "سوار": "Bracelet", "عطر": "Parfum", "نظارات": "Lunettes", "شمسية": "Soleil",
+  "أعلام": "Drapeaux", "علم": "Drapeau", "لافتات": "Bannières", "ملونة": "Couleur", "شاطئ": "Plage", "خياطة": "Couture",
+  "تطريز": "Broderie", "حرف": "Artisanat", "يدوي": "Fait Main", "أكريليك": "Acrylique", "مسطرة": "Règle", "شفرة": "Lame",
+  "شفرات": "Lames", "حصيرة": "Tapis", "قص": "Découpe", "أمان": "Sécurité", "قفل": "Serrure"
+};
+
+const AR_TO_TR_PRODUCT_DICT: Record<string, string> = {
+  "ساعات": "Saatler", "ساعة": "Saat", "ذكية": "Akıllı", "ذكي": "Akıllı", "يد": "Kol", "فاخرة": "Lüks", "فاخر": "Lüks",
+  "رجال": "Erkekler", "رجالي": "Erkek", "رجالية": "Erkek", "نساء": "Kadınlar", "نسائي": "Kadın", "نسائية": "Kadın",
+  "هاتف": "Telefon", "جوال": "Mobil", "شاحن": "Şarj Cihazı", "كابل": "Kablo", "سلك": "Kordon", "سماعات": "Kulaklık",
+  "سماعة": "Kulaklık", "بلوتوث": "Bluetooth", "لاسلكي": "Kablosuz", "لاسلكية": "Kablosuz", "حافظة": "Kılıf",
+  "جراب": "Kapak", "غطاء": "Koruyucu", "حماية": "Koruma", "شاشة": "Ekran", "زجاج": "Cam", "مقاوم": "Su Geçirmez",
+  "للماء": "Su Geçirmez", "مقاومة": "Su Geçirmez", "حقيبة": "Çanta", "حقائب": "Çantalar", "ظهر": "Sırt", "سفر": "Seyahat",
+  "يدوية": "El Çantası", "حذاء": "Ayakkabı", "أحذية": "Ayakkabılar", "رياضي": "Spor", "رياضية": "Spor Ayakkabı", "جلد": "Deri",
+  "طبيعي": "Hakiki", "ملابس": "Giyim", "قميص": "Gömlek", "تيشيرت": "Tişört", "بنطلون": "Pantolon", "جاكيت": "Ceket",
+  "فستان": "Elbise", "أطفال": "Çocuklar", "طفل": "Bebek", "لعبة": "Oyuncak", "ألعاب": "Oyuncaklar", "سيارة": "Araba", "سيارات": "Oto",
+  "إلكترونيات": "Elektronik", "كمبيوتر": "Bilgisayar", "لابتوب": "Dizüstü", "فأرة": "Fare", "لوحة": "Klavye",
+  "مفاتيح": "Klavye", "منزل": "Ev", "مطبخ": "Mutfak", "أدوات": "Aletler", "أداة": "Alet", "طقم": "Takım",
+  "مجموعة": "Set", "سكين": "Bıçak", "قاطع": "Kesici", "مقص": "Makas", "إضاءة": "Aydınlatma", "مصباح": "Lamba",
+  "كاميرا": "Kamera", "درون": "Dron", "طائرة": "Drone", "تصوير": "Fotoğrafçılık", "تجميل": "Güzellik", "عناية": "Bakım",
+  "بشرة": "Cilt", "شعر": "Saç", "ماكينة": "Tıraş Makinesi", "حلاقة": "Tıraş", "مجوهرات": "Takı", "خاتم": "Yüzük",
+  "سلسال": "Kolye", "قلادة": "Kolye Ucu", "سوار": "Bilezik", "عطر": "Parfüm", "نظارات": "Gözlük", "شمسية": "Güneş Gözlüğü",
+  "أعلام": "Bayraklar", "علم": "Bayrak", "لافتات": "Pankartlar", "ملونة": "Renkli", "شاطئ": "Plaj", "خياطة": "Dikiş",
+  "تطريز": "Nakış", "حرف": "El Sanatı", "يدوي": "El Yapımı", "أكريليك": "Akrilik", "مسطرة": "Cetvel", "شفرة": "Bıçak Ucu",
+  "شفرات": "Bıçaklar", "حصيرة": "Mat", "قص": "Kesim", "أمان": "Güvenlik", "قفل": "Kilit"
+};
+
+const AR_TO_ZH_PRODUCT_DICT: Record<string, string> = {
+  "ساعات": "手表", "ساعة": "手表", "ذكية": "智能", "ذكي": "智能", "يد": "手腕", "فاخرة": "奢华", "فاخر": "豪华",
+  "رجال": "男士", "رجالي": "男款", "رجالية": "男士", "نساء": "女士", "نسائي": "女款", "نسائية": "女士",
+  "هاتف": "手机", "جوال": "手机", "شاحن": "充电器", "كابل": "数据线", "سلك": "连接线", "سماعات": "耳机",
+  "سماعة": "耳机", "بلوتوث": "蓝牙", "لاسلكي": "无线", "لاسلكية": "无线", "حافظة": "保护套",
+  "جراب": "保护壳", "غطاء": "外壳", "حماية": "防护", "شاشة": "屏幕", "زجاج": "钢化膜", "مقاوم": "防水",
+  "للماء": "防水", "مقاومة": "防水", "حقيبة": "包", "حقائب": "箱包", "ظهر": "双肩包", "سفر": "旅行",
+  "يدوية": "手提包", "حذاء": "鞋", "أحذية": "鞋靴", "رياضي": "运动", "رياضية": "运动鞋", "جلد": "真皮",
+  "طبيعي": "正品", "ملابس": "服装", "قميص": "衬衫", "تيشيرت": "T恤", "بنطلون": "裤子", "جاكيت": "外套",
+  "فستان": "连衣裙", "أطفال": "儿童", "طفل": "婴儿", "لعبة": "玩具", "ألعاب": "玩具", "سيارة": "汽车", "سيارات": "车载",
+  "إلكترونيات": "数码电子", "كمبيوتر": "电脑", "لابتوب": "笔记本", "فأرة": "鼠标", "لوحة": "键盘",
+  "مفاتيح": "键盘", "منزل": "家居", "مطبخ": "厨房", "أدوات": "工具", "أداة": "工具", "طقم": "套装",
+  "مجموعة": "组合", "سكين": "刀具", "قاطع": "切割器", "مقص": "剪刀", "إضاءة": "照明", "مصباح": "台灯",
+  "كاميرا": "相机", "درون": "无人机", "طائرة": "航拍机", "تصوير": "摄影", "تجميل": "美妆", "عناية": "护理",
+  "بشرة": "护肤", "شعر": "美发", "ماكينة": "理发器", "حلاقة": "剃须刀", "مجوهرات": "首饰", "خاتم": "戒指",
+  "سلسال": "项链", "قلادة": "吊坠", "سوار": "手镯", "عطر": "香水", "نظارات": "眼镜", "شمسية": "太阳镜",
+  "أعلام": "旗帜", "علم": "旗帜", "لافتات": "条幅", "ملونة": "彩色", "شاطئ": "沙滩", "خياطة": "缝纫",
+  "تطريز": "刺绣", "حرف": "工艺", "يدوي": "手工", "أكريليك": "亚克力", "مسطرة": "尺子", "شفرة": "刀片",
+  "شفرات": "刀片", "حصيرة": "垫板", "قص": "剪切", "أمان": "安全", "قفل": "智能锁"
+};
+
+const EN_TO_FR_DICT: Record<string, string> = {
+  "knife": "Couteau", "cover": "Housse", "tool": "Outil", "tools": "Outils", "kit": "Kit",
+  "set": "Ensemble", "pro": "Pro", "edition": "Édition", "smart": "Intelligent", "watch": "Montre",
+  "phone": "Téléphone", "case": "Coque", "cable": "Câble", "charger": "Chargeur", "led": "LED",
+  "lamp": "Lampe", "bag": "Sac", "shoes": "Chaussures", "camera": "Appareil", "drone": "Drone"
+};
+
+const EN_TO_TR_DICT: Record<string, string> = {
+  "knife": "Bıçak", "cover": "Kapak", "tool": "Alet", "tools": "Aletler", "kit": "Set",
+  "set": "Takım", "pro": "Pro", "edition": "Seri", "smart": "Akıllı", "watch": "Saat",
+  "phone": "Telefon", "case": "Kılıf", "cable": "Kablo", "charger": "Şarj", "led": "LED",
+  "lamp": "Lamba", "bag": "Çanta", "shoes": "Ayakkabı", "camera": "Kamera", "drone": "Dron"
+};
+
+const EN_TO_ZH_DICT: Record<string, string> = {
+  "knife": "刀具", "cover": "保护套", "tool": "工具", "tools": "工具套件", "kit": "套装",
+  "set": "组合", "pro": "专业版", "edition": "旗舰款", "smart": "智能", "watch": "手表",
+  "phone": "手机", "case": "保护壳", "cable": "数据线", "charger": "充电器", "led": "LED",
+  "lamp": "台灯", "bag": "背包", "shoes": "鞋", "camera": "相机", "drone": "无人机"
+};
+
+const CLEAN_CATEGORY_NAMES: Record<number, { ar: string; en: string; fr: string; tr: string; zh: string }> = {
+  1: { ar: "إلكترونيات وأجهزة ذكية", en: "Electronics & Smart Devices", fr: "Électronique & Appareils Intelligents", tr: "Elektronik ve Akıllı Cihazlar", zh: "电子与智能设备" },
+  2: { ar: "أزياء وموضة", en: "Fashion & Style", fr: "Mode & Style", tr: "Moda ve Stil", zh: "时尚与潮流" },
+  3: { ar: "هواتف ذكية وإكسسوارات", en: "Smartphones & Accessories", fr: "Smartphones & Accessoires", tr: "Akıllı Telefonlar ve Aksesuarlar", zh: "智能手机与配件" },
+  4: { ar: "ساعات ومجوهرات", en: "Watches & Jewelry", fr: "Montres & Bijoux", tr: "Saatler ve Takılar", zh: "手表与珠宝" },
+  5: { ar: "المنزل والمطبخ", en: "Home & Kitchen", fr: "Maison & Cuisine", tr: "Ev ve Mutfak", zh: "家居与厨房" },
+  6: { ar: "الصحة والجمال", en: "Health & Beauty", fr: "Santé & Beauté", tr: "Sağlık ve Güzellik", zh: "健康与美容" },
+  7: { ar: "رياضة وترفيه", en: "Sports & Outdoors", fr: "Sports & Loisirs", tr: "Spor ve Açık Hava", zh: "运动与户外" },
+  8: { ar: "ألعاب وأطفال", en: "Toys, Kids & Babies", fr: "Jouets, Enfants & Bébés", tr: "Oyuncak, Çocuk ve Bebek", zh: "母婴与玩具" },
+  9: { ar: "سيارات ودراجات نارية", en: "Automotive & Motorcycles", fr: "Automobiles & Motos", tr: "Otomotiv ve Motosiklet", zh: "汽车与摩托车" },
+  10: { ar: "أحذية وحقائب", en: "Shoes & Bags", fr: "Chaussures & Sacs", tr: "Ayakkabı ve Çantalar", zh: "鞋子与箱包" },
+  11: { ar: "كمبيوتر ولابتوب", en: "Computers & Office", fr: "Ordinateurs & Bureautique", tr: "Bilgisayar ve Ofis", zh: "电脑与办公" },
+  12: { ar: "أجهزة إلكترونية استهلاكية", en: "Consumer Electronics", fr: "Électronique Grand Public", tr: "Tüketici Elektroniği", zh: "消费类电子产品" },
+  13: { ar: "أزياء وملابس رجالية", en: "Men's Fashion", fr: "Mode Homme", tr: "Erkek Modası", zh: "男装服饰" },
+  14: { ar: "أدوات وتحسين المنزل", en: "Tools & Home Improvement", fr: "Outils & Bricolage", tr: "Aletler ve Ev Geliştirme", zh: "工具与家装" },
+  15: { ar: "إضاءة ومصابيح", en: "Lights & Lighting", fr: "Lumières & Éclairage", tr: "Işıklar ve Aydınlatma", zh: "灯具与照明" },
+  16: { ar: "أمان وحماية ذكية", en: "Security & Protection", fr: "Sécurité & Protection", tr: "Güvenlik ve Koruma", zh: "安防与智能监控" },
+  17: { ar: "مستلزمات الحيوانات الأليفة", en: "Pet Supplies", fr: "Animalerie", tr: "Evcil Hayvan Ürünleri", zh: "宠物用品" },
+  18: { ar: "أدوات مكتبية ومدرسية", en: "Office & School Supplies", fr: "Fournitures de Bureau & Scolaires", tr: "Ofis ve Okul Malzemeleri", zh: "办公与文具用品" },
+  19: { ar: "أثاث وديكور منزلي", en: "Furniture & Home Decor", fr: "Meubles & Décoration", tr: "Mobilya ve Ev Dekorasyonu", zh: "家具与家居装饰" },
+  20: { ar: "كاميرات وطائرات درون", en: "Cameras & Drones", fr: "Appareils Photo & Drones", tr: "Kameralar ve Dronlar", zh: "相机与无人机" },
+  21: { ar: "المنزل الذكي وإنترنت الأشياء", en: "Smart Home & IoT", fr: "Maison Intelligente & IoT", tr: "Akıllı Ev ve IoT", zh: "智能家居与物联网" },
+  22: { ar: "وصلات وشعر مستعار", en: "Hair Extensions & Wigs", fr: "Extensions & Perruques", tr: "Saç Kaynakları ve Peruklar", zh: "假发与接发" },
+  23: { ar: "مستلزمات الحفلات والمناسبات", en: "Event & Party Supplies", fr: "Articles de Fête", tr: "Parti ve Etkinlik Malzemeleri", zh: "派对与节日用品" },
+  24: { ar: "فنون وحرف وخياطة", en: "Arts, Crafts & Sewing", fr: "Arts, Loisirs Créatifs & Couture", tr: "Sanat, El Sanatları ve Dikiş", zh: "艺术、手工艺与缝纫" },
 };
 
 function isValidEnglishText(t: string | null | undefined): boolean {
@@ -1326,49 +1421,109 @@ function isCleanArabicText(t: string | null | undefined): boolean {
 
 function localizeProductName(p: { id?: number; name_ar?: string | null; name_en?: string | null; name?: string | null; sku?: string | null; category_id?: number | null }, lang: string): string {
   const cat = p.category_id ? CLEAN_CATEGORY_NAMES[Number(p.category_id)] : null;
-  const catEn = cat ? cat.en : "AliExpress Verified";
-  const catAr = cat ? cat.ar : "علي إكسبرس الرسمي";
   const cleanSku = p.sku?.replace(/^ALI-/, "").slice(0, 14) || String(p.id || "PROD");
+  const targetLang = normalizeRequestLang(lang);
 
-  if (lang === "en") {
-    if (isValidEnglishText(p.name_en)) {
-      return p.name_en!.trim();
-    }
+  if (targetLang === "ar") {
+    if (isCleanArabicText(p.name_ar)) return p.name_ar!.trim();
+    const catAr = cat?.ar || "علي إكسبرس الرسمي";
+    return `${catAr} - منتج أصلي عالي الجودة (${cleanSku})`;
+  }
+
+  if (targetLang === "en") {
+    if (isValidEnglishText(p.name_en)) return p.name_en!.trim();
     const raw = (p.name_ar || p.name || p.name_en || "").trim();
     const tokens = raw.split(/[\s,،\-–—._/()+]+/);
     const words: string[] = [];
     for (const t of tokens) {
       if (!t) continue;
-      if (/^[a-zA-Z0-9]+$/.test(t)) {
-        words.push(t);
-      } else if (AR_TO_EN_PRODUCT_DICT[t]) {
-        words.push(AR_TO_EN_PRODUCT_DICT[t]);
-      }
+      if (/^[a-zA-Z0-9]+$/.test(t)) words.push(t);
+      else if (AR_TO_EN_PRODUCT_DICT[t]) words.push(AR_TO_EN_PRODUCT_DICT[t]);
     }
-    if (words.length >= 2) {
-      return words.slice(0, 8).join(" ") + " Pro Edition";
-    }
+    if (words.length >= 2) return words.slice(0, 8).join(" ") + " Pro Edition";
+    const catEn = cat?.en || "AliExpress Verified";
     return `${catEn} Premium Item (${cleanSku})`;
-  } else {
-    if (isCleanArabicText(p.name_ar)) {
-      return p.name_ar!.trim();
-    }
-    return `${catAr} - منتج أصلي عالي الجودة (${cleanSku})`;
   }
+
+  if (targetLang === "fr") {
+    const raw = (p.name_ar || p.name || p.name_en || "").trim();
+    const tokens = raw.split(/[\s,،\-–—._/()+]+/);
+    const words: string[] = [];
+    for (const t of tokens) {
+      if (!t) continue;
+      const lower = t.toLowerCase();
+      if (AR_TO_FR_PRODUCT_DICT[t]) words.push(AR_TO_FR_PRODUCT_DICT[t]);
+      else if (EN_TO_FR_DICT[lower]) words.push(EN_TO_FR_DICT[lower]);
+      else if (/^[0-9]+$/.test(t)) words.push(t);
+    }
+    if (words.length >= 2) return words.slice(0, 8).join(" ") + " Édition Pro";
+    const catFr = cat?.fr || cat?.en || "AliExpress Certifié";
+    return `${catFr} Article de Qualité (${cleanSku})`;
+  }
+
+  if (targetLang === "tr") {
+    const raw = (p.name_ar || p.name || p.name_en || "").trim();
+    const tokens = raw.split(/[\s,،\-–—._/()+]+/);
+    const words: string[] = [];
+    for (const t of tokens) {
+      if (!t) continue;
+      const lower = t.toLowerCase();
+      if (AR_TO_TR_PRODUCT_DICT[t]) words.push(AR_TO_TR_PRODUCT_DICT[t]);
+      else if (EN_TO_TR_DICT[lower]) words.push(EN_TO_TR_DICT[lower]);
+      else if (/^[0-9]+$/.test(t)) words.push(t);
+    }
+    if (words.length >= 2) return words.slice(0, 8).join(" ") + " Özel Seri";
+    const catTr = cat?.tr || cat?.en || "AliExpress Orijinal";
+    return `${catTr} Kaliteli Ürün (${cleanSku})`;
+  }
+
+  if (targetLang === "zh") {
+    const raw = (p.name_ar || p.name || p.name_en || "").trim();
+    const tokens = raw.split(/[\s,،\-–—._/()+]+/);
+    const words: string[] = [];
+    for (const t of tokens) {
+      if (!t) continue;
+      const lower = t.toLowerCase();
+      if (AR_TO_ZH_PRODUCT_DICT[t]) words.push(AR_TO_ZH_PRODUCT_DICT[t]);
+      else if (EN_TO_ZH_DICT[lower]) words.push(EN_TO_ZH_DICT[lower]);
+      else if (/^[0-9]+$/.test(t)) words.push(t);
+    }
+    if (words.length >= 2) return words.slice(0, 8).join("") + " 优质版";
+    const catZh = cat?.zh || cat?.en || "速卖通优选";
+    return `${catZh} 精品正品 (${cleanSku})`;
+  }
+
+  return p.name_ar || p.name || String(p.id);
 }
 
 function localizeProductDesc(p: { id?: number; description_ar?: string | null; description_en?: string | null; description?: string | null; sku?: string | null; category_id?: number | null }, lang: string): string {
   const cat = p.category_id ? CLEAN_CATEGORY_NAMES[Number(p.category_id)] : null;
-  const catEn = cat ? cat.en : "AliExpress verified item";
-  const catAr = cat ? cat.ar : "منتج رسمي من علي إكسبرس";
   const cleanSku = p.sku?.replace(/^ALI-/, "").slice(0, 14) || String(p.id || "PROD");
+  const targetLang = normalizeRequestLang(lang);
 
-  if (lang === "en") {
+  if (targetLang === "ar") {
+    if (isCleanArabicText(p.description_ar)) return p.description_ar!.trim();
+    const catAr = cat?.ar || "منتج رسمي من علي إكسبرس";
+    return `${catAr} أصلي عالي الجودة ومضمون 100% من المورد المعتمد (كود: ${cleanSku}) مع شحن سريع ومباشر.`;
+  }
+  if (targetLang === "en") {
     if (isValidEnglishText(p.description_en)) return p.description_en!.trim();
+    const catEn = cat?.en || "AliExpress verified item";
     return `Authentic ${catEn} (SKU: ${cleanSku}). High quality standards, official supplier warranty, and express international shipping.`;
   }
-  if (isCleanArabicText(p.description_ar)) return p.description_ar!.trim();
-  return `${catAr} أصلي عالي الجودة ومضمون 100% من المورد المعتمد (كود: ${cleanSku}) مع شحن سريع ومباشر.`;
+  if (targetLang === "fr") {
+    const catFr = cat?.fr || "Article vérifié AliExpress";
+    return `${catFr} authentique (Réf: ${cleanSku}). Normes de haute qualité certifiées, garantie fournisseur officielle et expédition internationale rapide.`;
+  }
+  if (targetLang === "tr") {
+    const catTr = cat?.tr || "Orijinal AliExpress ürünü";
+    return `Orijinal ${catTr} (Stok Kodu: ${cleanSku}). Yüksek kalite standartları, resmi tedarikçi garantisi ve hızlı uluslararası kargo.`;
+  }
+  if (targetLang === "zh") {
+    const catZh = cat?.zh || "官方认证商品";
+    return `正品 ${catZh}（编号：${cleanSku}）。官方严选正品保障，高品质工艺标准，支持国际极速直发。`;
+  }
+  return p.description_ar || p.description || "";
 }
 
 function setCachedProducts(key: string, data: any, ttlSec: number = 600) {
@@ -1386,7 +1541,7 @@ export function clearProductsCache() {
 router.get("/products", async (req, res, next) => {
   try {
     const { category_id, lang, page = "1", limit, search = "" } = req.query as Record<string, string>;
-    const requestLang = lang || (req.headers["accept-language"]?.includes("en") ? "en" : "ar");
+    const requestLang = normalizeRequestLang(lang, req.headers["accept-language"]);
     const p = Math.max(1, parseInt(page) || 1);
     const defaultLimit = limit ? Math.min(100, Math.max(1, parseInt(limit))) : 40;
 
@@ -1437,10 +1592,13 @@ router.get("/products", async (req, res, next) => {
       return {
         ...p,
         name: locName,
-        name_en: requestLang === "en" ? locName : (isValidEnglishText(p.name_en) ? p.name_en! : locName),
-        name_ar: p.name_ar || locName,
-        image: toOptimizedThumb(p.image),
+        name_ar: localizeProductName(p, "ar"),
+        name_en: localizeProductName(p, "en"),
+        name_fr: localizeProductName(p, "fr"),
+        name_tr: localizeProductName(p, "tr"),
+        name_zh: localizeProductName(p, "zh"),
         description: "",
+        image: toOptimizedThumb(p.image),
       };
     });
 
@@ -1456,12 +1614,17 @@ router.get("/products", async (req, res, next) => {
 router.get("/products/:id", validateParams(idParamSchema), async (req, res, next) => {
   try {
     const { lang } = req.query as Record<string, string>;
-    const requestLang = lang || (req.headers["accept-language"]?.includes("en") ? "en" : "ar");
+    const requestLang = normalizeRequestLang(lang, req.headers["accept-language"]);
     const pId = parseInt(String(req.params.id));
     if (!isNaN(pId)) {
       const stockStatus = await verifyAndSyncDropshipProductStock(pId).catch(() => ({ available: true }));
       if (!stockStatus.available) {
-        return res.status(404).json({ success: false, message: requestLang === "en" ? "Sorry, this product is out of stock at supplier" : "عذراً، هذا المنتج نفد من المصدر وتم حذفه من المتجر" });
+        const outMsg = requestLang === "ar" ? "عذراً، هذا المنتج نفد من المصدر وتم حذفه من المتجر" :
+                       requestLang === "fr" ? "Désolé, ce produit est en rupture de stock chez le fournisseur" :
+                       requestLang === "tr" ? "Üzgünüz, bu ürün tedarikçide tükendi" :
+                       requestLang === "zh" ? "抱歉，该商品在供应商处已售罄" :
+                       "Sorry, this product is out of stock at supplier";
+        return res.status(404).json({ success: false, message: outMsg });
       }
     }
     const [product] = await db.select().from(products).where(and(eq(products.id, pId), eq(products.is_active, true), isNull(products.deleted_at), sql`${products.quantity} > 0`));
@@ -1469,18 +1632,29 @@ router.get("/products/:id", validateParams(idParamSchema), async (req, res, next
       if (product) {
         await purgeProductById(product.id);
       }
-      return res.status(404).json({ success: false, message: requestLang === "en" ? "Sorry, this product is out of stock" : "عذراً، هذا المنتج نفد من المخزون وتم حذفه من المتجر" });
+      const outMsg = requestLang === "ar" ? "عذراً، هذا المنتج نفد من المخزون وتم حذفه من المتجر" :
+                     requestLang === "fr" ? "Désolé, ce produit est épuisé" :
+                     requestLang === "tr" ? "Üzgünüz, bu ürün stokta kalmadı" :
+                     requestLang === "zh" ? "抱歉，该商品已缺货" :
+                     "Sorry, this product is out of stock";
+      return res.status(404).json({ success: false, message: outMsg });
     }
     const locName = localizeProductName(product, requestLang);
     const locDesc = localizeProductDesc(product, requestLang);
     const localized = {
       ...product,
       name: locName,
-      name_en: requestLang === "en" ? locName : (isValidEnglishText(product.name_en) ? product.name_en! : locName),
-      name_ar: product.name_ar || locName,
+      name_ar: localizeProductName(product, "ar"),
+      name_en: localizeProductName(product, "en"),
+      name_fr: localizeProductName(product, "fr"),
+      name_tr: localizeProductName(product, "tr"),
+      name_zh: localizeProductName(product, "zh"),
       description: locDesc,
-      description_en: requestLang === "en" ? locDesc : (isValidEnglishText(product.description_en) ? product.description_en! : locDesc),
-      description_ar: product.description_ar || locDesc,
+      description_ar: localizeProductDesc(product, "ar"),
+      description_en: localizeProductDesc(product, "en"),
+      description_fr: localizeProductDesc(product, "fr"),
+      description_tr: localizeProductDesc(product, "tr"),
+      description_zh: localizeProductDesc(product, "zh"),
     };
     return res.json({ 
       success: true, 
@@ -1493,7 +1667,7 @@ router.get("/products/:id", validateParams(idParamSchema), async (req, res, next
 router.get("/categories", async (req, res, next) => {
   try {
     const { lang } = req.query as Record<string, string>;
-    const requestLang = lang || (req.headers["accept-language"]?.includes("en") ? "en" : "ar");
+    const requestLang = normalizeRequestLang(lang, req.headers["accept-language"]);
     const cacheKey = `cached_categories_${requestLang}`;
     const cached = getCachedProducts(cacheKey);
     if (cached) {
@@ -1505,15 +1679,16 @@ router.get("/categories", async (req, res, next) => {
     const rawData = await db.select().from(categories).where(and(eq(categories.is_active, true), isNull(categories.deleted_at))).orderBy(categories.id);
     const data = rawData.map(c => {
       const cleanCat = CLEAN_CATEGORY_NAMES[Number(c.id)];
-      const name = requestLang === "en"
-        ? (cleanCat?.en || (isValidEnglishText(c.name_en) ? c.name_en! : c.name_ar))
-        : (cleanCat?.ar || (isCleanArabicText(c.name_ar) ? c.name_ar! : c.name_en));
+      const name = cleanCat ? (cleanCat[requestLang] || cleanCat.en) : (c.name_ar || c.name_en);
       return {
         ...c,
         name,
-        name_en: cleanCat?.en || c.name_en,
         name_ar: cleanCat?.ar || c.name_ar,
-        description: requestLang === "en" ? (c.description_en || c.description_ar) : (c.description_ar || c.description_en),
+        name_en: cleanCat?.en || c.name_en,
+        name_fr: cleanCat?.fr || cleanCat?.en || c.name_en,
+        name_tr: cleanCat?.tr || cleanCat?.en || c.name_en,
+        name_zh: cleanCat?.zh || cleanCat?.en || c.name_en,
+        description: cleanCat ? (cleanCat[requestLang] || cleanCat.en) : (c.description_ar || c.description_en),
       };
     });
     const result = { success: true, data };
@@ -1529,7 +1704,7 @@ router.get("/categories", async (req, res, next) => {
 router.get("/home-feed", async (req, res, next) => {
   try {
     const { lang } = req.query as Record<string, string>;
-    const requestLang = lang || (req.headers["accept-language"]?.includes("en") ? "en" : "ar");
+    const requestLang = normalizeRequestLang(lang, req.headers["accept-language"]);
     const cacheKey = `cached_home_feed_${requestLang}`;
     const cached = getCachedProducts(cacheKey);
     if (cached) {
@@ -1571,8 +1746,11 @@ router.get("/home-feed", async (req, res, next) => {
         list.push({
           ...p,
           name: locName,
-          name_en: requestLang === "en" ? locName : (isValidEnglishText(p.name_en) ? p.name_en : locName),
-          name_ar: isCleanArabicText(p.name_ar) ? p.name_ar : locName,
+          name_ar: localizeProductName(p, "ar"),
+          name_en: localizeProductName(p, "en"),
+          name_fr: localizeProductName(p, "fr"),
+          name_tr: localizeProductName(p, "tr"),
+          name_zh: localizeProductName(p, "zh"),
           image: toOptimizedThumb(p.image),
         });
       }
@@ -1581,15 +1759,16 @@ router.get("/home-feed", async (req, res, next) => {
     const sections = allCats
       .map(cat => {
         const cleanCat = CLEAN_CATEGORY_NAMES[Number(cat.id)];
-        const name = requestLang === "en"
-          ? (cleanCat?.en || (isValidEnglishText(cat.name_en) ? cat.name_en! : cat.name_ar))
-          : (cleanCat?.ar || (isCleanArabicText(cat.name_ar) ? cat.name_ar! : cat.name_en));
+        const name = cleanCat ? (cleanCat[requestLang] || cleanCat.en) : (cat.name_ar || cat.name_en);
         return {
           ...cat,
           name,
-          name_en: cleanCat?.en || cat.name_en,
           name_ar: cleanCat?.ar || cat.name_ar,
-          description: requestLang === "en" ? (cat.description_en || cat.description_ar) : (cat.description_ar || cat.description_en),
+          name_en: cleanCat?.en || cat.name_en,
+          name_fr: cleanCat?.fr || cleanCat?.en || cat.name_en,
+          name_tr: cleanCat?.tr || cleanCat?.en || cat.name_en,
+          name_zh: cleanCat?.zh || cleanCat?.en || cat.name_en,
+          description: cleanCat ? (cleanCat[requestLang] || cleanCat.en) : (cat.description_ar || cat.description_en),
           products: prodMap.get(Number(cat.id)) || [],
         };
       })

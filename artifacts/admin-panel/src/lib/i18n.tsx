@@ -342,6 +342,7 @@ export function isCleanArabicText(t: string | null | undefined): boolean {
 
 export function getProductLocalizedName(p: any, lang: Language): string {
   if (!p) return "";
+  if (p[`name_${lang}`]) return p[`name_${lang}`];
   const cat = p.category_id ? CLEAN_CATEGORY_NAMES[Number(p.category_id)] : null;
   const catEn = cat ? cat.en : "AliExpress Verified";
   const catAr = cat ? cat.ar : "علي إكسبرس الرسمي";
@@ -383,6 +384,7 @@ export function getProductLocalizedName(p: any, lang: Language): string {
 
 export function getProductLocalizedDesc(p: any, lang: Language): string {
   if (!p) return "";
+  if (p[`description_${lang}`]) return p[`description_${lang}`];
   const cat = p.category_id ? CLEAN_CATEGORY_NAMES[Number(p.category_id)] : null;
   const catEn = cat ? cat.en : "AliExpress verified item";
   const catAr = cat ? cat.ar : "منتج رسمي من علي إكسبرس";

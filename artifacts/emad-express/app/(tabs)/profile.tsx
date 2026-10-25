@@ -8,6 +8,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useLanguage, LANGUAGES, Lang } from "@/context/LanguageContext";
 import { useCurrency, CURRENCIES, CurrencyCode } from "@/context/CurrencyContext";
 import { useAppSettings } from "@/hooks/useAppSettings";
+import { UI_LABELS } from "@/lib/i18n";
 
 const APP_VERSION = "18.0.1";
 
@@ -34,7 +35,7 @@ function CurrencyModal({ visible, onClose }: { visible: boolean; onClose: () => 
         <View style={[styles.modalSheet, { backgroundColor: colors.card, paddingBottom: insets.bottom + 16 }]}>
           <View style={styles.modalHandle} />
           <Text style={[styles.modalTitle, { color: colors.foreground }]}>
-            {language === "ar" ? "اختر العملة" : "Select Currency"}
+            {(UI_LABELS.selectCurrency as any)[language] || UI_LABELS.selectCurrency.en}
           </Text>
           {CURRENCIES.map(c => {
             const isSelected = c.code === currency.code;
@@ -74,7 +75,7 @@ function LanguageModal({ visible, onClose }: { visible: boolean; onClose: () => 
         <View style={[styles.modalSheet, { backgroundColor: colors.card, paddingBottom: insets.bottom + 16 }]}>
           <View style={styles.modalHandle} />
           <Text style={[styles.modalTitle, { color: colors.foreground }]}>
-            {language === "ar" ? "اختر اللغة" : "Select Language"}
+            {(UI_LABELS.selectLanguage as any)[language] || UI_LABELS.selectLanguage.en}
           </Text>
           {LANGUAGES.map(lang => {
             const isSelected = lang.code === language;
@@ -314,12 +315,12 @@ export default function ProfileScreen() {
 
           <View style={{ padding: 16, gap: 10 }}>
             <MenuItem icon="package"     label={t.profile.my_orders}                              onPress={() => router.push("/(tabs)/orders")} />
-            <MenuItem icon="rotate-ccw"  label={(t.profile as any).returns || (language === "ar" ? "المرتجعات واسترداد الأموال" : "Returns & Refunds")} onPress={() => router.push("/returns")} />
+            <MenuItem icon="rotate-ccw"  label={(UI_LABELS.returns as any)[language] || UI_LABELS.returns.en} onPress={() => router.push("/returns")} />
             <MenuItem icon="heart"       label={t.profile.favorites}                              onPress={() => router.push("/favorites")} />
             <MenuItem icon="map-pin"     label={t.profile.addresses}                              onPress={() => router.push("/addresses")} />
             <MenuItem icon="globe"       label={t.profile.language}   rightEl={<LangBadge />}     onPress={() => setShowLanguage(true)} />
-            <MenuItem icon="dollar-sign" label={language === "ar" ? "العملة" : "Currency"} rightEl={<CurrencyBadge />} onPress={() => setShowCurrency(true)} />
-            <MenuItem icon="shield"      label={t.profile.privacy_policy || (language === "ar" ? "سياسة الخصوصية" : "Privacy Policy")} onPress={() => router.push("/privacy-policy")} />
+            <MenuItem icon="dollar-sign" label={(UI_LABELS.currency as any)[language] || UI_LABELS.currency.en} rightEl={<CurrencyBadge />} onPress={() => setShowCurrency(true)} />
+            <MenuItem icon="shield"      label={(UI_LABELS.privacyPolicy as any)[language] || UI_LABELS.privacyPolicy.en} onPress={() => router.push("/privacy-policy")} />
             <MenuItem icon="info"        label={(t.profile as any).about || "About Us"}            onPress={() => setShowAbout(true)} />
             <MenuItem icon="log-out"     label={t.profile.logout}                                 onPress={handleLogout} danger />
 
