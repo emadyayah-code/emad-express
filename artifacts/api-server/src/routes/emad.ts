@@ -69,6 +69,29 @@ const upload = multerFn({
 
 const router = Router();
 
+let lastOpportunisticSync = 0;
+let lastOpportunisticImport = 0;
+
+// Automatic self-sustaining background triggers for Serverless & persistent environments
+router.use((_req, _res, next) => {
+  const now = Date.now();
+  // Automatic price & stock sync every 10 minutes
+  if (now - lastOpportunisticSync > 10 * 60 * 1000) {
+    lastOpportunisticSync = now;
+    setTimeout(() => {
+      syncAllDropshipPricesAndStock().catch(err => logger.error({ err: err?.message }, "Opportunistic 10-min stock sync error"));
+    }, 100);
+  }
+  // Automatic auto-import 500 products every 1 hour
+  if (now - lastOpportunisticImport > 60 * 60 * 1000) {
+    lastOpportunisticImport = now;
+    setTimeout(() => {
+      runAutoImportCycle(500).catch(err => logger.error({ err: err?.message }, "Opportunistic hourly auto-import error"));
+    }, 250);
+  }
+  next();
+});
+
 function sanitizeText(text: string | undefined | null, maxLength: number = 5000): string {
   if (!text) return "";
   return sanitizeHtmlFn(text, {
@@ -3327,8 +3350,8 @@ router.post("/admin/dropship/sync-stock", requireAuth, requireRole("admin", "man
 
 router.post("/admin/dropship/run-auto-import", requireAuth, requireRole("admin", "manager"), async (req, res, next) => {
   try {
-    const { count = 2000 } = req.body || {};
-    const result = await runAutoImportCycle(Number(count) || 2000);
+    const { count = 500 } = req.body || {};
+    const result = await runAutoImportCycle(Number(count) || 500);
     return res.json({
       success: true,
       message: `تم تشغيل الجلب التلقائي ومزامنة المنتجات بنجاح بهامش ربح 300%!`,
@@ -3618,6 +3641,8 @@ export async function syncAllDropshipPricesAndStock() {
           } else {
             const margin = dp.source_price > 0 ? dp.our_price / dp.source_price : 4.0;
             const newOurPrice = parseFloat((newSourcePrice * margin).toFixed(2));
+            const rawStock = (aliProd as any).stock ?? (aliProd as any).inventory ?? (aliProd as any).quantity;
+            const liveStock = rawStock !== undefined && rawStock !== null && !isNaN(Number(rawStock)) ? Math.max(1, Number(rawStock)) : 500;
             await db.update(dropship_products).set({
               source_price: newSourcePrice,
               our_price: newOurPrice,
@@ -3626,6 +3651,7 @@ export async function syncAllDropshipPricesAndStock() {
             await db.update(products).set({
               price: newOurPrice,
               cost: newSourcePrice,
+              quantity: liveStock,
               is_active: true,
             }).where(eq(products.id, dp.product_id!));
             synced++;
@@ -3731,11 +3757,14 @@ export async function runAutoImportCycle(targetCount = 500): Promise<{ imported:
 
     const margin = 4.0; // 300% profit margin
     const seed = Math.floor(Math.random() * 80) + 1;
-    const maxPagesToScan = Math.max(350, Math.ceil(targetCount / 10));
+    const categoryIds = ALI_CATEGORIES.map(c => c.id);
+    const maxPagesToScan = Math.max(500, Math.ceil(targetCount / 5));
 
     for (let i = 0; i < maxPagesToScan && totalImported < targetCount; i++) {
-      const pageToFetch = autoImportPageIndex++;
-      const { kw, catId, actualPage } = getAliSearchParams(pageToFetch, "", undefined, seed);
+      // Pick next category in rotation so products from ALL categories are imported
+      const targetCatId = categoryIds[(autoImportPageIndex + i) % categoryIds.length];
+      const pageToFetch = Math.floor((autoImportPageIndex + i) / categoryIds.length) + 1;
+      const { kw, catId, actualPage } = getAliSearchParams(pageToFetch, "", targetCatId, seed);
 
       let prods = await searchAliExpressProducts(kw, creds, actualPage, 50, catId).catch(() => []);
       if ((!prods || prods.length === 0) && catId) {
@@ -3744,7 +3773,7 @@ export async function runAutoImportCycle(targetCount = 500): Promise<{ imported:
 
       if (!prods || prods.length === 0) {
         consecutiveEmptyBatches++;
-        if (consecutiveEmptyBatches >= 15) {
+        if (consecutiveEmptyBatches >= 25) {
           logger.info("Auto-import: Reached multiple empty search results, rotating page index.");
           autoImportPageIndex = ((autoImportPageIndex + 10) % 200) + 1;
           break;
@@ -3835,6 +3864,7 @@ export async function runAutoImportCycle(targetCount = 500): Promise<{ imported:
 
     if (totalImported > 0) {
       clearProductsCache();
+      autoImportPageIndex = ((autoImportPageIndex + Math.max(15, Math.ceil(totalImported / 10))) % 400) + 1;
       // Run automatic stock & price sync immediately after the import cycle
       logger.info("🔄 Initiating automatic price and stock synchronization after import cycle...");
       syncAllDropshipPricesAndStock().catch(syncErr => {

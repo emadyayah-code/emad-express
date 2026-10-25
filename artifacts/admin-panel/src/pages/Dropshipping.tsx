@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
-import { Search, Globe, Settings, Package, ExternalLink, Download, X, AlertCircle, CheckCircle, Link2, Loader2, Play, Pause, RotateCcw, BarChart3, TrendingUp, Database, Trash2 } from "lucide-react";
+import { Search, Globe, Settings, Package, ExternalLink, Download, X, AlertCircle, CheckCircle, Link2, Loader2, Play, Pause, RotateCcw, BarChart3, TrendingUp, Database, Trash2, Zap } from "lucide-react";
 
 const PLATFORMS = [
   { id: "aliexpress", name: "علي إكسبرس", flag: "🇨🇳", color: "text-red-600 bg-red-50", apiKey: "aliexpress_app_key" },
@@ -132,6 +132,23 @@ export default function Dropshipping() {
     }
   };
 
+  const [runningAutoImport, setRunningAutoImport] = useState(false);
+
+  const handleRunAutoImport = async () => {
+    setRunningAutoImport(true);
+    try {
+      const res = await api.post("/admin/dropship/run-auto-import", { count: 500 });
+      qc.invalidateQueries({ queryKey: ["dropship-products"] });
+      qc.invalidateQueries({ queryKey: ["products"] });
+      setCleanSuccess(res.message || `تم تشغيل دورة الجلب التلقائي (500 منتج) من جميع الأقسام بنجاح!`);
+      setTimeout(() => setCleanSuccess(""), 7000);
+    } catch (e: any) {
+      alert(e?.message || "فشل الجلب الآلي");
+    } finally {
+      setRunningAutoImport(false);
+    }
+  };
+
   const dpList = dropProducts?.data || [];
   const searchList = searchResults?.results || [];
 
@@ -140,6 +157,13 @@ export default function Dropshipping() {
       <div className="flex items-center justify-between flex-wrap gap-3">
         <h1 className="text-2xl font-bold text-gray-800">نظام الدروبشيبينغ</h1>
         <div className="flex items-center gap-2 flex-wrap">
+          <button
+            onClick={handleRunAutoImport}
+            disabled={runningAutoImport}
+            className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white px-3.5 py-2 rounded-xl text-xs font-bold transition-all shadow-md cursor-pointer disabled:opacity-50"
+          >
+            {runningAutoImport ? <><Loader2 size={14} className="animate-spin" /> جارٍ جلب 500 منتج...</> : <><Zap size={14} /> جلب فوري (500 منتج من جميع الأقسام)</>}
+          </button>
           <button
             onClick={handleSyncStock}
             disabled={syncingStock}
@@ -153,6 +177,24 @@ export default function Dropshipping() {
           >
             <Trash2 size={14} /> تنظيف وتفريغ قاعدة البيانات 🧹
           </button>
+        </div>
+      </div>
+
+      {/* Real-time Automation Info Banner */}
+      <div className="bg-gradient-to-r from-blue-900/40 via-amber-900/20 to-blue-950/40 border border-blue-500/30 rounded-2xl p-4 flex flex-wrap items-center justify-between gap-3 text-xs shadow-inner">
+        <div className="flex items-center gap-2.5 text-blue-100 font-medium">
+          <span className="relative flex h-3 w-3">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+          </span>
+          <span>
+            <strong>الأتمتة السحابية الذكية نشطة:</strong> جلب تلقائي لـ <strong>500 منتج كل ساعة</strong> من كافة الأقسام بالتناوب، ومزامنة حية للمخزون والأسعار <strong>كل 10 دقائق</strong> مع الحذف النهائي الفوري لأي منتج ينفد من المورد تلقائياً من المتجر وقاعدة البيانات.
+          </span>
+        </div>
+        <div className="flex items-center gap-3 text-xs">
+          <span className="bg-amber-500/20 text-amber-300 border border-amber-500/30 px-2.5 py-1 rounded-lg font-bold">
+            هامش الربح: 300% (×4.0)
+          </span>
         </div>
       </div>
 
