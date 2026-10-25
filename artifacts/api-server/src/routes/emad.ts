@@ -3932,13 +3932,16 @@ router.get("/affiliates/:code", async (req, res, next) => {
 // ========== DROPSHIPPING DEMO PRODUCTS ==========
 
 
-router.get("/admin/dropship/products", requireAuth, requireRole("admin", "manager"), async (_req, res, next) => {
+router.get("/admin/dropship/products", requireAuth, requireRole("admin", "manager"), async (req, res, next) => {
   try {
-    const dps = await db.select().from(dropship_products).orderBy(desc(dropship_products.id));
-    const result = await Promise.all(dps.map(async (dp) => {
-      let product: any = null;
-      if (dp.product_id) { const [p] = await db.select().from(products).where(and(eq(products.id, dp.product_id), isNull(products.deleted_at))); product = p || null; }
-      return { ...dp, product };
+    const limit = Math.min(parseInt(String(req.query.limit || "50")), 100);
+    const dps = await db.select().from(dropship_products).orderBy(desc(dropship_products.id)).limit(limit);
+    const prodIds = dps.map(d => d.product_id).filter(Boolean) as number[];
+    const prods = prodIds.length > 0 ? await db.select().from(products).where(and(inArray(products.id, prodIds), isNull(products.deleted_at))) : [];
+    const prodMap = new Map(prods.map(p => [p.id, p]));
+    const result = dps.map(dp => ({
+      ...dp,
+      product: dp.product_id ? prodMap.get(dp.product_id) || null : null,
     }));
     return res.json({ success: true, data: result });
   } catch (err) { next(err); }
