@@ -91,6 +91,51 @@ export default function OrdersScreen() {
     },
   });
 
+  const deleteOrderMutation = useMutation({
+    mutationFn: (orderId: number) => api.delete(`/orders/${orderId}`, token),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["my-orders"] });
+      if (Platform.OS === "web") {
+        alert(isArabic ? "تم حذف الطلب بنجاح" : "Order deleted successfully");
+      } else {
+        Alert.alert(
+          isArabic ? "تم الحذف" : "Deleted",
+          isArabic ? "تم حذف الطلب بنجاح" : "Order deleted successfully"
+        );
+      }
+    },
+    onError: (err: any) => {
+      const msg = err?.message || (isArabic ? "تعذر حذف الطلب" : "Failed to delete order");
+      if (Platform.OS === "web") {
+        alert(msg);
+      } else {
+        Alert.alert(isArabic ? "خطأ" : "Error", msg);
+      }
+    },
+  });
+
+  const confirmDeleteOrder = (order: any) => {
+    const title = isArabic ? "تأكيد حذف الطلب" : "Confirm Delete";
+    const msg = isArabic 
+      ? `هل أنت متأكد من حذف الطلب #${order.order_number} نهائياً؟`
+      : `Are you sure you want to delete order #${order.order_number}?`;
+
+    if (Platform.OS === "web") {
+      if (window.confirm(msg)) {
+        deleteOrderMutation.mutate(order.id);
+      }
+    } else {
+      Alert.alert(title, msg, [
+        { text: isArabic ? "إلغاء" : "Cancel", style: "cancel" },
+        { 
+          text: isArabic ? "حذف" : "Delete", 
+          style: "destructive", 
+          onPress: () => deleteOrderMutation.mutate(order.id) 
+        },
+      ]);
+    }
+  };
+
   const statusConfig: Record<string, { label: string; color: string; bg: string }> = {
     pending:    { label: t.orders.status.pending,    color: "#d97706", bg: "#fef3c7" },
     processing: { label: t.orders.status.processing, color: "#2563eb", bg: "#dbeafe" },
@@ -239,19 +284,31 @@ export default function OrdersScreen() {
                   <Text style={[styles.orderTotal, { color: colors.primary }]}>{format(item.total)}</Text>
                 </View>
 
-                {/* Return & Refund Action Button (Always available for delivered/completed orders) */}
-                {isDelivered && (
+                {/* Action Buttons Row */}
+                <View style={[styles.orderActionsRow, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
+                  {isDelivered && (
+                    <TouchableOpacity
+                      style={[styles.returnActionBtn, { borderColor: "#f59e0b44", backgroundColor: "rgba(245,158,11,0.06)", flex: 1 }]}
+                      onPress={() => openReturnModal(item)}
+                      activeOpacity={0.8}
+                    >
+                      <Feather name="rotate-ccw" size={13} color="#f59e0b" />
+                      <Text style={[styles.returnActionText, { color: "#f59e0b" }]}>
+                        {isArabic ? "طلب إرجاع" : "Return / Refund"}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
                   <TouchableOpacity
-                    style={[styles.returnActionBtn, { borderColor: "#f59e0b44", backgroundColor: "rgba(245,158,11,0.06)" }]}
-                    onPress={() => openReturnModal(item)}
+                    style={[styles.deleteActionBtn, { borderColor: "#ef444433", backgroundColor: "rgba(239,68,68,0.06)", flex: isDelivered ? 0 : 1 }]}
+                    onPress={() => confirmDeleteOrder(item)}
                     activeOpacity={0.8}
                   >
-                    <Feather name="rotate-ccw" size={14} color="#f59e0b" />
-                    <Text style={[styles.returnActionText, { color: "#f59e0b" }]}>
-                      {isArabic ? "طلب إرجاع أو استرداد أموال" : "Request Return / Refund"}
+                    <Feather name="trash-2" size={13} color="#ef4444" />
+                    <Text style={[styles.deleteActionText, { color: "#ef4444" }]}>
+                      {isArabic ? "حذف الطلب" : "Delete Order"}
                     </Text>
                   </TouchableOpacity>
-                )}
+                </View>
               </View>
             );
           }}
@@ -455,9 +512,24 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 12,
     borderWidth: 1,
-    marginTop: 4,
   },
   returnActionText: { fontSize: 13, fontWeight: "700" },
+  orderActionsRow: {
+    gap: 8,
+    marginTop: 6,
+    alignItems: "center",
+  },
+  deleteActionBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  deleteActionText: { fontSize: 13, fontWeight: "700" },
 
   // Modal styles
   modalOverlay: {

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
-import { Search, Eye, X, Truck, CheckCircle, Package, ExternalLink } from "lucide-react";
+import { Search, Eye, X, Truck, CheckCircle, Package, ExternalLink, Trash2, AlertTriangle } from "lucide-react";
 
 const statusMap: Record<string, { label: string; cls: string }> = {
   pending: { label: "قيد الانتظار", cls: "bg-yellow-100 text-yellow-700" },
@@ -36,10 +36,26 @@ export default function Orders() {
   const [fulfillModal, setFulfillModal] = useState<any>(null);
   const [trackingInput, setTrackingInput] = useState("");
   const [trackingModal, setTrackingModal] = useState<any>(null);
+  const [deleteModalOrder, setDeleteModalOrder] = useState<any>(null);
+  const [deleteSuccess, setDeleteSuccess] = useState("");
 
   const { data, isLoading } = useQuery({
     queryKey: ["orders", search, filterStatus],
     queryFn: () => api.get(`/admin/orders?order_number=${encodeURIComponent(search)}&status=${filterStatus}&per_page=50`),
+  });
+
+  const deleteMut = useMutation({
+    mutationFn: (id: number) => api.delete(`/admin/orders/${id}`),
+    onSuccess: (res: any) => {
+      qc.invalidateQueries({ queryKey: ["orders"] });
+      setDeleteModalOrder(null);
+      if (viewOrder?.id === deleteModalOrder?.id) setViewOrder(null);
+      setDeleteSuccess(res?.message || "تم حذف الطلب نهائياً بنجاح");
+      setTimeout(() => setDeleteSuccess(""), 5000);
+    },
+    onError: (err: any) => {
+      alert(err?.message || "فشل حذف الطلب");
+    },
   });
 
   const statusMut = useMutation({
@@ -73,6 +89,14 @@ export default function Orders() {
         <h1 className="text-2xl font-bold text-gray-800">الطلبات</h1>
         <span className="text-sm text-gray-500">{data?.total || 0} طلب</span>
       </div>
+
+      {deleteSuccess && (
+        <div className="bg-emerald-950/80 border border-emerald-500/40 text-emerald-300 rounded-xl p-3.5 flex items-center gap-2 text-sm font-bold animate-in fade-in">
+          <CheckCircle size={18} className="text-emerald-400" />
+          {deleteSuccess}
+        </div>
+      )}
+
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 flex flex-wrap gap-3">
         <div className="relative">
           <Search size={16} className="absolute top-2.5 right-3 text-gray-400" />
@@ -89,7 +113,7 @@ export default function Orders() {
             <table className="w-full text-sm">
               <thead className="bg-gray-50 border-b border-gray-100">
                 <tr>
-                  {["رقم الطلب", "العميل", "التاريخ", "الإجمالي", "الدفع", "الحالة", "الشحن", "تحديث", ""].map(h => (
+                  {["رقم الطلب", "العميل", "التاريخ", "الإجمالي", "الدفع", "الحالة", "الشحن", "تحديث", "الإجراءات"].map(h => (
                     <th key={h} className="text-right px-4 py-3 font-medium text-gray-600 whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
@@ -144,7 +168,14 @@ export default function Orders() {
                         </select>
                       </td>
                       <td className="px-4 py-3">
-                        <button onClick={() => setViewOrder(o)} className="text-blue-500 hover:text-blue-700"><Eye size={15} /></button>
+                        <div className="flex items-center gap-2">
+                          <button onClick={() => setViewOrder(o)} className="text-blue-500 hover:text-blue-700 p-1.5 rounded-lg hover:bg-blue-50 transition-colors cursor-pointer" title="عرض التفاصيل">
+                            <Eye size={16} />
+                          </button>
+                          <button onClick={() => setDeleteModalOrder(o)} className="text-red-500 hover:text-red-700 p-1.5 rounded-lg hover:bg-red-50 transition-colors cursor-pointer" title="حذف الطلب">
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -201,14 +232,26 @@ export default function Orders() {
                 <div className="flex justify-between"><span className="text-gray-500">الشحن</span><span>{viewOrder.shipping.toLocaleString()} ر</span></div>
                 <div className="flex justify-between font-bold text-gray-900 pt-1 border-t"><span>الإجمالي</span><span>{viewOrder.total.toLocaleString()} ر</span></div>
               </div>
-              {(!viewOrder.fulfillment_status || viewOrder.fulfillment_status === "unfulfilled") && (
+              <div className="pt-3 border-t flex items-center justify-between gap-3">
                 <button
-                  onClick={() => { setViewOrder(null); setFulfillModal(viewOrder); }}
-                  className="w-full flex items-center justify-center gap-2 bg-blue-500 hover:bg-blue-600 text-white py-2.5 rounded-lg text-sm font-medium"
+                  onClick={() => {
+                    const toDelete = viewOrder;
+                    setViewOrder(null);
+                    setDeleteModalOrder(toDelete);
+                  }}
+                  className="flex items-center gap-1.5 px-3.5 py-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg text-xs font-bold transition-colors cursor-pointer"
                 >
-                  <Truck size={15} /> إرسال للمورد (شحن دروبشيبينغ)
+                  <Trash2 size={14} /> حذف الطلب نهائياً
                 </button>
-              )}
+                {(!viewOrder.fulfillment_status || viewOrder.fulfillment_status === "unfulfilled") && (
+                  <button
+                    onClick={() => { setViewOrder(null); setFulfillModal(viewOrder); }}
+                    className="flex-1 flex items-center justify-center gap-2 bg-blue-500 hover:bg-blue-600 text-white py-2 rounded-lg text-xs font-bold transition-colors cursor-pointer"
+                  >
+                    <Truck size={14} /> إرسال للمورد (شحن دروبشيبينغ)
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -283,6 +326,39 @@ export default function Orders() {
                   {trackingMut.isPending ? "جارٍ الحفظ..." : <><CheckCircle size={14} /> حفظ</>}
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteModalOrder && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-150">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 text-right">
+            <div className="w-12 h-12 rounded-full bg-red-100 text-red-600 flex items-center justify-center mx-auto mb-4">
+              <AlertTriangle size={24} />
+            </div>
+            <h3 className="text-lg font-bold text-gray-900 text-center mb-2">تأكيد حذف الطلب</h3>
+            <p className="text-sm text-gray-600 text-center mb-6 leading-relaxed">
+              هل أنت متأكد من رغبتك في حذف الطلب رقم <span className="font-mono font-bold text-gray-900">#{deleteModalOrder.order_number}</span> للعميل <span className="font-bold text-gray-900">{deleteModalOrder.customer_name}</span> نهائياً؟
+              <br />
+              <span className="text-xs text-red-500 font-medium mt-1 block">سيتم مسح سجل الطلب وبيانات الشحن والدفع المرتبطة به نهائياً.</span>
+            </p>
+            <div className="flex items-center justify-center gap-3">
+              <button
+                onClick={() => deleteMut.mutate(deleteModalOrder.id)}
+                disabled={deleteMut.isPending}
+                className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2.5 px-4 rounded-xl text-sm font-bold transition-all shadow-md cursor-pointer disabled:opacity-50"
+              >
+                {deleteMut.isPending ? "جارٍ الحذف..." : "نعم، حذف الطلب"}
+              </button>
+              <button
+                onClick={() => setDeleteModalOrder(null)}
+                disabled={deleteMut.isPending}
+                className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-2.5 px-4 rounded-xl text-sm font-bold transition-all cursor-pointer"
+              >
+                إلغاء
+              </button>
             </div>
           </div>
         </div>

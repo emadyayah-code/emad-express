@@ -94880,6 +94880,53 @@ router2.put("/admin/orders/:id/status", requireAuth, requireRole("admin", "manag
     next(err);
   }
 });
+router2.delete("/admin/orders/:id", requireAuth, requireRole("admin", "manager"), validateParams(idParamSchema), async (req, res, next) => {
+  try {
+    const orderId = Number(req.params.id);
+    const [order] = await db.select().from(orders).where(eq(orders.id, orderId));
+    if (!order) return res.status(404).json({ success: false, message: "\u0627\u0644\u0637\u0644\u0628 \u063A\u064A\u0631 \u0645\u0648\u062C\u0648\u062F" });
+    await db.delete(supplier_payments).where(eq(supplier_payments.order_id, orderId)).catch(() => {
+    });
+    await db.delete(returns_refunds).where(eq(returns_refunds.order_id, orderId)).catch(() => {
+    });
+    await db.delete(shipments).where(eq(shipments.order_id, orderId)).catch(() => {
+    });
+    await db.delete(affiliate_conversions).where(eq(affiliate_conversions.order_id, orderId)).catch(() => {
+    });
+    await db.delete(orders).where(eq(orders.id, orderId));
+    logger.info({ orderId, orderNumber: order.order_number }, "Order deleted permanently by admin");
+    return res.json({ success: true, message: `\u062A\u0645 \u062D\u0630\u0641 \u0627\u0644\u0637\u0644\u0628 #${order.order_number} \u0628\u0646\u062C\u0627\u062D` });
+  } catch (err) {
+    next(err);
+  }
+});
+router2.post("/admin/orders/bulk-delete", requireAuth, requireRole("admin", "manager"), async (req, res, next) => {
+  try {
+    const { ids } = req.body || {};
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({ success: false, message: "\u064A\u0631\u062C\u0649 \u062A\u062D\u062F\u064A\u062F \u0627\u0644\u0637\u0644\u0628\u0627\u062A \u0627\u0644\u0645\u0631\u0627\u062F \u062D\u0630\u0641\u0647\u0627" });
+    }
+    const orderIds = ids.map((id) => Number(id)).filter((id) => !isNaN(id) && id > 0);
+    if (orderIds.length === 0) {
+      return res.status(400).json({ success: false, message: "\u0623\u0631\u0642\u0627\u0645 \u0637\u0644\u0628\u0627\u062A \u063A\u064A\u0631 \u0635\u0627\u0644\u062D\u0629" });
+    }
+    for (const orderId of orderIds) {
+      await db.delete(supplier_payments).where(eq(supplier_payments.order_id, orderId)).catch(() => {
+      });
+      await db.delete(returns_refunds).where(eq(returns_refunds.order_id, orderId)).catch(() => {
+      });
+      await db.delete(shipments).where(eq(shipments.order_id, orderId)).catch(() => {
+      });
+      await db.delete(affiliate_conversions).where(eq(affiliate_conversions.order_id, orderId)).catch(() => {
+      });
+      await db.delete(orders).where(eq(orders.id, orderId)).catch(() => {
+      });
+    }
+    return res.json({ success: true, message: `\u062A\u0645 \u062D\u0630\u0641 ${orderIds.length} \u0637\u0644\u0628 \u0628\u0646\u062C\u0627\u062D`, count: orderIds.length });
+  } catch (err) {
+    next(err);
+  }
+});
 router2.get("/admin/users", requireAuth, requireRole("admin", "manager"), async (req, res, next) => {
   try {
     const { page = "1", per_page = "20", search = "", role = "all" } = req.query;
@@ -95368,6 +95415,29 @@ router2.get("/orders", requireAuth, async (req, res, next) => {
     if (!session.customerId) return res.json({ success: true, data: [], total: 0 });
     const data = await db.select().from(orders).where(eq(orders.customer_id, session.customerId)).orderBy(desc(orders.id));
     return res.json({ success: true, data, total: data.length });
+  } catch (err) {
+    next(err);
+  }
+});
+router2.delete("/orders/:id", requireAuth, validateParams(idParamSchema), async (req, res, next) => {
+  try {
+    const session = req.session;
+    const orderId = Number(req.params.id);
+    const [order] = await db.select().from(orders).where(eq(orders.id, orderId));
+    if (!order) return res.status(404).json({ success: false, message: "\u0627\u0644\u0637\u0644\u0628 \u063A\u064A\u0631 \u0645\u0648\u062C\u0648\u062F" });
+    if (session.customerId && order.customer_id !== session.customerId && session.role !== "admin" && session.role !== "manager") {
+      return res.status(403).json({ success: false, message: "\u063A\u064A\u0631 \u0645\u0635\u0631\u062D \u0644\u0643 \u0628\u062D\u0630\u0641 \u0647\u0630\u0627 \u0627\u0644\u0637\u0644\u0628" });
+    }
+    await db.delete(supplier_payments).where(eq(supplier_payments.order_id, orderId)).catch(() => {
+    });
+    await db.delete(returns_refunds).where(eq(returns_refunds.order_id, orderId)).catch(() => {
+    });
+    await db.delete(shipments).where(eq(shipments.order_id, orderId)).catch(() => {
+    });
+    await db.delete(affiliate_conversions).where(eq(affiliate_conversions.order_id, orderId)).catch(() => {
+    });
+    await db.delete(orders).where(eq(orders.id, orderId));
+    return res.json({ success: true, message: "\u062A\u0645 \u062D\u0630\u0641 \u0627\u0644\u0637\u0644\u0628 \u0628\u0646\u062C\u0627\u062D" });
   } catch (err) {
     next(err);
   }

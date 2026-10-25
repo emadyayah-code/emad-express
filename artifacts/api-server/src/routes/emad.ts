@@ -865,6 +865,49 @@ router.put("/admin/orders/:id/status", requireAuth, requireRole("admin", "manage
   } catch (err) { next(err); }
 });
 
+router.delete("/admin/orders/:id", requireAuth, requireRole("admin", "manager"), validateParams(idParamSchema), async (req, res, next) => {
+  try {
+    const orderId = Number(req.params.id);
+    const [order] = await db.select().from(orders).where(eq(orders.id, orderId));
+    if (!order) return res.status(404).json({ success: false, message: "الطلب غير موجود" });
+
+    // Clean up related records
+    await db.delete(supplier_payments).where(eq(supplier_payments.order_id, orderId)).catch(() => {});
+    await db.delete(returns_refunds).where(eq(returns_refunds.order_id, orderId)).catch(() => {});
+    await db.delete(shipments).where(eq(shipments.order_id, orderId)).catch(() => {});
+    await db.delete(affiliate_conversions).where(eq(affiliate_conversions.order_id, orderId)).catch(() => {});
+
+    // Delete the order itself
+    await db.delete(orders).where(eq(orders.id, orderId));
+
+    logger.info({ orderId, orderNumber: order.order_number }, "Order deleted permanently by admin");
+    return res.json({ success: true, message: `تم حذف الطلب #${order.order_number} بنجاح` });
+  } catch (err) { next(err); }
+});
+
+router.post("/admin/orders/bulk-delete", requireAuth, requireRole("admin", "manager"), async (req, res, next) => {
+  try {
+    const { ids } = req.body || {};
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({ success: false, message: "يرجى تحديد الطلبات المراد حذفها" });
+    }
+    const orderIds = ids.map((id: any) => Number(id)).filter((id: number) => !isNaN(id) && id > 0);
+    if (orderIds.length === 0) {
+      return res.status(400).json({ success: false, message: "أرقام طلبات غير صالحة" });
+    }
+
+    for (const orderId of orderIds) {
+      await db.delete(supplier_payments).where(eq(supplier_payments.order_id, orderId)).catch(() => {});
+      await db.delete(returns_refunds).where(eq(returns_refunds.order_id, orderId)).catch(() => {});
+      await db.delete(shipments).where(eq(shipments.order_id, orderId)).catch(() => {});
+      await db.delete(affiliate_conversions).where(eq(affiliate_conversions.order_id, orderId)).catch(() => {});
+      await db.delete(orders).where(eq(orders.id, orderId)).catch(() => {});
+    }
+
+    return res.json({ success: true, message: `تم حذف ${orderIds.length} طلب بنجاح`, count: orderIds.length });
+  } catch (err) { next(err); }
+});
+
 // ========== USERS & CUSTOMERS (بيانات المستخدمين) ==========
 router.get("/admin/users", requireAuth, requireRole("admin", "manager"), async (req, res, next) => {
   try {
@@ -1414,6 +1457,29 @@ router.get("/orders", requireAuth, async (req, res, next) => {
     if (!session.customerId) return res.json({ success: true, data: [], total: 0 });
     const data = await db.select().from(orders).where(eq(orders.customer_id, session.customerId)).orderBy(desc(orders.id));
     return res.json({ success: true, data, total: data.length });
+  } catch (err) { next(err); }
+});
+
+router.delete("/orders/:id", requireAuth, validateParams(idParamSchema), async (req, res, next) => {
+  try {
+    const session = (req as any).session;
+    const orderId = Number(req.params.id);
+    const [order] = await db.select().from(orders).where(eq(orders.id, orderId));
+    if (!order) return res.status(404).json({ success: false, message: "الطلب غير موجود" });
+
+    // Validate ownership (customer can only delete their own orders unless admin/manager)
+    if (session.customerId && order.customer_id !== session.customerId && session.role !== "admin" && session.role !== "manager") {
+      return res.status(403).json({ success: false, message: "غير مصرح لك بحذف هذا الطلب" });
+    }
+
+    // Clean up related records
+    await db.delete(supplier_payments).where(eq(supplier_payments.order_id, orderId)).catch(() => {});
+    await db.delete(returns_refunds).where(eq(returns_refunds.order_id, orderId)).catch(() => {});
+    await db.delete(shipments).where(eq(shipments.order_id, orderId)).catch(() => {});
+    await db.delete(affiliate_conversions).where(eq(affiliate_conversions.order_id, orderId)).catch(() => {});
+    await db.delete(orders).where(eq(orders.id, orderId));
+
+    return res.json({ success: true, message: "تم حذف الطلب بنجاح" });
   } catch (err) { next(err); }
 });
 
