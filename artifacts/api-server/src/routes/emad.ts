@@ -29,6 +29,7 @@ import { fulfillAliExpressOrder, fulfillAmazonOrder, fulfillAlibabaOrder, fulfil
 import { startBulkImport, stopBulkImport, getJobStatus, getAllJobs, getActiveJob } from "../lib/bulk-import";
 import { matchCategoryId } from "../lib/category-matcher";
 import { extractRealSupplierStock } from "../lib/supplier-stock";
+import { getOptimizedImageUrl } from "../lib/image-optimizer";
 
 const isServerlessEnv = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.NOW_REGION);
 const UPLOADS_DIR = isServerlessEnv ? "/tmp/uploads" : env.UPLOADS_DIR;
@@ -1240,20 +1241,8 @@ function getCachedProducts(key: string): any | null {
   return item.data;
 }
 
-function toOptimizedThumb(url: string | null | undefined): string {
-  if (!url) return "";
-  const s = url.trim();
-  // Automatically serve high-performance 350x350 CDN thumbnails for product lists (drastically cuts bandwidth & render lag)
-  if (
-    (s.includes("alicdn.com") || s.includes("aliexpress-media.com") || s.includes("aliexpress.com")) &&
-    !s.includes("_350x350") &&
-    !s.includes("_220x220") &&
-    !s.includes(".jpg_") &&
-    !s.includes(".png_")
-  ) {
-    return `${s}_350x350.jpg`;
-  }
-  return s;
+function toOptimizedThumb(url: string | null | undefined, size: "thumb" | "card" | "detail" = "card"): string {
+  return getOptimizedImageUrl(url, size);
 }
 
 function normalizeRequestLang(langParam?: string, acceptHeader?: string): "ar" | "en" | "fr" | "tr" | "zh" {
@@ -1599,7 +1588,9 @@ router.get("/products", async (req, res, next) => {
         name_tr: localizeProductName(p, "tr"),
         name_zh: localizeProductName(p, "zh"),
         description: "",
-        image: toOptimizedThumb(p.image),
+        image: getOptimizedImageUrl(p.image, "card"),
+        image_thumb: getOptimizedImageUrl(p.image, "thumb"),
+        image_large: getOptimizedImageUrl(p.image, "detail"),
       };
     });
 
@@ -1656,6 +1647,9 @@ router.get("/products/:id", validateParams(idParamSchema), async (req, res, next
       description_fr: localizeProductDesc(product, "fr"),
       description_tr: localizeProductDesc(product, "tr"),
       description_zh: localizeProductDesc(product, "zh"),
+      image: getOptimizedImageUrl(product.image, "detail"),
+      image_thumb: getOptimizedImageUrl(product.image, "thumb"),
+      image_large: getOptimizedImageUrl(product.image, "detail"),
     };
     return res.json({ 
       success: true, 
@@ -1752,7 +1746,9 @@ router.get("/home-feed", async (req, res, next) => {
           name_fr: localizeProductName(p, "fr"),
           name_tr: localizeProductName(p, "tr"),
           name_zh: localizeProductName(p, "zh"),
-          image: toOptimizedThumb(p.image),
+          image: getOptimizedImageUrl(p.image, "card"),
+          image_thumb: getOptimizedImageUrl(p.image, "thumb"),
+          image_large: getOptimizedImageUrl(p.image, "detail"),
         });
       }
     }

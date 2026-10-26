@@ -25,6 +25,7 @@ import { StoreNavbar, StoreFooter } from "@/components/StoreNavbar";
 import { useCart } from "@/context/CartContext";
 import { api } from "@/lib/api";
 import { useI18n, getProductLocalizedName, getProductLocalizedDesc } from "@/lib/i18n";
+import { getOptimizedImageUrl } from "@/lib/image-optimizer";
 
 export default function CategoryPage() {
   const [, params] = useRoute("/category/:id");
@@ -390,9 +391,11 @@ export default function CategoryPage() {
             <div className="md:w-1/2 aspect-square md:aspect-auto bg-slate-950 relative overflow-hidden flex items-center justify-center">
               {quickViewProduct.image ? (
                 <img
-                  src={quickViewProduct.image}
+                  src={getOptimizedImageUrl(quickViewProduct.image_large || quickViewProduct.image, "detail")}
                   alt={getProductLocalizedName(quickViewProduct, language)}
                   className="w-full h-full object-cover"
+                  loading="eager"
+                  decoding="async"
                 />
               ) : (
                 <div className="text-slate-600 text-sm">{language === "en" ? "Product Image" : "صورة المنتج غير متوفرة"}</div>
@@ -502,11 +505,12 @@ function ProductCard({
       <div className="relative aspect-square overflow-hidden bg-slate-950">
         {product.image ? (
           <img
-            src={product.image}
+            src={getOptimizedImageUrl(product.image_thumb || product.image, "card")}
             alt={displayName}
             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out"
             referrerPolicy="no-referrer"
             loading="lazy"
+            decoding="async"
             onError={(e) => {
               (e.currentTarget as HTMLImageElement).src = "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600&auto=format&fit=crop&q=80";
             }}

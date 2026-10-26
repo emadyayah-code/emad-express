@@ -12,6 +12,7 @@ import { useLanguage } from "@/context/LanguageContext";
 import { useCurrency } from "@/context/CurrencyContext";
 import { useFavorites } from "@/context/FavoritesContext";
 import { getProductLocalizedName, getCategoryLocalizedName } from "@/lib/i18n";
+import { getOptimizedImageUrl, prefetchProductImages } from "@/lib/image-optimizer";
 
 // Highly responsive memoized Product Grid Item
 const ProductGridItem = React.memo(function ProductGridItem({
@@ -42,11 +43,13 @@ const ProductGridItem = React.memo(function ProductGridItem({
       <View style={{ position: "relative" }}>
         {item.image ? (
           <ExpoImage
-            source={{ uri: item.image }}
+            source={{ uri: getOptimizedImageUrl(item.image_thumb || item.image, "card") }}
             style={styles.productImage}
             contentFit="cover"
-            transition={100}
+            transition={120}
             cachePolicy="memory-disk"
+            priority="high"
+            recyclingKey={String(item.id)}
           />
         ) : (
           <View style={[styles.productImage, { backgroundColor: colors.muted, alignItems: "center", justifyContent: "center" }]}>
@@ -138,6 +141,13 @@ export default function ProductsScreen() {
         return name.includes(search.toLowerCase());
       })
     : categoryMatched;
+
+  // Ultra-fast background prefetching of visible grid images
+  useEffect(() => {
+    if (filtered.length > 0) {
+      prefetchProductImages(filtered, 16);
+    }
+  }, [filtered]);
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
 

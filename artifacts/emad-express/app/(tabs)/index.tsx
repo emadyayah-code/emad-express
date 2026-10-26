@@ -14,6 +14,7 @@ import { useFavorites } from "@/context/FavoritesContext";
 import { LinearGradient } from "expo-linear-gradient";
 import { AdBanner } from "@/components/AdBanner";
 import { getProductLocalizedName, getProductLocalizedDesc, getCategoryLocalizedName, UI_LABELS } from "@/lib/i18n";
+import { getOptimizedImageUrl, prefetchProductImages } from "@/lib/image-optimizer";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const SLIDE_WIDTH = Math.min(SCREEN_WIDTH - 32, 480);
@@ -160,7 +161,14 @@ const ShowcaseCarousel = React.memo(function ShowcaseCarousel({
 
               <View style={styles.showcaseImageWrap}>
                 {item.image ? (
-                  <ExpoImage source={{ uri: item.image }} style={styles.showcaseImage} contentFit="cover" cachePolicy="memory-disk" />
+                  <ExpoImage
+                    source={{ uri: getOptimizedImageUrl(item.image_large || item.image, "detail") }}
+                    style={styles.showcaseImage}
+                    contentFit="cover"
+                    priority="high"
+                    cachePolicy="memory-disk"
+                    transition={150}
+                  />
                 ) : (
                   <View style={[styles.showcaseImage, { backgroundColor: "#1f1f1f", alignItems: "center", justifyContent: "center" }]}>
                     <Feather name="package" size={40} color="#666" />
@@ -220,7 +228,15 @@ const ProductCardItem = React.memo(function ProductCardItem({
     >
       <View style={{ position: "relative" }}>
         {item.image ? (
-          <ExpoImage source={{ uri: item.image }} style={styles.productImage} contentFit="cover" transition={100} cachePolicy="memory-disk" />
+          <ExpoImage
+            source={{ uri: getOptimizedImageUrl(item.image_thumb || item.image, "card") }}
+            style={styles.productImage}
+            contentFit="cover"
+            transition={120}
+            cachePolicy="memory-disk"
+            priority="high"
+            recyclingKey={String(item.id)}
+          />
         ) : (
           <View style={[styles.productImage, { backgroundColor: colors.muted, alignItems: "center", justifyContent: "center" }]}>
             <Feather name="package" size={32} color={colors.mutedForeground} />
@@ -350,6 +366,13 @@ export default function HomeScreen() {
     };
   }, [categoriesWithProducts, products]);
 
+  // Ultra-fast background prefetching into RAM/SSD cache
+  useEffect(() => {
+    if (featured.length > 0 || showcaseProducts.length > 0) {
+      prefetchProductImages([...showcaseProducts, ...featured, ...topSelling], 20);
+    }
+  }, [featured, showcaseProducts, topSelling]);
+
   const topPad = Platform.OS === "web" ? 67 : insets.top;
   const isRTL = language === "ar";
 
@@ -400,7 +423,13 @@ export default function HomeScreen() {
                 onPress={() => router.push({ pathname: "/(tabs)/products", params: { category_id: item.id } })}
               >
                 {item.image ? (
-                  <ExpoImage source={{ uri: item.image }} style={styles.catImage} contentFit="cover" transition={100} cachePolicy="memory-disk" />
+                  <ExpoImage
+                    source={{ uri: getOptimizedImageUrl(item.image, "thumb") }}
+                    style={styles.catImage}
+                    contentFit="cover"
+                    transition={100}
+                    cachePolicy="memory-disk"
+                  />
                 ) : (
                   <View style={[styles.catImage, { alignItems: "center", justifyContent: "center", backgroundColor: colors.muted }]}>
                     <Text style={styles.catIcon}>{item.icon || CATEGORIES_ICONS[item.name] || "📦"}</Text>
@@ -465,7 +494,14 @@ export default function HomeScreen() {
                 onPress={() => router.push({ pathname: "/product/[id]", params: { id: item.id } })}
               >
                 {item.image ? (
-                  <ExpoImage source={{ uri: item.image }} style={styles.listImage} contentFit="cover" transition={100} cachePolicy="memory-disk" />
+                  <ExpoImage
+                    source={{ uri: getOptimizedImageUrl(item.image_thumb || item.image, "thumb") }}
+                    style={styles.listImage}
+                    contentFit="cover"
+                    transition={100}
+                    cachePolicy="memory-disk"
+                    recyclingKey={String(item.id)}
+                  />
                 ) : (
                   <View style={[styles.listImage, { backgroundColor: colors.muted, alignItems: "center", justifyContent: "center" }]}>
                     <Feather name="package" size={24} color={colors.mutedForeground} />

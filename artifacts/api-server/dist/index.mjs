@@ -94170,6 +94170,40 @@ function getActiveJob() {
   return jobs.get(activeJobId);
 }
 
+// src/lib/image-optimizer.ts
+function getOptimizedImageUrl(url2, size = "card") {
+  if (!url2 || typeof url2 !== "string") return "";
+  let clean = url2.trim();
+  if (clean.startsWith("//")) clean = `https:${clean}`;
+  if (size === "original") return clean;
+  if (clean.includes("aliexpress-media.com") || clean.includes("alicdn.com")) {
+    const base = clean.replace(/_\d+x\d+\.(jpg|jpeg|png|webp).*$/i, "");
+    if (size === "thumb") {
+      return `${base}_220x220.jpg`;
+    }
+    if (size === "card") {
+      return `${base}_350x350.jpg`;
+    }
+    return `${base}_640x640.jpg`;
+  }
+  if (clean.includes("media-amazon.com") || clean.includes("images-amazon.com")) {
+    if (size === "thumb") {
+      return clean.replace(/\._AC_SL\d+_\./, "._AC_SL220_.");
+    }
+    if (size === "card") {
+      return clean.replace(/\._AC_SL\d+_\./, "._AC_SL350_.");
+    }
+    return clean.replace(/\._AC_SL\d+_\./, "._AC_SL640_.");
+  }
+  if (clean.includes("images.unsplash.com")) {
+    const width = size === "thumb" ? 220 : size === "card" ? 350 : 640;
+    const cleanUrl = clean.replace(/[?&]w=\d+/, "").replace(/[?&]q=\d+/, "");
+    const separator = cleanUrl.includes("?") ? "&" : "?";
+    return `${cleanUrl}${separator}w=${width}&q=80&auto=format`;
+  }
+  return clean;
+}
+
 // src/routes/emad.ts
 var isServerlessEnv = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.NOW_REGION);
 var UPLOADS_DIR = isServerlessEnv ? "/tmp/uploads" : env.UPLOADS_DIR;
@@ -95324,14 +95358,6 @@ function getCachedProducts(key) {
   }
   return item.data;
 }
-function toOptimizedThumb(url2) {
-  if (!url2) return "";
-  const s = url2.trim();
-  if ((s.includes("alicdn.com") || s.includes("aliexpress-media.com") || s.includes("aliexpress.com")) && !s.includes("_350x350") && !s.includes("_220x220") && !s.includes(".jpg_") && !s.includes(".png_")) {
-    return `${s}_350x350.jpg`;
-  }
-  return s;
-}
 function normalizeRequestLang(langParam, acceptHeader) {
   const p = (langParam || "").toLowerCase().trim();
   if (p === "ar" || p === "en" || p === "fr" || p === "tr" || p === "zh") return p;
@@ -96046,7 +96072,9 @@ router2.get("/products", async (req, res, next) => {
         name_tr: localizeProductName(p2, "tr"),
         name_zh: localizeProductName(p2, "zh"),
         description: "",
-        image: toOptimizedThumb(p2.image)
+        image: getOptimizedImageUrl(p2.image, "card"),
+        image_thumb: getOptimizedImageUrl(p2.image, "thumb"),
+        image_large: getOptimizedImageUrl(p2.image, "detail")
       };
     });
     const result = { success: true, data, total: data.length, page: p, limit: defaultLimit };
@@ -96093,7 +96121,10 @@ router2.get("/products/:id", validateParams(idParamSchema), async (req, res, nex
       description_en: localizeProductDesc(product, "en"),
       description_fr: localizeProductDesc(product, "fr"),
       description_tr: localizeProductDesc(product, "tr"),
-      description_zh: localizeProductDesc(product, "zh")
+      description_zh: localizeProductDesc(product, "zh"),
+      image: getOptimizedImageUrl(product.image, "detail"),
+      image_thumb: getOptimizedImageUrl(product.image, "thumb"),
+      image_large: getOptimizedImageUrl(product.image, "detail")
     };
     return res.json({
       success: true,
@@ -96177,7 +96208,9 @@ router2.get("/home-feed", async (req, res, next) => {
           name_fr: localizeProductName(p, "fr"),
           name_tr: localizeProductName(p, "tr"),
           name_zh: localizeProductName(p, "zh"),
-          image: toOptimizedThumb(p.image)
+          image: getOptimizedImageUrl(p.image, "card"),
+          image_thumb: getOptimizedImageUrl(p.image, "thumb"),
+          image_large: getOptimizedImageUrl(p.image, "detail")
         });
       }
     }

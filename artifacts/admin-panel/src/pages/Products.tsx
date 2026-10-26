@@ -2,6 +2,7 @@ import { useState, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, getApiBase } from "@/lib/api";
 import { useI18n, getProductLocalizedName, getProductLocalizedDesc } from "@/lib/i18n";
+import { getOptimizedImageUrl } from "@/lib/image-optimizer";
 import { Plus, Search, Edit, Trash2, X, Upload, Image as ImageIcon } from "lucide-react";
 
 interface Product {
@@ -457,7 +458,15 @@ export default function Products() {
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3 max-w-lg">
                         {p.image ? (
-                          <img src={p.image} alt={p.name} className="w-12 h-12 rounded-lg object-cover flex-shrink-0" style={{ border: "1px solid rgba(245,158,11,0.2)" }} referrerPolicy="no-referrer" />
+                          <img
+                            src={getOptimizedImageUrl(p.image, "thumb")}
+                            alt={p.name}
+                            className="w-12 h-12 rounded-lg object-cover flex-shrink-0"
+                            style={{ border: "1px solid rgba(245,158,11,0.2)" }}
+                            referrerPolicy="no-referrer"
+                            loading="lazy"
+                            decoding="async"
+                          />
                         ) : (
                           <div className="w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: "rgba(245,158,11,0.1)", border: "1px solid rgba(245,158,11,0.2)" }}>
                             <ImageIcon size={18} className="text-amber-500/50" />

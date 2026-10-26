@@ -12,6 +12,7 @@ import { useLanguage } from "@/context/LanguageContext";
 import { useCurrency } from "@/context/CurrencyContext";
 import { useFavorites } from "@/context/FavoritesContext";
 import { getProductLocalizedName, getProductLocalizedDesc, UI_LABELS } from "@/lib/i18n";
+import { getOptimizedImageUrl } from "@/lib/image-optimizer";
 
 export default function ProductDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -66,7 +67,14 @@ export default function ProductDetailScreen() {
       <ScrollView showsVerticalScrollIndicator={false}>
         <View style={{ position: "relative" }}>
           {product.image ? (
-            <ExpoImage source={{ uri: product.image }} style={[styles.heroImage, { marginTop: topPad }]} contentFit="cover" transition={150} cachePolicy="memory-disk" priority="high" />
+            <ExpoImage
+              source={{ uri: getOptimizedImageUrl(product.image_large || product.image, "detail") }}
+              style={[styles.heroImage, { marginTop: topPad }]}
+              contentFit="cover"
+              transition={150}
+              cachePolicy="memory-disk"
+              priority="high"
+            />
           ) : (
             <View style={[styles.heroImage, { backgroundColor: colors.muted, alignItems: "center", justifyContent: "center", marginTop: topPad }]}>
               <Feather name="package" size={60} color={colors.mutedForeground} />

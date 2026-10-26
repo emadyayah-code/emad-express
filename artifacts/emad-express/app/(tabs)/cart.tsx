@@ -8,6 +8,7 @@ import { useColors } from "@/hooks/useColors";
 import { useCart } from "@/context/CartContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { useCurrency } from "@/context/CurrencyContext";
+import { getOptimizedImageUrl } from "@/lib/image-optimizer";
 
 export default function CartScreen() {
   const colors = useColors();
@@ -56,10 +57,10 @@ export default function CartScreen() {
           <View style={[styles.item, { backgroundColor: colors.card, borderColor: colors.border }]}>
             {item.image ? (
               <ExpoImage
-                source={{ uri: item.image }}
+                source={{ uri: getOptimizedImageUrl(item.image, "thumb") }}
                 style={styles.itemImage}
                 contentFit="cover"
-                transition={150}
+                transition={120}
                 cachePolicy="memory-disk"
               />
             ) : (

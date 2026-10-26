@@ -7,6 +7,7 @@ import { useCustomerAuth } from "@/context/CustomerAuthContext";
 import { CheckoutModal } from "@/components/CheckoutModal";
 import { CustomerAuthModal } from "@/components/CustomerAuthModal";
 import { useI18n } from "@/lib/i18n";
+import { getOptimizedImageUrl } from "@/lib/image-optimizer";
 
 export function StoreNavbar({ onSearch }: { onSearch?: (q: string) => void }) {
   const { language, toggleLanguage, dir } = useI18n();
@@ -301,10 +302,12 @@ export function StoreNavbar({ onSearch }: { onSearch?: (q: string) => void }) {
                     <div key={item.id} className="pt-3 flex gap-3 items-center">
                       {item.image ? (
                         <img
-                          src={item.image}
+                          src={getOptimizedImageUrl(item.image, "thumb")}
                           alt=""
                           className="w-16 h-16 rounded-xl object-cover bg-slate-900 border border-slate-800 shrink-0"
                           referrerPolicy="no-referrer"
+                          loading="lazy"
+                          decoding="async"
                         />
                       ) : (
                         <div className="w-16 h-16 rounded-xl bg-slate-900 flex items-center justify-center text-xs text-slate-600 shrink-0">

@@ -10,6 +10,7 @@ import { useCart } from "@/context/CartContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { useCurrency } from "@/context/CurrencyContext";
 import { getProductLocalizedName, UI_LABELS } from "@/lib/i18n";
+import { getOptimizedImageUrl } from "@/lib/image-optimizer";
 
 export default function FavoritesScreen() {
   const colors = useColors();
@@ -73,7 +74,14 @@ export default function FavoritesScreen() {
               >
                 <View style={{ position: "relative" }}>
                   {item.image ? (
-                    <ExpoImage source={{ uri: item.image }} style={styles.productImage} contentFit="cover" transition={150} cachePolicy="memory-disk" />
+                    <ExpoImage
+                      source={{ uri: getOptimizedImageUrl(item.image, "card") }}
+                      style={styles.productImage}
+                      contentFit="cover"
+                      transition={120}
+                      cachePolicy="memory-disk"
+                      recyclingKey={String(item.id)}
+                    />
                   ) : (
                     <View style={[styles.productImage, { backgroundColor: colors.muted, alignItems: "center", justifyContent: "center" }]}>
                       <Feather name="package" size={32} color={colors.mutedForeground} />
