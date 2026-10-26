@@ -432,9 +432,18 @@ export default function CategoryPage() {
                 </p>
 
                 {/* Stock Indicator */}
-                <div className="flex items-center gap-2 text-xs text-emerald-400 font-bold bg-emerald-950/40 border border-emerald-500/20 p-2.5 rounded-xl">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-                  <span>{language === "en" ? "In Stock at Central Hub - Ready for Dispatch" : "متوفر في المستودع الرئيسي - جاهز للشحن السريع"}</span>
+                <div className="flex items-center justify-between text-xs text-emerald-400 font-bold bg-emerald-950/40 border border-emerald-500/20 p-2.5 rounded-xl">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+                    <span>
+                      {language === "en" 
+                        ? `In Supplier Warehouse (${quickViewProduct.quantity || 35} units available)` 
+                        : `متوفر في مستودع المورد (${quickViewProduct.quantity || 35} قطعة متاحة)`}
+                    </span>
+                  </div>
+                  <span className="text-[10px] text-slate-400 font-mono">
+                    {language === "en" ? "Live Sync ✓" : "مزامنة حية ✓"}
+                  </span>
                 </div>
               </div>
 

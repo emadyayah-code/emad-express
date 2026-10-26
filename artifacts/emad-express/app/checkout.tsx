@@ -12,6 +12,7 @@ import {
   Linking,
   Modal,
   FlatList,
+  Image,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Feather, FontAwesome5 } from "@expo/vector-icons";
@@ -24,6 +25,12 @@ import { useCurrency } from "@/context/CurrencyContext";
 import { useAddress } from "@/context/AddressContext";
 import { api } from "@/lib/api";
 import { ALL_COUNTRIES, Country } from "@/lib/countries";
+import { getOptimizedImageUrl } from "@/lib/image-optimizer";
+import {
+  AcceptedCardsRow,
+  detectCardBrand,
+  DynamicCardBrandBadge,
+} from "@/components/PaymentBadges";
 
 export default function CheckoutScreen() {
   const colors = useColors();
@@ -307,18 +314,37 @@ export default function CheckoutScreen() {
         <View style={{ padding: 16, gap: 16 }}>
           {/* Order Summary */}
           <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <Text style={[styles.cardTitle, { color: colors.foreground }]}>ملخص الطلب</Text>
+            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+              <Text style={[styles.cardTitle, { color: colors.foreground, marginBottom: 0 }]}>
+                ملخص الطلب ({items.length} {items.length === 1 ? "منتج" : "منتجات"})
+              </Text>
+              <Text style={{ color: colors.mutedForeground, fontSize: 12 }}>
+                {items.reduce((acc, it) => acc + it.quantity, 0)} قطعة إجمالاً
+              </Text>
+            </View>
+
             {items.map((item) => (
-              <View key={item.id} style={styles.orderItem}>
-                <Text style={{ color: colors.mutedForeground, fontSize: 13 }}>
-                  {item.name} × {item.quantity}
-                </Text>
-                <Text style={{ color: colors.foreground, fontSize: 13, fontWeight: "600" }}>
+              <View key={item.id} style={{ flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: colors.border + "40" }}>
+                <Image
+                  source={{ uri: getOptimizedImageUrl(item.image, "thumb") }}
+                  style={{ width: 44, height: 44, borderRadius: 8, backgroundColor: colors.muted }}
+                  resizeMode="cover"
+                />
+                <View style={{ flex: 1 }}>
+                  <Text numberOfLines={1} style={{ color: colors.foreground, fontSize: 13, fontWeight: "600" }}>
+                    {item.name}
+                  </Text>
+                  <Text style={{ color: colors.mutedForeground, fontSize: 11, marginTop: 2 }}>
+                    الكمية: {item.quantity} × {format(item.price)}
+                  </Text>
+                </View>
+                <Text style={{ color: colors.foreground, fontSize: 13, fontWeight: "700" }}>
                   {format(item.price * item.quantity)}
                 </Text>
               </View>
             ))}
-            <View style={[styles.divider, { backgroundColor: colors.border }]} />
+
+            <View style={[styles.divider, { backgroundColor: colors.border, marginVertical: 8 }]} />
             <View style={styles.orderItem}>
               <Text style={{ color: colors.mutedForeground, fontSize: 13 }}>{t.checkout.tax}</Text>
               <Text style={{ color: colors.foreground, fontSize: 13 }}>{tax === 0 ? "0 ر.س (معفى)" : format(tax)}</Text>
@@ -546,6 +572,13 @@ export default function CheckoutScreen() {
                     </View>
                     {m.desc && <Text style={{ color: colors.mutedForeground, fontSize: 12, marginTop: 4, lineHeight: 16 }}>{m.desc}</Text>}
 
+                    {/* Official Accepted Payment Brand Badges */}
+                    {m.key === "paypal" && (
+                      <View style={{ marginTop: 10, marginBottom: 2 }}>
+                        <AcceptedCardsRow />
+                      </View>
+                    )}
+
                     {/* Direct Card Entry or PayPal Account Toggle */}
                     {isSelected && m.key === "paypal" && (
                       <View style={{ marginTop: 14, paddingTop: 14, borderTopWidth: 1, borderTopColor: colors.border }}>
@@ -587,80 +620,132 @@ export default function CheckoutScreen() {
                         </View>
 
                         {paySubMode === "card" ? (
-                          <View style={{ gap: 10 }}>
-                            {/* Visual Card Preview */}
+                          <View style={{ gap: 12 }}>
+                            {/* World-Class Luxury 3D Credit Card Preview */}
                             <View style={{
-                              backgroundColor: "#0f172a",
-                              borderRadius: 14,
-                              padding: 16,
+                              backgroundColor: "#090d16",
+                              borderRadius: 16,
+                              padding: 18,
                               borderWidth: 1,
-                              borderColor: "#f59e0b40",
+                              borderColor: "#1e293b",
+                              shadowColor: "#000",
+                              shadowOffset: { width: 0, height: 8 },
+                              shadowOpacity: 0.35,
+                              shadowRadius: 12,
+                              elevation: 6,
                             }}>
-                              <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-                                <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                                  <Feather name="shield" size={14} color="#f59e0b" />
-                                  <Text style={{ color: "#f59e0b", fontSize: 11, fontWeight: "800" }}>بطاقة معتمدة عالمياً</Text>
+                              {/* Card Top Row: Chip + Contactless Wave + Dynamic Card Brand Badge */}
+                              <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+                                <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+                                  {/* Realistic EMV Smart Chip */}
+                                  <View style={{
+                                    width: 38,
+                                    height: 28,
+                                    borderRadius: 6,
+                                    backgroundColor: "#eab308",
+                                    borderWidth: 1,
+                                    borderColor: "#ca8a04",
+                                    padding: 2,
+                                    justifyContent: "space-between",
+                                  }}>
+                                    <View style={{ flexDirection: "row", justifyContent: "space-between", height: 7, borderBottomWidth: 0.8, borderColor: "#a16207" }}>
+                                      <View style={{ width: 10, height: 7, borderRightWidth: 0.8, borderColor: "#a16207" }} />
+                                      <View style={{ width: 10, height: 7, borderLeftWidth: 0.8, borderColor: "#a16207" }} />
+                                    </View>
+                                    <View style={{ height: 6, backgroundColor: "#ca8a04", opacity: 0.4, borderRadius: 2 }} />
+                                    <View style={{ flexDirection: "row", justifyContent: "space-between", height: 7, borderTopWidth: 0.8, borderColor: "#a16207" }}>
+                                      <View style={{ width: 10, height: 7, borderRightWidth: 0.8, borderColor: "#a16207" }} />
+                                      <View style={{ width: 10, height: 7, borderLeftWidth: 0.8, borderColor: "#a16207" }} />
+                                    </View>
+                                  </View>
+
+                                  {/* Contactless Waves */}
+                                  <Feather name="rss" size={15} color="#94a3b8" style={{ transform: [{ rotate: "90deg" }] }} />
                                 </View>
-                                <View style={{ backgroundColor: "#f59e0b20", paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6, borderWidth: 1, borderColor: "#f59e0b40" }}>
-                                  <Text style={{ color: "#fbbf24", fontSize: 10, fontWeight: "800" }}>{getCardBrand(cardNumber)}</Text>
-                                </View>
+
+                                {/* Dynamic Brand Badge */}
+                                <DynamicCardBrandBadge brandType={detectCardBrand(cardNumber).badge} />
                               </View>
 
-                              <Text style={{ color: "#fef08a", fontSize: 16, fontWeight: "700", letterSpacing: 2, textAlign: "left", marginBottom: 12, fontFamily: Platform.OS === "ios" ? "Courier" : "monospace" }}>
+                              {/* Card Number */}
+                              <Text style={{
+                                color: "#f8fafc",
+                                fontSize: 18,
+                                fontWeight: "700",
+                                letterSpacing: 2.5,
+                                textAlign: "left",
+                                marginBottom: 16,
+                                fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
+                                textShadowColor: "rgba(0,0,0,0.6)",
+                                textShadowOffset: { width: 1, height: 1 },
+                                textShadowRadius: 2,
+                              }}>
                                 {cardNumber || "•••• •••• •••• ••••"}
                               </Text>
 
+                              {/* Cardholder & Expiration */}
                               <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-end" }}>
-                                <View>
-                                  <Text style={{ color: "#94a3b8", fontSize: 9 }}>حامل البطاقة</Text>
-                                  <Text style={{ color: "#f8fafc", fontSize: 11, fontWeight: "700", textTransform: "uppercase" }}>
+                                <View style={{ flex: 1, marginRight: 12 }}>
+                                  <Text style={{ color: "#64748b", fontSize: 9, fontWeight: "700", textTransform: "uppercase", letterSpacing: 0.5 }}>حامل البطاقة / CARDHOLDER</Text>
+                                  <Text numberOfLines={1} style={{ color: "#f1f5f9", fontSize: 12, fontWeight: "700", textTransform: "uppercase", marginTop: 2 }}>
                                     {cardHolder || defaultAddress?.recipientName || "CARDHOLDER NAME"}
                                   </Text>
                                 </View>
                                 <View style={{ alignItems: "flex-end" }}>
-                                  <Text style={{ color: "#94a3b8", fontSize: 9 }}>تاريخ الانتهاء</Text>
-                                  <Text style={{ color: "#f8fafc", fontSize: 11, fontWeight: "700", fontFamily: Platform.OS === "ios" ? "Courier" : "monospace" }}>
+                                  <Text style={{ color: "#64748b", fontSize: 9, fontWeight: "700", textTransform: "uppercase", letterSpacing: 0.5 }}>صالحة حتى / EXPIRES</Text>
+                                  <Text style={{ color: "#f1f5f9", fontSize: 12, fontWeight: "700", fontFamily: Platform.OS === "ios" ? "Courier" : "monospace", marginTop: 2 }}>
                                     {cardExp || "MM/YY"}
                                   </Text>
                                 </View>
                               </View>
                             </View>
 
-                            {/* Card Number Input */}
+                            {/* Card Number Input with Embedded Detected Brand Badge */}
                             <View>
-                              <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 4 }}>
-                                <Text style={{ fontSize: 12, fontWeight: "700", color: colors.foreground }}>رقم البطاقة (16 رقماً)</Text>
-                                <Text style={{ fontSize: 11, fontWeight: "700", color: colors.primary }}>{getCardBrand(cardNumber)}</Text>
+                              <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                                <Text style={{ fontSize: 12, fontWeight: "700", color: colors.foreground }}>رقم البطاقة البنكية</Text>
+                                <Text style={{ fontSize: 11, fontWeight: "700", color: detectCardBrand(cardNumber).color }}>
+                                  {detectCardBrand(cardNumber).brand}
+                                </Text>
                               </View>
-                              <TextInput
-                                value={cardNumber}
-                                onChangeText={(val) => setCardNumber(formatCardNumber(val))}
-                                placeholder="0000 0000 0000 0000"
-                                placeholderTextColor={colors.mutedForeground}
-                                keyboardType="numeric"
-                                maxLength={19}
-                                style={{
-                                  backgroundColor: colors.muted,
-                                  color: colors.foreground,
-                                  borderRadius: 10,
-                                  borderWidth: 1,
-                                  borderColor: colors.border,
-                                  paddingHorizontal: 12,
-                                  paddingVertical: 10,
-                                  fontSize: 14,
-                                  textAlign: "left",
-                                  fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
-                                }}
-                              />
+                              <View style={{
+                                flexDirection: "row",
+                                alignItems: "center",
+                                backgroundColor: colors.muted,
+                                borderRadius: 10,
+                                borderWidth: 1,
+                                borderColor: colors.border,
+                                paddingHorizontal: 12,
+                              }}>
+                                <TextInput
+                                  value={cardNumber}
+                                  onChangeText={(val) => setCardNumber(formatCardNumber(val))}
+                                  placeholder="0000 0000 0000 0000"
+                                  placeholderTextColor={colors.mutedForeground}
+                                  keyboardType="numeric"
+                                  maxLength={19}
+                                  style={{
+                                    flex: 1,
+                                    color: colors.foreground,
+                                    paddingVertical: 10,
+                                    fontSize: 14,
+                                    textAlign: "left",
+                                    fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
+                                  }}
+                                />
+                                <View style={{ marginLeft: 8 }}>
+                                  <DynamicCardBrandBadge brandType={detectCardBrand(cardNumber).badge} />
+                                </View>
+                              </View>
                             </View>
 
                             {/* Cardholder Name Input */}
                             <View>
-                              <Text style={{ fontSize: 12, fontWeight: "700", color: colors.foreground, marginBottom: 4 }}>اسم حامل البطاقة</Text>
+                              <Text style={{ fontSize: 12, fontWeight: "700", color: colors.foreground, marginBottom: 6 }}>اسم حامل البطاقة (باللغة الإنجليزية كما في البطاقة)</Text>
                               <TextInput
                                 value={cardHolder}
                                 onChangeText={setCardHolder}
-                                placeholder="الاسم كما هو مطبوع على البطاقة"
+                                placeholder="CARDHOLDER NAME"
                                 placeholderTextColor={colors.mutedForeground}
                                 autoCapitalize="characters"
                                 style={{
@@ -672,7 +757,7 @@ export default function CheckoutScreen() {
                                   paddingHorizontal: 12,
                                   paddingVertical: 10,
                                   fontSize: 13,
-                                  textAlign: isRTL ? "right" : "left",
+                                  textAlign: "left",
                                 }}
                               />
                             </View>
@@ -680,7 +765,7 @@ export default function CheckoutScreen() {
                             {/* Exp and CVV Grid */}
                             <View style={{ flexDirection: "row", gap: 10 }}>
                               <View style={{ flex: 1 }}>
-                                <Text style={{ fontSize: 12, fontWeight: "700", color: colors.foreground, marginBottom: 4 }}>الانتهاء (شهر / سنة)</Text>
+                                <Text style={{ fontSize: 12, fontWeight: "700", color: colors.foreground, marginBottom: 6 }}>تاريخ الانتهاء</Text>
                                 <TextInput
                                   value={cardExp}
                                   onChangeText={(val) => setCardExp(formatCardExp(val))}
@@ -704,7 +789,10 @@ export default function CheckoutScreen() {
                               </View>
 
                               <View style={{ flex: 1 }}>
-                                <Text style={{ fontSize: 12, fontWeight: "700", color: colors.foreground, marginBottom: 4 }}>رمز الأمان (CVV)</Text>
+                                <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                                  <Text style={{ fontSize: 12, fontWeight: "700", color: colors.foreground }}>رمز الأمان</Text>
+                                  <Text style={{ fontSize: 10, color: colors.mutedForeground }}>CVV / CVC</Text>
+                                </View>
                                 <TextInput
                                   value={cardCvv}
                                   onChangeText={(val) => setCardCvv(val.replace(/\D/g, "").slice(0, 4))}
@@ -729,18 +817,35 @@ export default function CheckoutScreen() {
                               </View>
                             </View>
 
-                            {/* Security Notice */}
-                            <View style={{ flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "rgba(5, 150, 105, 0.08)", padding: 8, borderRadius: 8, borderWidth: 1, borderColor: "rgba(5, 150, 105, 0.2)" }}>
-                              <Feather name="check-circle" size={13} color="#059669" />
-                              <Text style={{ fontSize: 10, color: "#059669", fontWeight: "700", flex: 1 }}>
-                                تشفير بنكي 256-bit وحماية المشتري المعتمدة من PayPal عالمياً
-                              </Text>
+                            {/* Security Trust Badges */}
+                            <View style={{
+                              flexDirection: "row",
+                              alignItems: "center",
+                              gap: 8,
+                              backgroundColor: "rgba(5, 150, 105, 0.08)",
+                              padding: 10,
+                              borderRadius: 10,
+                              borderWidth: 1,
+                              borderColor: "rgba(5, 150, 105, 0.25)",
+                            }}>
+                              <Feather name="shield" size={16} color="#059669" />
+                              <View style={{ flex: 1 }}>
+                                <Text style={{ fontSize: 11, color: "#059669", fontWeight: "800" }}>
+                                  تشفير بنكي 256-Bit SSL وحماية المشتري لـ 180 يوماً
+                                </Text>
+                                <Text style={{ fontSize: 10, color: colors.mutedForeground, marginTop: 1 }}>
+                                  البيانات مشفرة ومعتمدة طبقاً لمعايير PCI-DSS العالمية
+                                </Text>
+                              </View>
                             </View>
                           </View>
                         ) : (
-                          <View style={{ backgroundColor: colors.muted, padding: 12, borderRadius: 10, alignItems: "center" }}>
-                            <Text style={{ fontSize: 12, color: colors.foreground, textAlign: "center", lineHeight: 18 }}>
-                              سيتم فتح نافذة PayPal الرسمية فور تأكيد الطلب لتسجيل الدخول والسداد السريع بحسابك.
+                          <View style={{ backgroundColor: colors.muted, padding: 14, borderRadius: 10, alignItems: "center", gap: 6 }}>
+                            <Text style={{ fontSize: 13, color: colors.foreground, fontWeight: "700", textAlign: "center" }}>
+                              الدفع السريع بحساب بايبال الشخصي
+                            </Text>
+                            <Text style={{ fontSize: 12, color: colors.mutedForeground, textAlign: "center", lineHeight: 18 }}>
+                              سيتم فتح نافذة PayPal الرسمية فور الضغط على زر الدفع لتسجيل الدخول والسداد الفوري بأمان.
                             </Text>
                           </View>
                         )}

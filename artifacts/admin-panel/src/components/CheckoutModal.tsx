@@ -560,15 +560,58 @@ export function CheckoutModal({
                           className="mt-1 accent-amber-500 cursor-pointer"
                         />
                         <div>
-                          <div className="flex items-center gap-2">
-                            <span className="font-bold text-xs text-white">الدفع الإلكتروني عبر PayPal والبطاقات المعتمدة</span>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-bold text-xs text-white">الدفع الإلكتروني عبر PayPal والبطاقات المعتمدة عالمياً</span>
                             <span className="text-[10px] bg-blue-900/60 text-blue-300 border border-blue-500/30 px-2 py-0.5 rounded-md font-bold">
                               PayPal Live 💳
                             </span>
+                            <span className="text-[10px] bg-emerald-950/60 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-md font-bold">
+                              حماية 100% 🛡️
+                            </span>
                           </div>
-                          <p className="text-[11px] text-slate-400 mt-0.5">
-                            يقبل كافة البطاقات البنكية المعتمدة (Visa، MasterCard، مدى، Amex) أو رصيد حساب PayPal
+                          <p className="text-[11px] text-slate-400 mt-1">
+                            يقبل كافة البطاقات البنكية المعتمدة عالمياً أو رصيد حساب PayPal الفوري
                           </p>
+
+                          {/* International Accepted Payment Badges Row */}
+                          <div className="flex items-center gap-1.5 flex-wrap mt-2.5">
+                            {/* PayPal Badge */}
+                            <div className="flex items-center gap-1 px-2 py-0.5 rounded bg-[#003087] text-white text-[10px] font-black tracking-tight shadow-sm">
+                              <span className="text-[#0079C1]">P</span><span className="text-white -ml-0.5">P</span>
+                              <span>PayPal</span>
+                            </div>
+
+                            {/* Visa Badge */}
+                            <div className="flex items-center px-2 py-0.5 rounded bg-[#0d2b6b] text-white text-[10px] font-black italic tracking-wider shadow-sm">
+                              VISA
+                            </div>
+
+                            {/* MasterCard Badge */}
+                            <div className="flex items-center gap-1 px-2 py-0.5 rounded bg-[#1e293b] text-white text-[10px] font-bold shadow-sm">
+                              <div className="flex items-center -space-x-1.5">
+                                <span className="w-2.5 h-2.5 rounded-full bg-[#EB001B] inline-block"></span>
+                                <span className="w-2.5 h-2.5 rounded-full bg-[#F79E1B] inline-block"></span>
+                              </div>
+                              <span className="text-[9px]">mastercard</span>
+                            </div>
+
+                            {/* Mada Badge */}
+                            <div className="flex items-center gap-1 px-2 py-0.5 rounded bg-[#064e3b] text-white text-[10px] font-bold shadow-sm">
+                              <span className="w-1.5 h-1.5 rounded-full bg-[#10b981] inline-block"></span>
+                              <span>mada مدى</span>
+                            </div>
+
+                            {/* AMEX Badge */}
+                            <div className="px-1.5 py-0.5 rounded bg-[#006fcf] text-white text-[10px] font-black shadow-sm">
+                              AMEX
+                            </div>
+
+                            {/* Apple Pay Badge */}
+                            <div className="flex items-center gap-1 px-2 py-0.5 rounded bg-black text-white text-[10px] font-bold shadow-sm border border-slate-700">
+                              <span></span>
+                              <span>Pay</span>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </label>
@@ -587,7 +630,7 @@ export function CheckoutModal({
                             }`}
                           >
                             <CreditCard size={14} />
-                            <span>إدخال بيانات البطاقة البنكية</span>
+                            <span>💳 البطاقة البنكية المباشرة</span>
                           </button>
 
                           <button
@@ -595,7 +638,7 @@ export function CheckoutModal({
                             onClick={() => setPaySubMode("paypal_account")}
                             className={`py-2 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
                               paySubMode === "paypal_account"
-                                ? "bg-blue-600 text-white shadow-md shadow-blue-500/20"
+                                ? "bg-[#003087] text-white shadow-md shadow-blue-500/20"
                                 : "text-slate-400 hover:text-white"
                             }`}
                           >
@@ -606,30 +649,52 @@ export function CheckoutModal({
                         {paySubMode === "card" ? (
                           /* Direct Card Input Fields */
                           <div className="space-y-3 bg-slate-900/90 p-4 rounded-2xl border border-slate-800">
-                            {/* Realistic Virtual Card Preview */}
-                            <div className="bg-gradient-to-tr from-slate-950 via-slate-900 to-amber-950/80 border border-amber-500/40 rounded-2xl p-4 text-white shadow-xl relative overflow-hidden">
-                              <div className="flex justify-between items-center mb-3">
-                                <div className="flex items-center gap-1.5 text-amber-400 font-black text-xs">
-                                  <ShieldCheck size={16} />
-                                  <span>بطاقة بنكية معتمدة</span>
+                            {/* Realistic Virtual Card Preview with EMV Chip & Contactless */}
+                            <div className="bg-gradient-to-tr from-[#090d16] via-[#111827] to-[#1e293b] border border-slate-700/80 rounded-2xl p-4 text-white shadow-2xl relative overflow-hidden">
+                              {/* Top row: Chip + Contactless wave + Brand */}
+                              <div className="flex justify-between items-center mb-4">
+                                <div className="flex items-center gap-2.5">
+                                  {/* Realistic EMV Chip */}
+                                  <div className="w-9 h-7 rounded bg-amber-400 border border-amber-600 p-0.5 flex flex-col justify-between shadow-inner">
+                                    <div className="flex justify-between border-b border-amber-700 h-2">
+                                      <div className="w-2.5 border-r border-amber-700"></div>
+                                      <div className="w-2.5 border-l border-amber-700"></div>
+                                    </div>
+                                    <div className="h-1 bg-amber-600/40 rounded"></div>
+                                    <div className="flex justify-between border-t border-amber-700 h-2">
+                                      <div className="w-2.5 border-r border-amber-700"></div>
+                                      <div className="w-2.5 border-l border-amber-700"></div>
+                                    </div>
+                                  </div>
+
+                                  {/* Contactless waves icon */}
+                                  <div className="text-slate-400 transform rotate-90 text-sm font-bold tracking-tighter">
+                                    (((
+                                  </div>
                                 </div>
-                                <span className="bg-amber-500/20 text-amber-300 font-mono text-[10px] px-2 py-0.5 rounded border border-amber-500/40 font-bold">
-                                  {getCardBrand(cardNumber)}
-                                </span>
+
+                                {/* Dynamic Brand Display */}
+                                <div className="flex items-center gap-1 bg-slate-900/90 px-2.5 py-1 rounded-md border border-slate-700">
+                                  <ShieldCheck size={13} className="text-amber-400" />
+                                  <span className="font-bold text-[11px] text-amber-300">
+                                    {getCardBrand(cardNumber)}
+                                  </span>
+                                </div>
                               </div>
 
-                              <div className="font-mono text-base tracking-widest text-amber-200 py-1 dir-ltr text-left">
+                              {/* 16 digits Card Number */}
+                              <div className="font-mono text-lg tracking-widest text-slate-100 py-1 dir-ltr text-left font-bold drop-shadow">
                                 {cardNumber || "•••• •••• •••• ••••"}
                               </div>
 
                               <div className="flex justify-between items-end mt-3 text-[11px] text-slate-300">
                                 <div>
-                                  <span className="text-[9px] text-slate-400 block">حامل البطاقة:</span>
-                                  <span className="font-bold uppercase">{cardHolder || recipientName || "CARDHOLDER NAME"}</span>
+                                  <span className="text-[9px] text-slate-400 font-bold block">حامل البطاقة / CARDHOLDER</span>
+                                  <span className="font-bold uppercase tracking-wide text-white">{cardHolder || recipientName || "CARDHOLDER NAME"}</span>
                                 </div>
                                 <div className="text-left font-mono">
-                                  <span className="text-[9px] text-slate-400 block">الانتهاء:</span>
-                                  <span className="font-bold">{cardExp || "MM/YY"}</span>
+                                  <span className="text-[9px] text-slate-400 font-bold block">صالحة حتى / EXPIRES</span>
+                                  <span className="font-bold text-white">{cardExp || "MM/YY"}</span>
                                 </div>
                               </div>
                             </div>
@@ -637,7 +702,7 @@ export function CheckoutModal({
                             {/* Card Inputs */}
                             <div>
                               <div className="flex justify-between items-center mb-1">
-                                <label className="text-[11px] font-bold text-slate-300">رقم البطاقة البنكية (16 رقماً)</label>
+                                <label className="text-[11px] font-bold text-slate-300">رقم البطاقة البنكية</label>
                                 <span className="text-[10px] text-amber-400 font-bold">{getCardBrand(cardNumber)}</span>
                               </div>
                               <div className="relative">

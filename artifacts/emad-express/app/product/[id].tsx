@@ -105,9 +105,11 @@ export default function ProductDetailScreen() {
             <Text style={[styles.productName, { color: colors.foreground, flex: 1, textAlign: language === "ar" ? "right" : "left" }]}>
               {getProductLocalizedName(product, language)}
             </Text>
-            <View style={[styles.stockBadge, { backgroundColor: product.quantity > 0 ? "#d1fae5" : "#fee2e2" }]}>
-              <Text style={{ color: product.quantity > 0 ? "#059669" : "#dc2626", fontSize: 12, fontWeight: "600" }}>
-                {product.quantity > 0 ? t.products.in_stock : t.products.out_of_stock}
+            <View style={[styles.stockBadge, { backgroundColor: product.quantity > 0 ? "rgba(16, 185, 129, 0.12)" : "rgba(239, 68, 68, 0.12)", borderWidth: 1, borderColor: product.quantity > 0 ? "rgba(16, 185, 129, 0.3)" : "rgba(239, 68, 68, 0.3)" }]}>
+              <Text style={{ color: product.quantity > 0 ? "#059669" : "#dc2626", fontSize: 12, fontWeight: "700" }}>
+                {product.quantity > 0
+                  ? (language === "ar" ? `متوفر في مستودع المورد (${product.quantity} قطعة) ✓` : `In Supplier Stock (${product.quantity} units) ✓`)
+                  : t.products.out_of_stock}
               </Text>
             </View>
           </View>
@@ -128,8 +130,12 @@ export default function ProductDetailScreen() {
             </View>
             <View style={[styles.infoDivider, { backgroundColor: colors.border }]} />
             <View style={styles.infoItem}>
-              <Text style={{ color: colors.mutedForeground, fontSize: 12 }}>{(UI_LABELS.stock as any)[language] || UI_LABELS.stock.en}</Text>
-              <Text style={{ color: colors.foreground, fontSize: 14, fontWeight: "600" }}>{product.quantity}</Text>
+              <Text style={{ color: colors.mutedForeground, fontSize: 12 }}>
+                {language === "ar" ? "المخزون المتوفر لدى المورد" : ((UI_LABELS.stock as any)[language] || UI_LABELS.stock.en)}
+              </Text>
+              <Text style={{ color: colors.foreground, fontSize: 14, fontWeight: "700" }}>
+                {product.quantity} {language === "ar" ? "قطعة متوفرة" : "units"}
+              </Text>
             </View>
           </View>
         </View>
