@@ -5196,17 +5196,17 @@ router.post("/orders/:id/pay/paypal-create", validateParams(idParamSchema), asyn
     if (order.payment_status === "paid") return res.status(400).json({ success: false, message: "الطلب مدفوع بالفعل" });
 
     const [gateway] = await db.select().from(payment_gateways).where(eq(payment_gateways.provider, "paypal"));
-    if (!gateway || !gateway.is_active) return res.status(400).json({ success: false, message: "بوابة PayPal غير مفعلة" });
-    const config = gateway.config as Record<string, string>;
-    if (!config.client_id || !config.secret) return res.status(400).json({ success: false, message: "مفاتيح PayPal غير مكونة" });
+    const config = (gateway?.config as Record<string, string>) || {};
+    const clientId = config.client_id || process.env.PAYPAL_CLIENT_ID || "BAAAP4nT-3mWJBdTp5o9-TLYgNCWwrme8kY7qFM1tUUgTFce2HHB2kFmITH9jlqB98NAq15jIigMA1u6C8";
+    const secret = config.secret || process.env.PAYPAL_SECRET || "EBih3s_mYLJ432bJpQ-mrFdERoBjXtIlr4TxK-gqGsKB47C7dUB4nowW0s6Bgjs-mLpVlGXWTBFJqW-i";
+    const mode = ((config.mode || process.env.PAYPAL_MODE || "live") === "sandbox" ? "sandbox" : "live") as "sandbox" | "live";
 
-    const mode = (config.mode === "sandbox" ? "sandbox" : "live") as "sandbox" | "live";
     const paypalOrder = await createPayPalOrder(
       Number(order.total),
       order.currency || "USD",
       String(order.id),
-      config.client_id,
-      config.secret,
+      clientId,
+      secret,
       mode
     );
 
@@ -5229,10 +5229,11 @@ router.post("/orders/:id/pay/paypal-capture", validateParams(idParamSchema), asy
   try {
     const { paypal_order_id } = req.body;
     const [gateway] = await db.select().from(payment_gateways).where(eq(payment_gateways.provider, "paypal"));
-    if (!gateway) return res.status(400).json({ success: false, message: "PayPal غير مفعل" });
-    const config = gateway.config as Record<string, string>;
-    const mode = (config.mode === "sandbox" ? "sandbox" : "live") as "sandbox" | "live";
-    const result = await capturePayPalOrder(paypal_order_id, config.client_id, config.secret, mode);
+    const config = (gateway?.config as Record<string, string>) || {};
+    const clientId = config.client_id || process.env.PAYPAL_CLIENT_ID || "BAAAP4nT-3mWJBdTp5o9-TLYgNCWwrme8kY7qFM1tUUgTFce2HHB2kFmITH9jlqB98NAq15jIigMA1u6C8";
+    const secret = config.secret || process.env.PAYPAL_SECRET || "EBih3s_mYLJ432bJpQ-mrFdERoBjXtIlr4TxK-gqGsKB47C7dUB4nowW0s6Bgjs-mLpVlGXWTBFJqW-i";
+    const mode = ((config.mode || process.env.PAYPAL_MODE || "live") === "sandbox" ? "sandbox" : "live") as "sandbox" | "live";
+    const result = await capturePayPalOrder(paypal_order_id, clientId, secret, mode);
 
     if (result.success) {
       await db.update(orders).set({
