@@ -3950,7 +3950,7 @@ router.post("/admin/dropship/import", requireAuth, requireRole("admin", "manager
     const skuUnique = `DS-${b.source_id?.slice(-6) || Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 6)}`;
     const matchedCatId = await matchCategoryId(`${b.name || ""} ${b.description || ""}`, b.category_id);
     const realStock = extractRealSupplierStock(b);
-    const finalStock = Number(b.quantity) > 0 ? Number(b.quantity) : (realStock > 0 ? realStock : 20);
+    const finalStock = Number(b.quantity) > 0 ? Number(b.quantity) : (realStock > 0 ? realStock : (35 + (Math.abs(parseInt(String(b.source_id || Date.now()), 10) || 1) % 95)));
 
     const [newProduct] = await db.insert(products).values({
       name_ar: b.name || "منتج دروبشيبينغ",

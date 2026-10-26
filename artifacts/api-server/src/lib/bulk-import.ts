@@ -87,7 +87,7 @@ async function saveProduct(
       return "skipped";
     }
 
-    const realStock = rawStock && rawStock > 0 ? rawStock : 20;
+    const realStock = rawStock && rawStock > 0 ? rawStock : (35 + (Math.abs(parseInt(String(sourceId), 10) || 1) % 95));
     const ourPrice = parseFloat((price * (1 + job.marginPercent / 100)).toFixed(2));
     const matchedCategoryId = await matchCategoryId(`${name} ${categoryName || ""}`);
 

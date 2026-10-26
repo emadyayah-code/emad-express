@@ -93588,7 +93588,7 @@ async function saveProduct(job, sourceId, platform, name, price, originalPrice, 
       job.processed = job.imported + job.skipped + job.failed;
       return "skipped";
     }
-    const realStock = rawStock && rawStock > 0 ? rawStock : 20;
+    const realStock = rawStock && rawStock > 0 ? rawStock : 35 + Math.abs(parseInt(String(sourceId), 10) || 1) % 95;
     const ourPrice = parseFloat((price * (1 + job.marginPercent / 100)).toFixed(2));
     const matchedCategoryId = await matchCategoryId(`${name} ${categoryName || ""}`);
     const [newProduct] = await db.insert(products).values({
@@ -97929,7 +97929,7 @@ router2.post("/admin/dropship/import", requireAuth, requireRole("admin", "manage
     const skuUnique = `DS-${b.source_id?.slice(-6) || Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 6)}`;
     const matchedCatId = await matchCategoryId(`${b.name || ""} ${b.description || ""}`, b.category_id);
     const realStock = extractRealSupplierStock(b);
-    const finalStock = Number(b.quantity) > 0 ? Number(b.quantity) : realStock > 0 ? realStock : 20;
+    const finalStock = Number(b.quantity) > 0 ? Number(b.quantity) : realStock > 0 ? realStock : 35 + Math.abs(parseInt(String(b.source_id || Date.now()), 10) || 1) % 95;
     const [newProduct] = await db.insert(products).values({
       name_ar: b.name || "\u0645\u0646\u062A\u062C \u062F\u0631\u0648\u0628\u0634\u064A\u0628\u064A\u0646\u063A",
       name_en: b.name || "Dropshipping Product",
