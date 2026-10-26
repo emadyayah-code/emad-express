@@ -24,7 +24,7 @@ import {
 import { StoreNavbar, StoreFooter } from "@/components/StoreNavbar";
 import { useCart } from "@/context/CartContext";
 import { api } from "@/lib/api";
-import { useI18n, getProductLocalizedName, getProductLocalizedDesc } from "@/lib/i18n";
+import { useI18n, getProductLocalizedName, getProductLocalizedDesc, getCategoryLocalizedName } from "@/lib/i18n";
 import { getOptimizedImageUrl } from "@/lib/image-optimizer";
 
 export default function CategoryPage() {
@@ -120,9 +120,7 @@ export default function CategoryPage() {
     setTimeout(() => setToastNotification(null), 3500);
   };
 
-  const catName = language === "en"
-    ? (currentCategory?.name_en || currentCategory?.name || currentCategory?.name_ar || "Category")
-    : (currentCategory?.name_ar || currentCategory?.name || currentCategory?.name_en || "القسم المختار");
+  const catName = currentCategory ? getCategoryLocalizedName(currentCategory, language) : (language === "en" ? "Category" : "القسم المختار");
   const catIcon = currentCategory?.icon || "📦";
 
   return (

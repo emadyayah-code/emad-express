@@ -94323,7 +94323,8 @@ router2.get("/admin/dashboard", requireAuth, requireRole("admin", "manager", "sa
 });
 router2.get("/admin/products", requireAuth, requireRole("admin", "manager", "sales"), async (req, res, next) => {
   try {
-    const { page = "1", per_page = "50", search = "", category_id, status } = req.query;
+    const { page = "1", per_page = "50", search = "", category_id, status, lang } = req.query;
+    const requestLang = normalizeRequestLang(lang, req.headers["accept-language"]);
     const p = Math.max(1, parseInt(page) || 1);
     const pp = Math.min(1e3, Math.max(1, parseInt(per_page) || 50));
     const conds = [isNull(products.deleted_at)];
@@ -94334,15 +94335,33 @@ router2.get("/admin/products", requireAuth, requireRole("admin", "manager", "sal
     const where = and(...conds);
     const [{ count = 0 } = {}] = await db.select({ count: sql`COUNT(*)` }).from(products).where(where);
     const rawData = await db.select().from(products).where(where).orderBy(desc(products.id)).limit(pp).offset((p - 1) * pp);
-    const data = rawData.map((prod) => ({
-      ...prod,
-      name_ar: prod.name_ar || prod.name || "",
-      name_en: prod.name_en || prod.name || "",
-      name: prod.name_ar || prod.name_en || prod.name || "\u0645\u0646\u062A\u062C",
-      description_ar: prod.description_ar || prod.description || "",
-      description_en: prod.description_en || prod.description || "",
-      description: prod.description_ar || prod.description_en || prod.description || ""
-    }));
+    const data = rawData.map((prod) => {
+      const name_ar = localizeProductName(prod, "ar");
+      const name_en = localizeProductName(prod, "en");
+      const name_fr = localizeProductName(prod, "fr");
+      const name_tr = localizeProductName(prod, "tr");
+      const name_zh = localizeProductName(prod, "zh");
+      const desc_ar = localizeProductDesc(prod, "ar");
+      const desc_en = localizeProductDesc(prod, "en");
+      const desc_fr = localizeProductDesc(prod, "fr");
+      const desc_tr = localizeProductDesc(prod, "tr");
+      const desc_zh = localizeProductDesc(prod, "zh");
+      return {
+        ...prod,
+        name_ar,
+        name_en,
+        name_fr,
+        name_tr,
+        name_zh,
+        name: requestLang === "en" ? name_en : name_ar,
+        description_ar: desc_ar,
+        description_en: desc_en,
+        description_fr: desc_fr,
+        description_tr: desc_tr,
+        description_zh: desc_zh,
+        description: requestLang === "en" ? desc_en : desc_ar
+      };
+    });
     const totalCount = Number(count);
     return res.json({
       success: true,
@@ -94422,9 +94441,27 @@ router2.delete("/admin/products/:id", requireAuth, requireRole("admin", "manager
     next(err);
   }
 });
-router2.get("/admin/categories", requireAuth, requireRole("admin", "manager", "sales"), async (_req, res, next) => {
+router2.get("/admin/categories", requireAuth, requireRole("admin", "manager", "sales"), async (req, res, next) => {
   try {
-    const data = await db.select().from(categories).where(isNull(categories.deleted_at)).orderBy(categories.id);
+    const { lang } = req.query;
+    const requestLang = normalizeRequestLang(lang, req.headers["accept-language"]);
+    const rawData = await db.select().from(categories).where(isNull(categories.deleted_at)).orderBy(categories.id);
+    const data = rawData.map((c) => {
+      const cleanCat = CLEAN_CATEGORY_NAMES[Number(c.id)];
+      const locName = cleanCat ? cleanCat[requestLang] || cleanCat.en : requestLang === "en" ? c.name_en || c.name_ar : c.name_ar || c.name_en;
+      return {
+        ...c,
+        name: locName,
+        name_ar: cleanCat?.ar || c.name_ar || "",
+        name_en: cleanCat?.en || c.name_en || "",
+        name_fr: cleanCat?.fr || cleanCat?.en || c.name_en || "",
+        name_tr: cleanCat?.tr || cleanCat?.en || c.name_en || "",
+        name_zh: cleanCat?.zh || cleanCat?.en || c.name_en || "",
+        description: cleanCat ? cleanCat[requestLang] || cleanCat.en : c.description_ar || c.description_en || "",
+        description_ar: cleanCat?.ar || c.description_ar || "",
+        description_en: cleanCat?.en || c.description_en || ""
+      };
+    });
     return res.json({ success: true, data });
   } catch (err) {
     next(err);

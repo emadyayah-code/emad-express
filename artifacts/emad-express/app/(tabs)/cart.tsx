@@ -9,6 +9,7 @@ import { useCart } from "@/context/CartContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { useCurrency } from "@/context/CurrencyContext";
 import { getOptimizedImageUrl } from "@/lib/image-optimizer";
+import { getProductLocalizedName } from "@/lib/i18n";
 
 export default function CartScreen() {
   const colors = useColors();
@@ -69,7 +70,9 @@ export default function CartScreen() {
               </View>
             )}
             <View style={{ flex: 1, marginHorizontal: 12 }}>
-              <Text style={[styles.itemName, { color: colors.foreground, textAlign: isRTL ? "right" : "left" }]} numberOfLines={2}>{item.name}</Text>
+              <Text style={[styles.itemName, { color: colors.foreground, textAlign: isRTL ? "right" : "left" }]} numberOfLines={2}>
+                {getProductLocalizedName(item, language)}
+              </Text>
               <Text style={[styles.itemPrice, { color: colors.primary }]}>{format(item.price, language)}</Text>
             </View>
             <View style={styles.qtyControl}>

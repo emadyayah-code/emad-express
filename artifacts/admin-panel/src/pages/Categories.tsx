@@ -1,6 +1,7 @@
 import { useState, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, getApiBase } from "@/lib/api";
+import { useI18n, getCategoryLocalizedName, getCategoryLocalizedDesc } from "@/lib/i18n";
 import { Plus, Edit, Trash2, X, Upload, Image as ImageIcon, Sparkles, Loader2 } from "lucide-react";
 
 interface Category {
@@ -73,13 +74,14 @@ function ImageUploader({ value, onChange, endpoint }: { value: string; onChange:
 
 export default function Categories() {
   const qc = useQueryClient();
+  const { language, t } = useI18n();
   const [modal, setModal] = useState<"add" | "edit" | null>(null);
   const [editing, setEditing] = useState<Category | null>(null);
   const [form, setForm] = useState(emptyForm);
 
   const { data: rawCategories, isLoading } = useQuery<any>({
-    queryKey: ["categories-admin"],
-    queryFn: () => api.get("/admin/categories"),
+    queryKey: ["categories-admin", language],
+    queryFn: () => api.get(`/admin/categories?lang=${language}`),
   });
   const categories: Category[] = Array.isArray(rawCategories)
     ? rawCategories
@@ -185,31 +187,37 @@ export default function Categories() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {categories.map(c => (
-            <div key={c.id} className="rounded-xl overflow-hidden group" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(245,158,11,0.15)" }}>
-              <div className="relative h-40">
-                {c.image ? (
-                  <img src={c.image} alt={c.name} className="w-full h-full object-cover" />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center" style={{ background: "rgba(245,158,11,0.06)" }}>
-                    <ImageIcon size={36} className="text-amber-500/40" />
+          {categories.map(c => {
+            const catTitle = getCategoryLocalizedName(c, language);
+            const catDesc = getCategoryLocalizedDesc(c, language);
+            return (
+              <div key={c.id} className="rounded-xl overflow-hidden group" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(245,158,11,0.15)" }}>
+                <div className="relative h-40">
+                  {c.image ? (
+                    <img src={c.image} alt={catTitle} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center" style={{ background: "rgba(245,158,11,0.06)" }}>
+                      <ImageIcon size={36} className="text-amber-500/40" />
+                    </div>
+                  )}
+                  <div className="absolute top-2 left-2 text-2xl">{c.icon}</div>
+                  {!c.is_active && (
+                    <div className="absolute top-2 right-2 text-xs px-2 py-1 rounded-full bg-gray-700/80 text-gray-300">
+                      {language === "ar" ? "غير نشط" : "Inactive"}
+                    </div>
+                  )}
+                </div>
+                <div className="p-4">
+                  <h3 className="font-semibold text-white/90 mb-1">{catTitle}</h3>
+                  <p className="text-xs text-white/50 line-clamp-2 h-8">{catDesc}</p>
+                  <div className="flex items-center justify-end gap-3 mt-3 pt-3" style={{ borderTop: "1px solid rgba(255,255,255,0.05)" }}>
+                    <button onClick={() => openEdit(c)} title={language === "ar" ? "تعديل" : "Edit"} className="text-blue-400 hover:text-blue-300 transition-colors"><Edit size={15} /></button>
+                    <button onClick={() => confirm(language === "ar" ? "حذف هذه الفئة؟" : "Delete this category?") && deleteMut.mutate(c.id)} title={language === "ar" ? "حذف" : "Delete"} className="text-red-400 hover:text-red-300 transition-colors"><Trash2 size={15} /></button>
                   </div>
-                )}
-                <div className="absolute top-2 left-2 text-2xl">{c.icon}</div>
-                {!c.is_active && (
-                  <div className="absolute top-2 right-2 text-xs px-2 py-1 rounded-full bg-gray-700/80 text-gray-300">غير نشط</div>
-                )}
-              </div>
-              <div className="p-4">
-                <h3 className="font-semibold text-white/90 mb-1">{c.name}</h3>
-                <p className="text-xs text-white/50 line-clamp-2 h-8">{c.description}</p>
-                <div className="flex items-center justify-end gap-3 mt-3 pt-3" style={{ borderTop: "1px solid rgba(255,255,255,0.05)" }}>
-                  <button onClick={() => openEdit(c)} className="text-blue-400 hover:text-blue-300 transition-colors"><Edit size={15} /></button>
-                  <button onClick={() => confirm("حذف هذه الفئة؟") && deleteMut.mutate(c.id)} className="text-red-400 hover:text-red-300 transition-colors"><Trash2 size={15} /></button>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 

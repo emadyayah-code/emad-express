@@ -342,7 +342,6 @@ export function isCleanArabicText(t: string | null | undefined): boolean {
 
 export function getProductLocalizedName(p: any, lang: Language): string {
   if (!p) return "";
-  if (p[`name_${lang}`]) return p[`name_${lang}`];
   const cat = p.category_id ? CLEAN_CATEGORY_NAMES[Number(p.category_id)] : null;
   const catEn = cat ? cat.en : "AliExpress Verified";
   const catAr = cat ? cat.ar : "علي إكسبرس الرسمي";
@@ -350,14 +349,14 @@ export function getProductLocalizedName(p: any, lang: Language): string {
 
   if (lang === "en") {
     if (isValidEnglishText(p.name_en)) {
-      return p.name_en;
+      return p.name_en.trim();
     }
     if (isValidEnglishText(p.name)) {
-      return p.name;
+      return p.name.trim();
     }
     
     // Convert Arabic product title dynamically to clear English
-    const rawAr = p.name_ar || p.name || p.name_en || "";
+    const rawAr = (p.name_ar || p.name || p.name_en || "").trim();
     const tokens = rawAr.split(/[\s,،\-–—._/()+]+/);
     const translatedWords: string[] = [];
     
@@ -376,25 +375,52 @@ export function getProductLocalizedName(p: any, lang: Language): string {
 
     return `${catEn} Premium Item (${cleanSku})`;
   } else {
-    if (isCleanArabicText(p.name_ar)) return p.name_ar;
-    if (isCleanArabicText(p.name)) return p.name;
+    if (isCleanArabicText(p.name_ar)) return p.name_ar.trim();
+    if (isCleanArabicText(p.name)) return p.name.trim();
     return `${catAr} - منتج أصلي عالي الجودة (${cleanSku})`;
   }
 }
 
 export function getProductLocalizedDesc(p: any, lang: Language): string {
   if (!p) return "";
-  if (p[`description_${lang}`]) return p[`description_${lang}`];
   const cat = p.category_id ? CLEAN_CATEGORY_NAMES[Number(p.category_id)] : null;
   const catEn = cat ? cat.en : "AliExpress verified item";
   const catAr = cat ? cat.ar : "منتج رسمي من علي إكسبرس";
   const cleanSku = p.sku?.replace(/^ALI-/, "").slice(0, 14) || String(p.id || "PROD");
 
   if (lang === "en") {
-    if (isValidEnglishText(p.description_en)) return p.description_en;
+    if (isValidEnglishText(p.description_en)) return p.description_en.trim();
+    if (isValidEnglishText(p.description)) return p.description.trim();
     return `Authentic ${catEn} (SKU: ${cleanSku}). High quality standards and fast international shipping.`;
   } else {
-    if (isCleanArabicText(p.description_ar)) return p.description_ar;
+    if (isCleanArabicText(p.description_ar)) return p.description_ar.trim();
+    if (isCleanArabicText(p.description)) return p.description.trim();
     return `${catAr} أصلي عالي الجودة ومضمون 100% من المورد المعتمد (كود: ${cleanSku}) مع شحن سريع ومباشر.`;
   }
+}
+
+export function getCategoryLocalizedName(c: any, lang: Language): string {
+  if (!c) return "";
+  const catClean = CLEAN_CATEGORY_NAMES[Number(c.id)];
+  if (catClean) {
+    return lang === "en" ? catClean.en : catClean.ar;
+  }
+  if (lang === "en") {
+    if (isValidEnglishText(c.name_en)) return c.name_en.trim();
+    if (isValidEnglishText(c.name)) return c.name.trim();
+    return c.name_en || c.name || "Category";
+  } else {
+    if (isCleanArabicText(c.name_ar)) return c.name_ar.trim();
+    if (isCleanArabicText(c.name)) return c.name.trim();
+    return c.name_ar || c.name || "فئة";
+  }
+}
+
+export function getCategoryLocalizedDesc(c: any, lang: Language): string {
+  if (!c) return "";
+  const catClean = CLEAN_CATEGORY_NAMES[Number(c.id)];
+  if (catClean) {
+    return lang === "en" ? `${catClean.en} official verified category.` : `قسم ${catClean.ar} الرسمي المعتمد.`;
+  }
+  return lang === "en" ? (c.description_en || c.description || "") : (c.description_ar || c.description || "");
 }

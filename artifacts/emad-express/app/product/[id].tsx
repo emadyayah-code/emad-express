@@ -56,7 +56,9 @@ export default function ProductDetailScreen() {
           <Feather name="arrow-right" size={24} color={colors.foreground} />
         </TouchableOpacity>
         <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
-          <Text style={{ color: colors.foreground, fontSize: 16 }}>المنتج غير موجود</Text>
+          <Text style={{ color: colors.foreground, fontSize: 16 }}>
+            {(UI_LABELS.productNotFound as any)[language] || UI_LABELS.productNotFound.en}
+          </Text>
         </View>
       </View>
     );
@@ -108,8 +110,8 @@ export default function ProductDetailScreen() {
             <View style={[styles.stockBadge, { backgroundColor: product.quantity > 0 ? "rgba(16, 185, 129, 0.12)" : "rgba(239, 68, 68, 0.12)", borderWidth: 1, borderColor: product.quantity > 0 ? "rgba(16, 185, 129, 0.3)" : "rgba(239, 68, 68, 0.3)" }]}>
               <Text style={{ color: product.quantity > 0 ? "#059669" : "#dc2626", fontSize: 12, fontWeight: "700" }}>
                 {product.quantity > 0
-                  ? (language === "ar" ? `متوفر في مستودع المورد (${product.quantity} قطعة) ✓` : `In Supplier Stock (${product.quantity} units) ✓`)
-                  : t.products.out_of_stock}
+                  ? `${(UI_LABELS.inSupplierStock as any)[language] || UI_LABELS.inSupplierStock.en} (${product.quantity} ${(UI_LABELS.unitsAvailable as any)[language] || UI_LABELS.unitsAvailable.en}) ✓`
+                  : ((UI_LABELS.outOfStock as any)[language] || UI_LABELS.outOfStock.en)}
               </Text>
             </View>
           </View>
@@ -131,10 +133,10 @@ export default function ProductDetailScreen() {
             <View style={[styles.infoDivider, { backgroundColor: colors.border }]} />
             <View style={styles.infoItem}>
               <Text style={{ color: colors.mutedForeground, fontSize: 12 }}>
-                {language === "ar" ? "المخزون المتوفر لدى المورد" : ((UI_LABELS.stock as any)[language] || UI_LABELS.stock.en)}
+                {(UI_LABELS.inSupplierStock as any)[language] || UI_LABELS.inSupplierStock.en}
               </Text>
               <Text style={{ color: colors.foreground, fontSize: 14, fontWeight: "700" }}>
-                {product.quantity} {language === "ar" ? "قطعة متوفرة" : "units"}
+                {product.quantity} {(UI_LABELS.unitsAvailable as any)[language] || UI_LABELS.unitsAvailable.en}
               </Text>
             </View>
           </View>

@@ -324,10 +324,10 @@ export default function Products() {
   const [form, setForm] = useState(emptyForm);
 
   const { data, isLoading } = useQuery({
-    queryKey: ["products", search, page, perPage, selectedCategory, statusFilter],
-    queryFn: () => api.get(`/admin/products?page=${page}&per_page=${perPage}&search=${encodeURIComponent(search)}&category_id=${selectedCategory}&status=${statusFilter}`),
+    queryKey: ["products", search, page, perPage, selectedCategory, statusFilter, language],
+    queryFn: () => api.get(`/admin/products?page=${page}&per_page=${perPage}&search=${encodeURIComponent(search)}&category_id=${selectedCategory}&status=${statusFilter}&lang=${language}`),
   });
-  const { data: cats } = useQuery({ queryKey: ["categories"], queryFn: () => api.get("/admin/categories") });
+  const { data: cats } = useQuery({ queryKey: ["categories", language], queryFn: () => api.get(`/admin/categories?lang=${language}`) });
 
   const createMut = useMutation({ mutationFn: (d: any) => api.post("/admin/products", d), onSuccess: () => { qc.invalidateQueries({ queryKey: ["products"] }); setModal(null); } });
   const updateMut = useMutation({ mutationFn: (d: any) => api.put(`/admin/products/${editing?.id}`, d), onSuccess: () => { qc.invalidateQueries({ queryKey: ["products"] }); setModal(null); } });
@@ -447,7 +447,10 @@ export default function Products() {
             <table className="w-full text-sm">
               <thead style={{ background: "rgba(245,158,11,0.08)", borderBottom: "1px solid rgba(245,158,11,0.15)" }}>
                 <tr>
-                  {["المنتج", "SKU", "السعر", "التكلفة", "الكمية", "الحالة", ""].map(h => (
+                  {(language === "ar"
+                    ? ["المنتج", "SKU", "السعر", "التكلفة", "الكمية", "الحالة", "الإجراءات"]
+                    : ["Product", "SKU", "Price", "Cost", "Quantity", "Status", "Actions"]
+                  ).map(h => (
                     <th key={h} className="text-right px-4 py-3 font-medium" style={{ color: "rgba(245,158,11,0.8)" }}>{h}</th>
                   ))}
                 </tr>
@@ -483,18 +486,18 @@ export default function Products() {
                       </div>
                     </td>
                     <td className="px-4 py-3 font-mono text-xs whitespace-nowrap" style={{ color: "rgba(255,255,255,0.5)" }}>{p.sku}</td>
-                    <td className="px-4 py-3 font-bold text-amber-400 whitespace-nowrap">{p.price.toLocaleString()} ر</td>
-                    <td className="px-4 py-3 whitespace-nowrap" style={{ color: "rgba(255,255,255,0.6)" }}>{p.cost.toLocaleString()} ر</td>
+                    <td className="px-4 py-3 font-bold text-amber-400 whitespace-nowrap">{p.price.toLocaleString()} {language === "ar" ? "ر.س" : "SAR"}</td>
+                    <td className="px-4 py-3 whitespace-nowrap" style={{ color: "rgba(255,255,255,0.6)" }}>{p.cost.toLocaleString()} {language === "ar" ? "ر.س" : "SAR"}</td>
                     <td className="px-4 py-3 whitespace-nowrap">
                       <span className={`text-xs px-2.5 py-1 font-bold rounded-full ${p.quantity <= p.min_quantity ? "bg-red-500/20 text-red-400 border border-red-500/30" : "bg-green-500/20 text-green-400 border border-green-500/30"}`}>{p.quantity}</span>
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap">
-                      <span className={`text-xs px-2.5 py-1 font-bold rounded-full ${p.is_active ? "bg-green-500/20 text-green-400 border border-green-500/30" : "bg-gray-500/20 text-gray-400 border border-gray-500/30"}`}>{p.is_active ? "نشط" : "غير نشط"}</span>
+                      <span className={`text-xs px-2.5 py-1 font-bold rounded-full ${p.is_active ? "bg-green-500/20 text-green-400 border border-green-500/30" : "bg-gray-500/20 text-gray-400 border border-gray-500/30"}`}>{p.is_active ? (language === "ar" ? "نشط" : "Active") : (language === "ar" ? "غير نشط" : "Inactive")}</span>
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap">
                       <div className="flex items-center gap-2.5">
-                        <button onClick={() => openEdit(p)} title="تعديل" className="p-1.5 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/30 transition-colors cursor-pointer"><Edit size={14} /></button>
-                        <button onClick={() => confirm("حذف هذا المنتج بالكامل؟") && deleteMut.mutate(p.id)} title="حذف" className="p-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 transition-colors cursor-pointer"><Trash2 size={14} /></button>
+                        <button onClick={() => openEdit(p)} title={language === "ar" ? "تعديل" : "Edit"} className="p-1.5 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/30 transition-colors cursor-pointer"><Edit size={14} /></button>
+                        <button onClick={() => confirm(language === "ar" ? "حذف هذا المنتج بالكامل؟" : "Delete this product completely?") && deleteMut.mutate(p.id)} title={language === "ar" ? "حذف" : "Delete"} className="p-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 transition-colors cursor-pointer"><Trash2 size={14} /></button>
                       </div>
                     </td>
                   </tr>
