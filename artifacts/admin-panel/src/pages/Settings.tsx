@@ -2,7 +2,7 @@ import { useState, type ReactElement } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth";
 import { api } from "@/lib/api";
-import { User, Lock, Plus, Trash2, Edit2, X, Check, Shield, Smartphone, Phone, Facebook, Twitter, MapPin, Info } from "lucide-react";
+import { User, Lock, Plus, Trash2, Edit2, X, Check, Shield, Smartphone, Phone, Facebook, Twitter, MapPin, Info, CreditCard } from "lucide-react";
 
 const ROLE_LABELS: Record<string, string> = {
   admin: "مدير عام",
@@ -392,14 +392,206 @@ const APP_FIELDS = [
   { key: "about_en",       label: "عن التطبيق (إنجليزي)", icon: <Info size={15} />, placeholder: "App description in English...", dir: "ltr", multiline: true },
 ];
 
+function PaymentGatewaysTab() {
+  const qc = useQueryClient();
+  const [msg, setMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
+  const [showSecret, setShowSecret] = useState(false);
+
+  const { data: rawGateways, isLoading } = useQuery({
+    queryKey: ["payment-gateways"],
+    queryFn: () => api.get("/admin/payment-gateways"),
+  });
+
+  const gateways: any[] = Array.isArray(rawGateways) ? rawGateways : (rawGateways?.data || []);
+  const paypalGateway = gateways.find((g) => g.provider === "paypal") || {
+    id: 6,
+    is_active: false,
+    config: { client_id: "", secret: "", mode: "live" },
+  };
+
+  const [paypalActive, setPaypalActive] = useState<boolean | null>(null);
+  const [clientId, setClientId] = useState<string | null>(null);
+  const [secret, setSecret] = useState<string | null>(null);
+  const [mode, setMode] = useState<"live" | "sandbox" | null>(null);
+
+  const currentActive = paypalActive !== null ? paypalActive : Boolean(paypalGateway?.is_active);
+  const currentClientId = clientId !== null ? clientId : (paypalGateway?.config?.client_id || "");
+  const currentSecret = secret !== null ? secret : (paypalGateway?.config?.secret || "");
+  const currentMode = mode !== null ? mode : (paypalGateway?.config?.mode || "live");
+
+  const saveMut = useMutation({
+    mutationFn: async () => {
+      return api.put(`/admin/payment-gateways/${paypalGateway.id || 6}`, {
+        is_active: currentActive,
+        config: {
+          client_id: currentClientId.trim(),
+          secret: currentSecret.trim(),
+          mode: currentMode,
+        },
+      });
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["payment-gateways"] });
+      setMsg({ type: "ok", text: "تم حفظ إعدادات PayPal بنجاح وتفعيل استقبال الأموال في حسابك! ✓" });
+    },
+    onError: (e: any) => {
+      setMsg({ type: "err", text: e.message || "حدث خطأ أثناء حفظ الإعدادات" });
+    },
+  });
+
+  const inp = "w-full px-4 py-3 rounded-xl text-white text-sm outline-none border transition-all";
+  const inpStyle = { background: "rgba(255,255,255,0.05)", borderColor: "rgba(245,158,11,0.2)" };
+
+  if (isLoading) {
+    return <p className="text-white/40 text-sm">جارٍ تحميل بيانات بوابات الدفع...</p>;
+  }
+
+  return (
+    <div className="max-w-2xl space-y-6">
+      <div className="flex items-center justify-between pb-4 border-b border-amber-500/20">
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 rounded-2xl bg-[#003087] flex items-center justify-center text-white font-black text-xl shadow-lg shadow-blue-900/30">
+            <span className="text-[#0079C1]">P</span><span className="-ml-1">P</span>
+          </div>
+          <div>
+            <h3 className="text-white font-bold text-base">بوابة الدفع الإلكتروني (PayPal & Cards)</h3>
+            <p className="text-white/40 text-xs">استقبال المدفوعات بالبطاقات البنكية وحسابات بايبال مباشرة في حسابك</p>
+          </div>
+        </div>
+
+        <label className="flex items-center gap-2 cursor-pointer bg-slate-900 px-3.5 py-2 rounded-xl border border-slate-700">
+          <input
+            type="checkbox"
+            checked={currentActive}
+            onChange={(e) => setPaypalActive(e.target.checked)}
+            className="w-4 h-4 accent-amber-500 cursor-pointer"
+          />
+          <span className={`text-xs font-bold ${currentActive ? "text-emerald-400" : "text-slate-400"}`}>
+            {currentActive ? "البوابة مفعّلة ✓" : "البوابة معطّلة"}
+          </span>
+        </label>
+      </div>
+
+      {msg && (
+        <div className={`px-4 py-3 rounded-xl text-sm font-medium ${msg.type === "ok" ? "bg-green-500/20 text-green-400" : "bg-red-500/20 text-red-400"}`}>
+          {msg.text}
+        </div>
+      )}
+
+      {/* Trust Notice & Explanation */}
+      <div className="bg-blue-950/40 border border-blue-500/30 rounded-2xl p-4 text-xs text-blue-200 leading-relaxed space-y-2">
+        <p className="font-bold text-blue-300 flex items-center gap-1.5">
+          <Info size={15} /> كيف تصل الأموال إلى حسابك؟
+        </p>
+        <p>
+          عندما يقوم المشتري بالدفع في التطبيق أو المتجر، سواء استخدم <strong>بطاقته البنكية (Visa / MasterCard / مدى)</strong> أو <strong>حساب بايبال</strong>، فإن معالج PayPal يقوم بخصم المبلغ من المشتري وإيداعه مباشرة وفورياً في <strong>رصيد حسابك أنت في PayPal</strong> المرتبط بالمفاتيح أدناه.
+        </p>
+      </div>
+
+      <div className="space-y-4">
+        {/* Environment Mode */}
+        <div>
+          <label className="text-white/70 text-xs mb-1.5 block font-bold">بيئة التشغيل (Environment)</label>
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              type="button"
+              onClick={() => setMode("live")}
+              className={`py-2.5 px-4 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                currentMode === "live"
+                  ? "bg-amber-500 text-black border-amber-400 shadow-md shadow-amber-500/20"
+                  : "bg-slate-900 text-slate-400 border-slate-800 hover:text-white"
+              }`}
+            >
+              الحساب الحقيقي الفعلي (Live Mode) ⚡
+            </button>
+            <button
+              type="button"
+              onClick={() => setMode("sandbox")}
+              className={`py-2.5 px-4 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                currentMode === "sandbox"
+                  ? "bg-blue-600 text-white border-blue-500 shadow-md shadow-blue-500/20"
+                  : "bg-slate-900 text-slate-400 border-slate-800 hover:text-white"
+              }`}
+            >
+              بيئة التجربة والاختبار (Sandbox) 🧪
+            </button>
+          </div>
+        </div>
+
+        {/* Client ID */}
+        <div>
+          <label className="text-white/70 text-xs mb-1.5 block font-bold">
+            PayPal Client ID (معرّف العميل)
+          </label>
+          <input
+            className={inp}
+            style={inpStyle}
+            dir="ltr"
+            placeholder="مثال: AbCD...1234 (من حسابك في developer.paypal.com)"
+            value={currentClientId}
+            onChange={(e) => setClientId(e.target.value)}
+          />
+        </div>
+
+        {/* Secret Key */}
+        <div>
+          <div className="flex justify-between items-center mb-1.5">
+            <label className="text-white/70 text-xs font-bold">
+              PayPal Secret Key (المفتاح السري)
+            </label>
+            <button
+              type="button"
+              onClick={() => setShowSecret(!showSecret)}
+              className="text-[11px] text-amber-400 hover:underline cursor-pointer"
+            >
+              {showSecret ? "إخفاء المفتاح" : "إظهار المفتاح"}
+            </button>
+          </div>
+          <input
+            type={showSecret ? "text" : "password"}
+            className={inp}
+            style={inpStyle}
+            dir="ltr"
+            placeholder="مثال: EKlm...9876 (المفتاح السري لحسابك)"
+            value={currentSecret}
+            onChange={(e) => setSecret(e.target.value)}
+          />
+        </div>
+
+        {/* How to get credentials helper */}
+        <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-3.5 text-[11px] text-slate-300 space-y-1.5">
+          <p className="font-bold text-amber-400">💡 كيف تحصل على الـ Client ID والـ Secret Key الخاص بحسابك؟</p>
+          <ol className="list-decimal list-inside space-y-1 text-slate-400 leading-normal">
+            <li>ادخل إلى <a href="https://developer.paypal.com/dashboard/applications/live" target="_blank" rel="noreferrer" className="text-blue-400 underline">لوحة تحكم مطوري بايبال (developer.paypal.com)</a>.</li>
+            <li>سجل الدخول بحساب بايبال التجاري الخاص بك (Business Account).</li>
+            <li>اضغط على <strong>Apps & Credentials</strong> ثم اختر <strong>Live</strong>.</li>
+            <li>اضغط على <strong>Create App</strong> وسمّه <strong>Emad Express</strong>.</li>
+            <li>انسخ <strong>Client ID</strong> و <strong>Secret Key</strong> والصقهما في الحقول أعلاه واضغط حفظ.</li>
+          </ol>
+        </div>
+
+        <button
+          onClick={() => saveMut.mutate()}
+          disabled={saveMut.isPending}
+          className="w-full py-3.5 rounded-xl font-bold text-black transition-opacity hover:opacity-90 flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-amber-500/20"
+          style={{ background: "linear-gradient(135deg,#f59e0b,#d97706)" }}
+        >
+          {saveMut.isPending ? "جارٍ حفظ إعدادات PayPal..." : <><Check size={18} /> حفظ وتفعيل بوابة PayPal</>}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 const SETTINGS_TABS = [
   { key: "profile", label: "الملف الشخصي", icon: User },
+  { key: "gateways", label: "بوابات الدفع (PayPal & Cards)", icon: CreditCard },
   { key: "app", label: "إعدادات التطبيق", icon: Smartphone },
   { key: "employees", label: "الموظفون والصلاحيات", icon: Shield },
 ];
 
 export default function Settings() {
-  const [tab, setTab] = useState<"profile" | "app" | "employees">("profile");
+  const [tab, setTab] = useState<"profile" | "gateways" | "app" | "employees">("profile");
   const card = { background: "rgba(255,255,255,0.02)", border: "1px solid rgba(245,158,11,0.12)", borderRadius: 20 };
 
   return (
@@ -429,6 +621,7 @@ export default function Settings() {
 
       <div className="p-6" style={card}>
         {tab === "profile" && <ProfileTab />}
+        {tab === "gateways" && <PaymentGatewaysTab />}
         {tab === "app" && <AppSettingsTab />}
         {tab === "employees" && <EmployeesTab />}
       </div>
