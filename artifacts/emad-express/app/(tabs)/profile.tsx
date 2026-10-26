@@ -10,7 +10,7 @@ import { useCurrency, CURRENCIES, CurrencyCode } from "@/context/CurrencyContext
 import { useAppSettings } from "@/hooks/useAppSettings";
 import { UI_LABELS } from "@/lib/i18n";
 
-const APP_VERSION = "18.0.1";
+const APP_VERSION = "18.0.2";
 
 function MenuItem({ icon, label, onPress, danger, rightEl }: { icon: string; label: string; onPress: () => void; danger?: boolean; rightEl?: React.ReactNode }) {
   const colors = useColors();
