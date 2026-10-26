@@ -92355,131 +92355,288 @@ async function getCategories() {
   lastCacheTime = now;
   return categoryCache || [];
 }
-var ALI_OFFICIAL_CAT_MAP = {
-  // Watches & Jewelry
-  "watches": "\u0633\u0627\u0639\u0627\u062A \u0648\u0645\u062C\u0648\u0647\u0631\u0627\u062A \u0648\u0625\u0643\u0633\u0633\u0648\u0627\u0631\u0627\u062A",
-  "wristwatches": "\u0633\u0627\u0639\u0627\u062A \u0648\u0645\u062C\u0648\u0647\u0631\u0627\u062A \u0648\u0625\u0643\u0633\u0633\u0648\u0627\u0631\u0627\u062A",
-  "jewelry & accessories": "\u0633\u0627\u0639\u0627\u062A \u0648\u0645\u062C\u0648\u0647\u0631\u0627\u062A \u0648\u0625\u0643\u0633\u0633\u0648\u0627\u0631\u0627\u062A",
-  "jewelry": "\u0633\u0627\u0639\u0627\u062A \u0648\u0645\u062C\u0648\u0647\u0631\u0627\u062A \u0648\u0625\u0643\u0633\u0633\u0648\u0627\u0631\u0627\u062A",
-  // Luggage & Shoes
-  "luggage & bags": "\u062D\u0642\u0627\u0626\u0628 \u0648\u0623\u062D\u0630\u064A\u0629",
-  "shoes": "\u062D\u0642\u0627\u0626\u0628 \u0648\u0623\u062D\u0630\u064A\u0629",
-  "bags": "\u062D\u0642\u0627\u0626\u0628 \u0648\u0623\u062D\u0630\u064A\u0629",
-  // Phones
-  "phones & telecommunications": "\u0647\u0648\u0627\u062A\u0641 \u0630\u0643\u064A\u0629 \u0648\u0645\u0644\u062D\u0642\u0627\u062A\u0647\u0627",
-  "cellphones & telecommunications": "\u0647\u0648\u0627\u062A\u0641 \u0630\u0643\u064A\u0629 \u0648\u0645\u0644\u062D\u0642\u0627\u062A\u0647\u0627",
-  "mobile phones": "\u0647\u0648\u0627\u062A\u0641 \u0630\u0643\u064A\u0629 \u0648\u0645\u0644\u062D\u0642\u0627\u062A\u0647\u0627",
-  // Consumer Electronics
-  "consumer electronics": "\u0625\u0644\u0643\u062A\u0631\u0648\u0646\u064A\u0627\u062A \u0627\u0633\u062A\u0647\u0644\u0627\u0643\u064A\u0629",
-  "electronic components & supplies": "\u0625\u0644\u0643\u062A\u0631\u0648\u0646\u064A\u0627\u062A \u0627\u0633\u062A\u0647\u0644\u0627\u0643\u064A\u0629",
-  // Computer & Office
-  "computer & office": "\u0623\u062C\u0647\u0632\u0629 \u0643\u0645\u0628\u064A\u0648\u062A\u0631 \u0648\u0645\u0643\u0627\u062A\u0628",
-  "computers & office": "\u0623\u062C\u0647\u0632\u0629 \u0643\u0645\u0628\u064A\u0648\u062A\u0631 \u0648\u0645\u0643\u0627\u062A\u0628",
-  // Women's Clothing
-  "women's clothing": "\u0623\u0632\u064A\u0627\u0621 \u0648\u0645\u0644\u0627\u0628\u0633 \u0646\u0633\u0627\u0626\u064A\u0629",
-  "women clothing": "\u0623\u0632\u064A\u0627\u0621 \u0648\u0645\u0644\u0627\u0628\u0633 \u0646\u0633\u0627\u0626\u064A\u0629",
-  // Men's Clothing
-  "men's clothing": "\u0623\u0632\u064A\u0627\u0621 \u0648\u0645\u0644\u0627\u0628\u0633 \u0631\u062C\u0627\u0644\u064A\u0629",
-  "men clothing": "\u0623\u0632\u064A\u0627\u0621 \u0648\u0645\u0644\u0627\u0628\u0633 \u0631\u062C\u0627\u0644\u064A\u0629",
-  // Home & Garden
-  "home & garden": "\u0627\u0644\u0645\u0646\u0632\u0644 \u0648\u0627\u0644\u062D\u062F\u064A\u0642\u0629 \u0648\u0627\u0644\u0645\u0637\u0628\u062E",
-  // Home Appliances
-  "home appliances": "\u0623\u062C\u0647\u0632\u0629 \u0645\u0646\u0632\u0644\u064A\u0629 \u0643\u0647\u0631\u0628\u0627\u0626\u064A\u0629",
-  "appliances": "\u0623\u062C\u0647\u0632\u0629 \u0645\u0646\u0632\u0644\u064A\u0629 \u0643\u0647\u0631\u0628\u0627\u0626\u064A\u0629",
-  // Beauty & Health
-  "beauty & health": "\u0627\u0644\u062C\u0645\u0627\u0644 \u0648\u0627\u0644\u0635\u062D\u0629 \u0648\u0627\u0644\u0639\u0646\u0627\u064A\u0629 \u0627\u0644\u0634\u062E\u0635\u064A\u0629",
-  "hair extensions & wigs": "\u0634\u0639\u0631 \u0645\u0633\u062A\u0639\u0627\u0631 \u0648\u0628\u0627\u0631\u0648\u0643\u0627\u062A",
-  // Toys, Kids & Babies
-  "mother & kids": "\u0623\u0644\u0639\u0627\u0628 \u0648\u0623\u0637\u0641\u0627\u0644 \u0648\u0631\u0636\u0639",
-  "toys & hobbies": "\u0623\u0644\u0639\u0627\u0628 \u0648\u0623\u0637\u0641\u0627\u0644 \u0648\u0631\u0636\u0639",
-  // Sports & Outdoors
-  "sports & entertainment": "\u0631\u064A\u0627\u0636\u0629 \u0648\u0644\u064A\u0627\u0642\u0629 \u0628\u062F\u0646\u064A\u0629 \u0648\u062E\u0627\u0631\u062C\u064A\u0629",
-  // Automobiles & Motorcycles
-  "automobiles & motorcycles": "\u0633\u064A\u0627\u0631\u0627\u062A \u0648\u062F\u0631\u0627\u062C\u0627\u062A \u0646\u0627\u0631\u064A\u0629 \u0648\u0642\u0637\u0639 \u063A\u064A\u0627\u0631",
-  "automobiles, parts & accessories": "\u0633\u064A\u0627\u0631\u0627\u062A \u0648\u062F\u0631\u0627\u062C\u0627\u062A \u0646\u0627\u0631\u064A\u0629 \u0648\u0642\u0637\u0639 \u063A\u064A\u0627\u0631",
-  // Tools & Hardware
-  "tools": "\u062A\u062D\u0633\u064A\u0646 \u0627\u0644\u0645\u0646\u0632\u0644 \u0648\u0627\u0644\u0639\u062F\u062F \u0648\u0627\u0644\u0623\u062F\u0648\u0627\u062A",
-  "tools & home improvement": "\u062A\u062D\u0633\u064A\u0646 \u0627\u0644\u0645\u0646\u0632\u0644 \u0648\u0627\u0644\u0639\u062F\u062F \u0648\u0627\u0644\u0623\u062F\u0648\u0627\u062A",
-  "home improvement": "\u062A\u062D\u0633\u064A\u0646 \u0627\u0644\u0645\u0646\u0632\u0644 \u0648\u0627\u0644\u0639\u062F\u062F \u0648\u0627\u0644\u0623\u062F\u0648\u0627\u062A",
-  // Lights & Lighting
-  "lights & lighting": "\u0623\u0636\u0648\u0627\u0621 \u0648\u0625\u0646\u0627\u0631\u0629 \u0630\u0643\u064A\u0629",
-  // Security & Protection
-  "security & protection": "\u0623\u0645\u0646 \u0648\u062D\u0645\u0627\u064A\u0629 \u0648\u0643\u0627\u0645\u064A\u0631\u0627\u062A \u0645\u0631\u0627\u0642\u0628\u0629",
-  // Pet Supplies
-  "pet products": "\u0645\u0633\u062A\u0644\u0632\u0645\u0627\u062A \u0627\u0644\u062D\u064A\u0648\u0627\u0646\u0627\u062A \u0627\u0644\u0623\u0644\u064A\u0641\u0629",
-  "pet supplies": "\u0645\u0633\u062A\u0644\u0632\u0645\u0627\u062A \u0627\u0644\u062D\u064A\u0648\u0627\u0646\u0627\u062A \u0627\u0644\u0623\u0644\u064A\u0641\u0629",
-  // Office & School Supplies
-  "education & office supplies": "\u0623\u062F\u0648\u0627\u062A \u0645\u0643\u062A\u0628\u064A\u0629 \u0648\u0645\u062F\u0631\u0633\u064A\u0629",
-  "office & school supplies": "\u0623\u062F\u0648\u0627\u062A \u0645\u0643\u062A\u0628\u064A\u0629 \u0648\u0645\u062F\u0631\u0633\u064A\u0629",
-  // Furniture
-  "furniture": "\u0623\u062B\u0627\u062B \u0648\u062F\u064A\u0643\u0648\u0631 \u0645\u0646\u0632\u0644\u064A",
-  "furniture & home decor": "\u0623\u062B\u0627\u062B \u0648\u062F\u064A\u0643\u0648\u0631 \u0645\u0646\u0632\u0644\u064A",
-  // Special categories
-  "cameras & drones": "\u0643\u0627\u0645\u064A\u0631\u0627\u062A \u0648\u0628\u0635\u0631\u064A\u0627\u062A \u0648\u0637\u0627\u0626\u0631\u0627\u062A \u062F\u0631\u0648\u0646",
-  "smart home & iot": "\u0623\u062C\u0647\u0632\u0629 \u0630\u0643\u064A\u0629 \u0648\u0625\u0646\u062A\u0631\u0646\u062A \u0627\u0644\u0623\u0634\u064A\u0627\u0621",
-  "event & party supplies": "\u0645\u0633\u062A\u0644\u0632\u0645\u0627\u062A \u0627\u0644\u062D\u0641\u0644\u0627\u062A \u0648\u0627\u0644\u0645\u0646\u0627\u0633\u0628\u0627\u062A",
-  "arts, crafts & sewing": "\u0623\u0642\u0645\u0634\u0629 \u0648\u062D\u0631\u0641 \u064A\u062F\u0648\u064A\u0629 \u0648\u062E\u064A\u0627\u0637\u0629"
+var ALI_OFFICIAL_CAT_ID_MAP = {
+  // 1: Electronics & Smart Devices
+  "electronics": 1,
+  "smart devices": 1,
+  "consumer electronics": 12,
+  "electronic components & supplies": 1,
+  "home audio & video": 12,
+  // 2: Fashion & Style (Women's Clothing)
+  "women's clothing": 2,
+  "women clothing": 2,
+  "dresses": 2,
+  "women dresses": 2,
+  "women's apparel": 2,
+  "ladies clothing": 2,
+  "abaya": 2,
+  // 3: Smartphones & Accessories
+  "phones & telecommunications": 3,
+  "cellphones & telecommunications": 3,
+  "mobile phones": 3,
+  "phone accessories": 3,
+  "mobile phone accessories": 3,
+  // 4: Watches & Jewelry
+  "watches": 4,
+  "wristwatches": 4,
+  "jewelry & accessories": 4,
+  "jewelry": 4,
+  "fine jewelry": 4,
+  // 5: Home & Kitchen
+  "home & garden": 5,
+  "kitchen & dining": 5,
+  "kitchen,dining & bar": 5,
+  "home appliances": 5,
+  "appliances": 5,
+  // 6: Health & Beauty
+  "beauty & health": 6,
+  "makeup": 6,
+  "skin care": 6,
+  "personal care": 6,
+  // 7: Sports & Outdoors
+  "sports & entertainment": 7,
+  "sports & outdoors": 7,
+  "fitness": 7,
+  // 8: Toys, Kids & Babies
+  "mother & kids": 8,
+  "toys & hobbies": 8,
+  "baby clothing": 8,
+  "kids toys": 8,
+  // 9: Automotive & Motorcycles
+  "automobiles & motorcycles": 9,
+  "automobiles, parts & accessories": 9,
+  "car electronics": 9,
+  // 10: Shoes & Bags
+  "luggage & bags": 10,
+  "shoes": 10,
+  "bags": 10,
+  "women's shoes": 10,
+  "men's shoes": 10,
+  "backpacks": 10,
+  // 11: Computers & Office
+  "computer & office": 11,
+  "computers & office": 11,
+  "office electronics": 11,
+  // 12: Consumer Electronics (Audio / Headphones)
+  "earphones & headphones": 12,
+  "audio": 12,
+  // 13: Men's Fashion
+  "men's clothing": 13,
+  "men clothing": 13,
+  "men's apparel": 13,
+  // 14: Tools & Home Improvement
+  "tools": 14,
+  "tools & home improvement": 14,
+  "home improvement": 14,
+  // 15: Lights & Lighting
+  "lights & lighting": 15,
+  "lamps": 15,
+  "led lighting": 15,
+  // 16: Security & Protection
+  "security & protection": 16,
+  "surveillance": 16,
+  // 17: Pet Supplies
+  "pet products": 17,
+  "pet supplies": 17,
+  // 18: Office & School Supplies
+  "education & office supplies": 18,
+  "office & school supplies": 18,
+  // 19: Furniture & Home Decor
+  "furniture": 19,
+  "furniture & home decor": 19,
+  "home decor": 19,
+  // 20: Cameras & Drones
+  "cameras & drones": 20,
+  "camera & photo": 20,
+  "drones": 20,
+  // 21: Smart Home & IoT
+  "smart home & iot": 21,
+  "smart electronics": 21,
+  // 22: Hair Extensions & Wigs
+  "hair extensions & wigs": 22,
+  "wigs": 22,
+  // 23: Event & Party Supplies
+  "event & party supplies": 23,
+  "festive & party supplies": 23,
+  // 24: Arts, Crafts & Sewing
+  "arts, crafts & sewing": 24
 };
-var ALI_CAT_TO_DB_NAME = {
-  "1511": "\u0633\u0627\u0639\u0627\u062A \u0648\u0645\u062C\u0648\u0647\u0631\u0627\u062A \u0648\u0625\u0643\u0633\u0633\u0648\u0627\u0631\u0627\u062A",
-  "44": "\u0625\u0644\u0643\u062A\u0631\u0648\u0646\u064A\u0627\u062A \u0627\u0633\u062A\u0647\u0644\u0627\u0643\u064A\u0629",
-  "509": "\u0647\u0648\u0627\u062A\u0641 \u0630\u0643\u064A\u0629 \u0648\u0645\u0644\u062D\u0642\u0627\u062A\u0647\u0627",
-  "15": "\u0623\u062C\u0647\u0632\u0629 \u0645\u0646\u0632\u0644\u064A\u0629 \u0643\u0647\u0631\u0628\u0627\u0626\u064A\u0629",
-  "1524": "\u062D\u0642\u0627\u0626\u0628 \u0648\u0623\u062D\u0630\u064A\u0629",
-  "1420": "\u062A\u062D\u0633\u064A\u0646 \u0627\u0644\u0645\u0646\u0632\u0644 \u0648\u0627\u0644\u0639\u062F\u062F \u0648\u0627\u0644\u0623\u062F\u0648\u0627\u062A",
-  "34": "\u0633\u064A\u0627\u0631\u0627\u062A \u0648\u062F\u0631\u0627\u062C\u0627\u062A \u0646\u0627\u0631\u064A\u0629 \u0648\u0642\u0637\u0639 \u063A\u064A\u0627\u0631",
-  "66": "\u0627\u0644\u062C\u0645\u0627\u0644 \u0648\u0627\u0644\u0635\u062D\u0629 \u0648\u0627\u0644\u0639\u0646\u0627\u064A\u0629 \u0627\u0644\u0634\u062E\u0635\u064A\u0629",
-  "18": "\u0631\u064A\u0627\u0636\u0629 \u0648\u0644\u064A\u0627\u0642\u0629 \u0628\u062F\u0646\u064A\u0629 \u0648\u062E\u0627\u0631\u062C\u064A\u0629",
-  "7": "\u0623\u062C\u0647\u0632\u0629 \u0643\u0645\u0628\u064A\u0648\u062A\u0631 \u0648\u0645\u0643\u0627\u062A\u0628",
-  "1509": "\u0633\u0627\u0639\u0627\u062A \u0648\u0645\u062C\u0648\u0647\u0631\u0627\u062A \u0648\u0625\u0643\u0633\u0633\u0648\u0627\u0631\u0627\u062A",
-  "1501": "\u0623\u0644\u0639\u0627\u0628 \u0648\u0623\u0637\u0641\u0627\u0644 \u0648\u0631\u0636\u0639",
-  "39": "\u0623\u0636\u0648\u0627\u0621 \u0648\u0625\u0646\u0627\u0631\u0629 \u0630\u0643\u064A\u0629",
-  "30": "\u0623\u0645\u0646 \u0648\u062D\u0645\u0627\u064A\u0629 \u0648\u0643\u0627\u0645\u064A\u0631\u0627\u062A \u0645\u0631\u0627\u0642\u0628\u0629",
-  "322": "\u062D\u0642\u0627\u0626\u0628 \u0648\u0623\u062D\u0630\u064A\u0629",
-  "200000343": "\u0623\u0632\u064A\u0627\u0621 \u0648\u0645\u0644\u0627\u0628\u0633 \u0631\u062C\u0627\u0644\u064A\u0629",
-  "200000345": "\u0623\u0632\u064A\u0627\u0621 \u0648\u0645\u0644\u0627\u0628\u0633 \u0646\u0633\u0627\u0626\u064A\u0629",
-  "1503": "\u0627\u0644\u0645\u0646\u0632\u0644 \u0648\u0627\u0644\u062D\u062F\u064A\u0642\u0629 \u0648\u0627\u0644\u0645\u0637\u0628\u062E",
-  "200000787": "\u0623\u062F\u0648\u0627\u062A \u0645\u0643\u062A\u0628\u064A\u0629 \u0648\u0645\u062F\u0631\u0633\u064A\u0629",
-  "200000297": "\u0623\u0644\u0639\u0627\u0628 \u0648\u0623\u0637\u0641\u0627\u0644 \u0648\u0631\u0636\u0639"
+var ALI_NUMERIC_CAT_ID_MAP = {
+  "200000345": 2,
+  // Women's Clothing -> Fashion & Style
+  "200000343": 13,
+  // Men's Clothing -> Men's Fashion
+  "1511": 4,
+  // Watches -> Watches & Jewelry
+  "1509": 4,
+  // Jewelry -> Watches & Jewelry
+  "509": 3,
+  // Phones -> Smartphones & Accessories
+  "44": 12,
+  // Consumer Electronics -> Consumer Electronics
+  "7": 11,
+  // Computer & Office -> Computers & Office
+  "1524": 10,
+  // Luggage & Bags -> Shoes & Bags
+  "322": 10,
+  // Shoes -> Shoes & Bags
+  "1503": 5,
+  // Home & Garden -> Home & Kitchen
+  "15": 5,
+  // Appliances -> Home & Kitchen
+  "66": 6,
+  // Beauty & Health -> Health & Beauty
+  "18": 7,
+  // Sports -> Sports & Outdoors
+  "1501": 8,
+  // Mother & Kids -> Toys, Kids & Babies
+  "200000297": 8,
+  // Toys & Hobbies -> Toys, Kids & Babies
+  "34": 9,
+  // Automobiles -> Automotive & Motorcycles
+  "1420": 14,
+  // Tools -> Tools & Home Improvement
+  "39": 15,
+  // Lights -> Lights & Lighting
+  "30": 16,
+  // Security -> Security & Protection
+  "200000787": 18
+  // Office & School -> Office & School Supplies
 };
 var CATEGORY_RULES = [
-  // 1. Watches & Jewelry
+  // 2. Fashion & Style (Women's Fashion, Dresses, Skirts, Abayas) - HIGHEST PRIORITY FOR CLOTHING
   {
-    categoryName: "\u0633\u0627\u0639\u0627\u062A \u0648\u0645\u062C\u0648\u0647\u0631\u0627\u062A \u0648\u0625\u0643\u0633\u0633\u0648\u0627\u0631\u0627\u062A",
+    categoryId: 2,
+    categoryName: "\u0623\u0632\u064A\u0627\u0621 \u0648\u0645\u0648\u0636\u0629",
+    strongKeywords: [
+      "\u0641\u0633\u062A\u0627\u0646",
+      "\u0641\u0633\u0627\u062A\u064A\u0646",
+      "\u062A\u0646\u0648\u0631\u0629",
+      "\u062A\u0646\u0627\u0646\u064A\u0631",
+      "\u0639\u0628\u0627\u064A\u0629",
+      "\u0639\u0628\u0627\u064A\u0627\u062A",
+      "\u0628\u0644\u0648\u0632\u0629",
+      "\u0628\u0644\u0648\u0632\u0627\u062A",
+      "\u0644\u0627\u0646\u062C\u0631\u064A",
+      "\u0642\u0645\u064A\u0635 \u0646\u0648\u0645",
+      "\u0631\u0648\u0628 \u0646\u0648\u0645",
+      "\u0643\u0648\u0631\u0633\u064A\u0647",
+      "\u062D\u0648\u0631\u064A\u0629 \u0627\u0644\u0628\u062D\u0631",
+      "\u0641\u0633\u062A\u0627\u0646 \u0645\u0627\u0643\u0633\u064A",
+      "\u0641\u0633\u062A\u0627\u0646 \u0633\u0647\u0631\u0629",
+      "\u0641\u0633\u062A\u0627\u0646 \u0635\u064A\u0641\u064A",
+      "dress",
+      "dresses",
+      "gown",
+      "gowns",
+      "skirt",
+      "skirts",
+      "blouse",
+      "blouses",
+      "lingerie",
+      "corset",
+      "maxi dress",
+      "summer dress",
+      "evening dress",
+      "nightgown",
+      "toleen",
+      "huhugirl"
+    ],
     phrases: [
+      "\u0641\u0633\u062A\u0627\u0646 \u0646\u0633\u0627\u0626",
+      "\u0641\u0633\u062A\u0627\u0646 \u0623\u0646\u064A\u0642",
+      "\u0641\u0633\u062A\u0627\u0646 \u0642\u0635\u064A\u0631",
+      "\u0641\u0633\u062A\u0627\u0646 \u0637\u0648\u064A\u0644",
+      "\u0641\u0633\u062A\u0627\u0646 \u0635\u064A\u0641\u064A",
+      "\u0641\u0633\u062A\u0627\u0646 \u0633\u0647\u0631\u0629",
+      "\u0645\u0644\u0627\u0628\u0633 \u0646\u0633\u0627\u0626",
+      "\u0637\u0628\u0639\u0629 \u0632\u0647\u0648\u0631",
+      "\u0645\u0643\u0634\u0648\u0641 \u0627\u0644\u0643\u062A\u0641\u064A\u0646",
+      "\u0628\u062F\u0648\u0646 \u0623\u0643\u0645\u0627\u0645",
+      "\u064A\u0627\u0642\u0629 \u0645\u0631\u0628\u0639\u0629",
+      "\u062D\u0645\u0627\u0644\u0627\u062A \u0628\u062F\u0648\u0646 \u0623\u0643\u0645\u0627\u0645",
+      "\u0623\u0643\u0645\u0627\u0645 \u0641\u0642\u0627\u0639\u064A\u0629",
+      "\u0639\u0635\u0631\u064A \u0644\u0644\u0646\u0633\u0627\u0621",
+      "\u0644\u0644\u0633\u064A\u062F\u0627\u062A",
+      "\u062D\u0641\u0644\u0627\u062A \u0628\u0648\u0647\u0648",
+      "\u0623\u0632\u064A\u0627\u0621 \u0634\u0627\u0637\u0626\u064A\u0629",
+      "\u062F\u0627\u0646\u062A\u064A\u0644 \u0634\u0641\u0627\u0641",
+      "\u062D\u0631\u064A\u0631 \u062E\u0627\u0644\u0635",
+      "women dress",
+      "summer dress",
+      "boho dress",
+      "party dress",
+      "floral dress",
+      "sleeveless dress",
+      "women skirt",
+      "women blouse",
+      "women shirt",
+      "casual dress",
+      "elegant dress"
+    ],
+    words: [
+      "\u0641\u0633\u062A\u0627\u0646",
+      "\u0641\u0633\u0627\u062A\u064A\u0646",
+      "\u0639\u0628\u0627\u064A\u0629",
+      "\u062A\u0646\u0648\u0631\u0629",
+      "\u0628\u0644\u0648\u0632\u0629",
+      "\u0644\u0627\u0646\u062C\u0631\u064A",
+      "\u0643\u0648\u0631\u0633\u064A\u0647",
+      "\u0646\u0633\u0627\u0626\u064A\u0629",
+      "\u0646\u0633\u0627\u0626\u064A",
+      "\u0644\u0644\u0633\u064A\u062F\u0627\u062A",
+      "dress",
+      "dresses",
+      "abaya",
+      "skirt",
+      "blouse",
+      "women",
+      "ladies"
+    ]
+  },
+  // 4. Watches & Jewelry
+  {
+    categoryId: 4,
+    categoryName: "\u0633\u0627\u0639\u0627\u062A \u0648\u0645\u062C\u0648\u0647\u0631\u0627\u062A",
+    strongKeywords: [
       "\u0633\u0627\u0639\u0629 \u064A\u062F",
       "\u0633\u0627\u0639\u0629 \u0631\u062C\u0627\u0644\u064A",
       "\u0633\u0627\u0639\u0629 \u0646\u0633\u0627\u0626",
       "\u0633\u0627\u0639\u0629 \u0643\u0648\u0627\u0631\u062A\u0632",
-      "\u0633\u0627\u0639\u0629 \u0630\u0643\u064A\u0629",
-      "\u0633\u0627\u0639\u0629 \u0631\u064A\u0627\u0636\u064A\u0629",
       "\u0633\u0627\u0639\u0629 \u0623\u0648\u062A\u0648\u0645\u0627\u062A\u064A\u0643",
       "\u0633\u0627\u0639\u0629 \u0645\u064A\u0643\u0627\u0646\u064A\u0643",
+      "\u062E\u0627\u062A\u0645 \u0641\u0636\u0629",
+      "\u062E\u0627\u062A\u0645 \u0630\u0647\u0628",
+      "\u0642\u0644\u0627\u062F\u0629 \u0641\u0636\u0629",
+      "\u0642\u0644\u0627\u062F\u0629 \u0630\u0647\u0628",
+      "\u0633\u0648\u0627\u0631 \u0645\u0639\u0635\u0645",
+      "\u0623\u0642\u0631\u0627\u0637 \u0623\u0630\u0646",
+      "wrist watch",
+      "quartz watch",
+      "automatic watch",
+      "silver ring",
+      "gold necklace",
+      "tennis bracelet"
+    ],
+    phrases: [
+      "\u0633\u0627\u0639\u0629 \u064A\u062F",
       "\u0643\u0631\u0648\u0646\u0648\u063A\u0631\u0627\u0641",
       "\u0637\u0642\u0645 \u0645\u062C\u0648\u0647\u0631\u0627\u062A",
       "\u062E\u0627\u062A\u0645 \u0641\u0636\u0629",
-      "\u062E\u0627\u062A\u0645 \u0630\u0647\u0628",
       "\u0633\u0648\u0627\u0631 \u064A\u062F",
       "\u0642\u0644\u0627\u062F\u0629 \u0641\u0636\u0629",
       "\u0633\u0644\u0633\u0627\u0644 \u0631\u0642\u0628\u0629",
-      "\u0633\u0648\u0627\u0631 \u0645\u0639\u0635\u0645",
       "\u062D\u0632\u0627\u0645 \u0633\u0627\u0639\u0629",
-      "smart watch",
-      "men watch",
-      "women watch",
+      "\u0645\u062C\u0648\u0647\u0631\u0627\u062A \u0646\u0633\u0627\u0626",
+      "\u0623\u0644\u0645\u0627\u0633 \u0645\u0648\u064A\u0633\u0627\u0646\u064A\u062A\u064A",
+      "silver ring",
+      "gold necklace",
       "quartz watch",
-      "automatic watch",
       "chronograph",
       "pagani design",
       "naviforce",
       "curren",
-      "silver ring",
-      "gold necklace",
-      "tennis bracelet",
-      "stud earrings",
-      "moissanite ring",
-      "watch strap",
-      "watch band"
+      "watch strap"
     ],
     words: [
       "\u0633\u0627\u0639\u0629",
@@ -92499,204 +92656,57 @@ var CATEGORY_RULES = [
       "\u0633\u0644\u0633\u0627\u0644",
       "watch",
       "watches",
-      "smartwatch",
       "quartz",
       "necklace",
       "bracelet",
-      "earring",
       "earrings",
       "pendant",
-      "bangle",
-      "cufflink",
-      "brooch",
       "jewellery",
       "jewelry"
     ]
   },
-  // 2. Home Appliances (Vacuums, Pool Cleaners, Kitchen Electric, Blenders)
+  // 10. Shoes & Bags
   {
-    categoryName: "\u0623\u062C\u0647\u0632\u0629 \u0645\u0646\u0632\u0644\u064A\u0629 \u0643\u0647\u0631\u0628\u0627\u0626\u064A\u0629",
-    phrases: [
-      "\u0645\u0643\u0646\u0633\u0629 \u0643\u0647\u0631\u0628\u0627\u0626\u064A\u0629",
-      "\u0645\u0643\u0646\u0633\u0629 \u0631\u0648\u0628\u0648\u062A",
-      "\u0631\u0648\u0628\u0648\u062A \u062A\u0646\u0638\u064A\u0641",
-      "\u062A\u0646\u0638\u064A\u0641 \u0627\u0644\u0645\u0633\u0627\u0628\u062D",
-      "\u062A\u0646\u0638\u064A\u0641 \u062D\u0645\u0627\u0645\u0627\u062A \u0627\u0644\u0633\u0628\u0627\u062D\u0629",
-      "\u0645\u0646\u0638\u0641 \u0641\u0631\u0627\u063A\u064A",
-      "\u0642\u0644\u0627\u064A\u0629 \u0647\u0648\u0627\u0626\u064A\u0629",
-      "\u0645\u0627\u0643\u064A\u0646\u0629 \u0642\u0647\u0648\u0629",
-      "\u0635\u0627\u0646\u0639\u0629 \u0642\u0647\u0648\u0629",
-      "\u063A\u0644\u0627\u064A\u0629 \u0645\u0627\u0621",
-      "\u0645\u0643\u0648\u0627\u0629 \u0628\u062E\u0627\u0631",
-      "\u0645\u0631\u0637\u0628 \u0647\u0648\u0627\u0621",
-      "\u0645\u0646\u0642\u064A \u0647\u0648\u0627\u0621",
-      "\u062E\u0644\u0627\u0637 \u0643\u0647\u0631\u0628\u0627\u0626\u064A",
-      "\u0645\u0641\u0631\u0645\u0629 \u0644\u062D\u0645",
-      "\u0635\u0627\u0646\u0639 \u0631\u063A\u0648\u0629",
-      "\u063A\u0633\u0627\u0644\u0629 \u0635\u063A\u064A\u0631\u0629",
-      "robot vacuum",
-      "vacuum cleaner",
-      "pool cleaner",
-      "air fryer",
-      "coffee maker",
-      "coffee machine",
-      "electric kettle",
-      "steam iron",
-      "air humidifier",
-      "air purifier",
-      "blender portable",
-      "food processor",
-      "meat grinder",
-      "electric juicer",
-      "roborock"
+    categoryId: 10,
+    categoryName: "\u0623\u062D\u0630\u064A\u0629 \u0648\u062D\u0642\u0627\u0626\u0628",
+    strongKeywords: [
+      "\u062D\u0630\u0627\u0621 \u0631\u064A\u0627\u0636\u064A",
+      "\u062D\u0630\u0627\u0621 \u0646\u0633\u0627\u0626",
+      "\u062D\u0630\u0627\u0621 \u0631\u062C\u0627\u0644\u064A",
+      "\u062D\u0630\u0627\u0621 \u0631\u0643\u0636",
+      "\u0635\u0646\u062F\u0644 \u0646\u0633\u0627\u0626",
+      "\u0643\u0639\u0628 \u0639\u0627\u0644\u064A",
+      "\u0628\u0648\u062A \u0634\u062A\u0648\u064A",
+      "\u062D\u0642\u064A\u0628\u0629 \u0638\u0647\u0631",
+      "\u062D\u0642\u064A\u0628\u0629 \u064A\u062F",
+      "\u062D\u0642\u064A\u0628\u0629 \u0643\u062A\u0641",
+      "\u062D\u0642\u064A\u0628\u0629 \u0633\u0641\u0631",
+      "\u0645\u062D\u0641\u0638\u0629 \u062C\u0644\u062F",
+      "\u0634\u0646\u0637\u0629 \u0646\u0633\u0627\u0626",
+      "\u0634\u0646\u0637\u0629 \u0633\u0641\u0631",
+      "sneakers shoes",
+      "running shoes",
+      "leather boots",
+      "high heels",
+      "backpack",
+      "shoulder bag",
+      "handbag",
+      "travel suitcase",
+      "leather wallet"
     ],
-    words: [
-      "\u0645\u0643\u0646\u0633\u0629",
-      "\u0645\u0643\u0627\u0646\u0633",
-      "\u0642\u0644\u0627\u064A\u0629",
-      "\u063A\u0644\u0627\u064A\u0629",
-      "\u0645\u0643\u0648\u0627\u0629",
-      "\u062E\u0644\u0627\u0637",
-      "\u0645\u0631\u0637\u0628",
-      "\u0645\u0646\u0642\u064A",
-      "\u0634\u0641\u0627\u0637",
-      "vacuum",
-      "blender",
-      "kettle",
-      "humidifier",
-      "purifier",
-      "toaster",
-      "juicer",
-      "roborock"
-    ]
-  },
-  // 3. Toys, Kids & Babies
-  {
-    categoryName: "\u0623\u0644\u0639\u0627\u0628 \u0648\u0623\u0637\u0641\u0627\u0644 \u0648\u0631\u0636\u0639",
-    phrases: [
-      "\u0645\u0644\u0627\u0628\u0633 \u0623\u0637\u0641\u0627\u0644",
-      "\u0628\u064A\u062C\u0627\u0645\u0627\u062A \u0623\u0637\u0641\u0627\u0644",
-      "\u0637\u0642\u0645 \u0645\u0648\u0627\u0644\u064A\u062F",
-      "\u0639\u0631\u0628\u0629 \u0623\u0637\u0641\u0627\u0644",
-      "\u062D\u0641\u0627\u0636\u0627\u062A \u0623\u0637\u0641\u0627\u0644",
-      "\u0623\u0644\u0639\u0627\u0628 \u0623\u0637\u0641\u0627\u0644",
-      "\u0633\u064A\u0627\u0631\u0629 \u062A\u062D\u0643\u0645 \u0639\u0646 \u0628\u0639\u062F",
-      "\u0645\u0643\u0639\u0628\u0627\u062A \u0628\u0646\u0627\u0621",
-      "\u0637\u0627\u0626\u0631\u0629 \u0644\u0639\u0628\u0629",
-      "\u062F\u0645\u064A\u0629 \u0642\u0637\u0646\u064A\u0629",
-      "\u0644\u0647\u0627\u064A\u0629 \u0623\u0637\u0641\u0627\u0644",
-      "\u0631\u0636\u0627\u0639\u0629 \u0623\u0637\u0641\u0627\u0644",
-      "\u0645\u0644\u0627\u0628\u0633 \u0646\u0648\u0645 \u0644\u0644\u0623\u0637\u0641\u0627\u0644",
-      "\u0623\u0644\u0639\u0627\u0628 \u0631\u0636\u0639",
-      "baby clothes",
-      "kids pajamas",
-      "baby romper",
-      "baby stroller",
-      "diaper bag",
-      "rc car",
-      "building blocks",
-      "plush toy",
-      "water gun",
-      "baby bottle",
-      "baby bib"
-    ],
-    words: [
-      "\u0623\u0637\u0641\u0627\u0644",
-      "\u0637\u0641\u0644",
-      "\u0631\u0636\u064A\u0639",
-      "\u0645\u0648\u0627\u0644\u064A\u062F",
-      "\u0648\u0644\u0627\u062F\u064A",
-      "\u0628\u0646\u0627\u062A\u064A",
-      "\u0628\u064A\u062C\u0627\u0645\u0629",
-      "\u0628\u064A\u062C\u0627\u0645\u0627\u062A",
-      "\u062D\u0641\u0627\u0636\u0627\u062A",
-      "\u0644\u0647\u0627\u064A\u0629",
-      "\u0639\u0636\u0627\u0636\u0629",
-      "\u0644\u0639\u0628\u0629",
-      "\u0623\u0644\u0639\u0627\u0628",
-      "\u062F\u0645\u064A\u0629",
-      "\u0645\u0643\u0639\u0628\u0627\u062A",
-      "baby",
-      "infant",
-      "toddler",
-      "kids",
-      "toy",
-      "toys",
-      "puzzle",
-      "doll",
-      "plush",
-      "stroller",
-      "romper",
-      "pacifier",
-      "diaper"
-    ]
-  },
-  // 4. Automotive & Motorcycles
-  {
-    categoryName: "\u0633\u064A\u0627\u0631\u0627\u062A \u0648\u062F\u0631\u0627\u062C\u0627\u062A \u0646\u0627\u0631\u064A\u0629 \u0648\u0642\u0637\u0639 \u063A\u064A\u0627\u0631",
-    phrases: [
-      "\u0625\u0643\u0633\u0633\u0648\u0627\u0631\u0627\u062A \u0633\u064A\u0627\u0631\u0627\u062A",
-      "\u0643\u0627\u0645\u064A\u0631\u0627 \u0633\u064A\u0627\u0631\u0629",
-      "\u062F\u0627\u0634 \u0643\u0627\u0645",
-      "\u0634\u0627\u062D\u0646 \u0633\u064A\u0627\u0631\u0629",
-      "\u0645\u0636\u062E\u0629 \u0625\u0637\u0627\u0631\u0627\u062A",
-      "\u0645\u0636\u062E\u0629 \u0648\u0642\u0648\u062F",
-      "\u063A\u0637\u0627\u0621 \u0633\u064A\u0627\u0631\u0629",
-      "\u0648\u0633\u0627\u062F\u0629 \u0645\u0642\u0639\u062F \u0633\u064A\u0627\u0631\u0629",
-      "\u0634\u0627\u062D\u0646 \u0633\u064A\u0627\u0631\u0627\u062A \u0643\u0647\u0631\u0628\u0627\u0626\u064A\u0629",
-      "\u0625\u0636\u0627\u0621\u0629 \u0633\u064A\u0627\u0631\u0629",
-      "\u0645\u0643\u0646\u0633\u0629 \u0633\u064A\u0627\u0631\u0629",
-      "\u0645\u0646\u0641\u0627\u062E \u0625\u0637\u0627\u0631\u0627\u062A",
-      "\u0645\u0631\u0622\u0629 \u0633\u064A\u0627\u0631\u0629",
-      "\u062D\u0627\u0645\u0644 \u0633\u064A\u0627\u0631\u0629",
-      "car dash cam",
-      "car charger",
-      "tire inflator",
-      "fuel pump",
-      "car seat cover",
-      "car led",
-      "ev charger",
-      "car vacuum",
-      "obd2 scanner",
-      "motorcycle helmet"
-    ],
-    words: [
-      "\u0633\u064A\u0627\u0631\u0629",
-      "\u0633\u064A\u0627\u0631\u0627\u062A",
-      "\u0645\u0631\u0643\u0628\u0629",
-      "\u0625\u0637\u0627\u0631\u0627\u062A",
-      "\u0628\u0646\u0632\u064A\u0646",
-      "\u0648\u0642\u0648\u062F",
-      "\u062F\u0631\u0627\u062C\u0629 \u0646\u0627\u0631\u064A\u0629",
-      "\u0645\u0631\u0622\u0628",
-      "car",
-      "automobile",
-      "vehicle",
-      "motorcycle",
-      "automotive",
-      "dashcam",
-      "obd2"
-    ]
-  },
-  // 5. Bags & Shoes
-  {
-    categoryName: "\u062D\u0642\u0627\u0626\u0628 \u0648\u0623\u062D\u0630\u064A\u0629",
     phrases: [
       "\u062D\u0642\u064A\u0628\u0629 \u0638\u0647\u0631",
       "\u062D\u0642\u064A\u0628\u0629 \u064A\u062F",
       "\u062D\u0642\u064A\u0628\u0629 \u0633\u0641\u0631",
       "\u062D\u0642\u064A\u0628\u0629 \u0643\u062A\u0641",
-      "\u062D\u0642\u064A\u0628\u0629 \u062E\u0635\u0631",
       "\u0645\u062D\u0641\u0638\u0629 \u0631\u062C\u0627\u0644\u064A",
       "\u0645\u062D\u0641\u0638\u0629 \u0646\u0633\u0627\u0626",
       "\u062D\u0630\u0627\u0621 \u0631\u064A\u0627\u0636\u064A",
       "\u062D\u0630\u0627\u0621 \u0631\u0643\u0636",
-      "\u062D\u0630\u0627\u0621 \u0646\u0633\u0627\u0626",
-      "\u062D\u0630\u0627\u0621 \u0631\u0633\u0645\u064A",
       "\u0635\u0646\u062F\u0644 \u0635\u064A\u0641\u064A",
       "\u0634\u0646\u0637\u0629 \u0646\u0633\u0627\u0626",
-      "\u0634\u0646\u0637\u0629 \u0633\u0641\u0631",
-      "\u062D\u0630\u0627\u0621 \u0643\u0631\u0629 \u0642\u062F\u0645",
+      "\u0634\u0646\u0637\u0629 \u064A\u062F",
+      "\u062D\u0642\u0627\u0626\u0628 \u0646\u0633\u0627\u0626",
       "running shoes",
       "sneakers shoes",
       "leather wallet",
@@ -92706,8 +92716,7 @@ var CATEGORY_RULES = [
       "tote bag",
       "ankle boots",
       "luggage suitcase",
-      "card holder rfid",
-      "casual shoes"
+      "card holder rfid"
     ],
     words: [
       "\u062D\u0630\u0627\u0621",
@@ -92730,7 +92739,6 @@ var CATEGORY_RULES = [
       "boots",
       "sandals",
       "slippers",
-      "loafers",
       "backpack",
       "handbag",
       "wallet",
@@ -92739,9 +92747,88 @@ var CATEGORY_RULES = [
       "suitcase"
     ]
   },
-  // 6. Phones & Telecommunications
+  // 12. Consumer Electronics (Audio / Earbuds / Speakers)
   {
-    categoryName: "\u0647\u0648\u0627\u062A\u0641 \u0630\u0643\u064A\u0629 \u0648\u0645\u0644\u062D\u0642\u0627\u062A\u0647\u0627",
+    categoryId: 12,
+    categoryName: "\u0623\u062C\u0647\u0632\u0629 \u0625\u0644\u0643\u062A\u0631\u0648\u0646\u064A\u0629 \u0627\u0633\u062A\u0647\u0644\u0627\u0643\u064A\u0629",
+    strongKeywords: [
+      "\u0633\u0645\u0627\u0639\u0627\u062A \u0628\u0644\u0648\u062A\u0648\u062B",
+      "\u0633\u0645\u0627\u0639\u0629 \u0628\u0644\u0648\u062A\u0648\u062B",
+      "\u0633\u0645\u0627\u0639\u0627\u062A \u0644\u0627\u0633\u0644\u0643\u064A\u0629",
+      "\u0627\u064A\u0631\u0628\u0648\u062F\u0632",
+      "\u0633\u0628\u064A\u0643\u0631 \u0628\u0644\u0648\u062A\u0648\u062B",
+      "\u0645\u0643\u0628\u0631 \u0635\u0648\u062A \u0628\u0644\u0648\u062A\u0648\u062B",
+      "\u0645\u064A\u0643\u0631\u0648\u0641\u0648\u0646 \u0644\u0627\u0633\u0644\u0643\u064A",
+      "\u0646\u0638\u0627\u0631\u0627\u062A \u0648\u0627\u0642\u0639 \u0627\u0641\u062A\u0631\u0627\u0636\u064A",
+      "\u0633\u0645\u0627\u0639\u0627\u062A \u0642\u064A\u0645\u0646\u0642",
+      "bluetooth earbuds",
+      "wireless earbuds",
+      "tws earbuds",
+      "bluetooth speaker",
+      "gaming headset"
+    ],
+    phrases: [
+      "\u0633\u0645\u0627\u0639\u0627\u062A \u0628\u0644\u0648\u062A\u0648\u062B",
+      "\u0633\u0645\u0627\u0639\u0629 \u0628\u0644\u0648\u062A\u0648\u062B",
+      "\u0633\u0645\u0627\u0639\u0627\u062A \u0644\u0627\u0633\u0644\u0643\u064A\u0629",
+      "\u0645\u0643\u0628\u0631 \u0635\u0648\u062A",
+      "\u0633\u0628\u064A\u0643\u0631 \u0628\u0644\u0648\u062A\u0648\u062B",
+      "\u0645\u064A\u0643\u0631\u0648\u0641\u0648\u0646 \u0644\u0627\u0633\u0644\u0643\u064A",
+      "\u0646\u0638\u0627\u0631\u0627\u062A \u0630\u0643\u064A\u0629",
+      "\u0646\u0638\u0627\u0631\u0627\u062A \u0648\u0627\u0642\u0639 \u0627\u0641\u062A\u0631\u0627\u0636\u064A",
+      "\u0645\u0636\u062E\u0645 \u0635\u0648\u062A",
+      "\u0633\u0645\u0627\u0639\u0627\u062A \u0642\u064A\u0645\u0646\u0642",
+      "\u0639\u0627\u0632\u0644 \u0644\u0644\u0636\u0648\u0636\u0627\u0621",
+      "bluetooth speaker",
+      "wireless earbuds",
+      "tws earbuds",
+      "noise cancelling",
+      "gaming headset",
+      "smart glasses",
+      "vr headset",
+      "sound bar",
+      "audio amplifier"
+    ],
+    words: [
+      "\u0633\u0645\u0627\u0639\u0629",
+      "\u0633\u0645\u0627\u0639\u0627\u062A",
+      "\u0633\u0628\u064A\u0643\u0631",
+      "\u0645\u064A\u0643\u0631\u0648\u0641\u0648\u0646",
+      "\u0627\u064A\u0631\u0628\u0648\u062F\u0632",
+      "earbuds",
+      "earphone",
+      "headphone",
+      "speaker",
+      "headset",
+      "microphone",
+      "tws",
+      "soundbar"
+    ]
+  },
+  // 3. Smartphones & Accessories
+  {
+    categoryId: 3,
+    categoryName: "\u0647\u0648\u0627\u062A\u0641 \u0630\u0643\u064A\u0629 \u0648\u0625\u0643\u0633\u0633\u0648\u0627\u0631\u0627\u062A",
+    strongKeywords: [
+      "\u0643\u0641\u0631 \u062C\u0648\u0627\u0644",
+      "\u0643\u0641\u0631 \u0647\u0627\u062A\u0641",
+      "\u062C\u0631\u0627\u0628 \u0647\u0627\u062A\u0641",
+      "\u062C\u0631\u0627\u0628 \u062C\u0648\u0627\u0644",
+      "\u0648\u0627\u0642\u064A \u0634\u0627\u0634\u0629 \u0647\u0627\u062A\u0641",
+      "\u0644\u0627\u0635\u0642 \u062D\u0645\u0627\u064A\u0629 \u0634\u0627\u0634\u0629",
+      "\u0634\u0627\u062D\u0646 \u0647\u0627\u062A\u0641",
+      "\u0634\u0627\u062D\u0646 \u0633\u0631\u064A\u0639 \u0644\u0644\u062C\u0648\u0627\u0644",
+      "\u0643\u0627\u0628\u0644 \u0634\u0627\u062D\u0646 \u0627\u064A\u0641\u0648\u0646",
+      "\u0628\u0627\u0648\u0631 \u0628\u0627\u0646\u0643",
+      "\u0628\u0627\u0648\u0631\u0628\u0627\u0646\u0643",
+      "\u062D\u0627\u0645\u0644 \u062C\u0648\u0627\u0644",
+      "phone case",
+      "screen protector",
+      "magsafe case",
+      "power bank",
+      "fast phone charger",
+      "iphone case"
+    ],
     phrases: [
       "\u0643\u0641\u0631 \u062C\u0648\u0627\u0644",
       "\u0643\u0641\u0631 \u0647\u0627\u062A\u0641",
@@ -92769,364 +92856,45 @@ var CATEGORY_RULES = [
       "type c cable"
     ],
     words: [
-      "\u0647\u0627\u062A\u0641",
+      "\u0643\u0641\u0631",
+      "\u062C\u0631\u0627\u0628",
       "\u062C\u0648\u0627\u0644",
+      "\u0647\u0627\u062A\u0641",
       "\u0622\u064A\u0641\u0648\u0646",
       "\u0627\u064A\u0641\u0648\u0646",
       "\u0633\u0627\u0645\u0633\u0648\u0646\u062C",
       "\u0634\u0627\u0648\u0645\u064A",
       "\u0647\u0648\u0627\u0648\u064A",
+      "phone",
       "smartphone",
       "iphone",
       "samsung",
       "xiaomi"
     ]
   },
-  // 7. Consumer Electronics (Audio, VR, Gaming)
+  // 13. Men's Fashion
   {
-    categoryName: "\u0625\u0644\u0643\u062A\u0631\u0648\u0646\u064A\u0627\u062A \u0627\u0633\u062A\u0647\u0644\u0627\u0643\u064A\u0629",
-    phrases: [
-      "\u0633\u0645\u0627\u0639\u0627\u062A \u0628\u0644\u0648\u062A\u0648\u062B",
-      "\u0633\u0645\u0627\u0639\u0629 \u0628\u0644\u0648\u062A\u0648\u062B",
-      "\u0633\u0645\u0627\u0639\u0627\u062A \u0644\u0627\u0633\u0644\u0643\u064A\u0629",
-      "\u0645\u0643\u0628\u0631 \u0635\u0648\u062A",
-      "\u0633\u0628\u064A\u0643\u0631 \u0628\u0644\u0648\u062A\u0648\u062B",
-      "\u0645\u064A\u0643\u0631\u0648\u0641\u0648\u0646 \u0644\u0627\u0633\u0644\u0643\u064A",
-      "\u0646\u0638\u0627\u0631\u0627\u062A \u0630\u0643\u064A\u0629",
-      "\u0646\u0638\u0627\u0631\u0627\u062A \u0648\u0627\u0642\u0639 \u0627\u0641\u062A\u0631\u0627\u0636\u064A",
-      "\u0645\u0636\u062E\u0645 \u0635\u0648\u062A",
-      "\u0633\u0645\u0627\u0639\u0627\u062A \u0642\u064A\u0645\u0646\u0642",
-      "bluetooth speaker",
-      "wireless earbuds",
-      "tws earbuds",
-      "noise cancelling",
-      "gaming headset",
-      "smart glasses",
-      "vr headset",
-      "sound bar",
-      "audio amplifier",
-      "voice recorder"
-    ],
-    words: [
-      "\u0633\u0645\u0627\u0639\u0629",
-      "\u0633\u0645\u0627\u0639\u0627\u062A",
-      "\u0633\u0628\u064A\u0643\u0631",
-      "\u0645\u064A\u0643\u0631\u0648\u0641\u0648\u0646",
-      "\u0627\u064A\u0631\u0628\u0648\u062F\u0632",
-      "\u0628\u0644\u0648\u062A\u0648\u062B",
-      "earbuds",
-      "earphone",
-      "headphone",
-      "speaker",
-      "headset",
-      "microphone",
-      "tws",
-      "audio",
-      "soundbar",
-      "amplifier"
-    ]
-  },
-  // 8. Computer & Office
-  {
-    categoryName: "\u0623\u062C\u0647\u0632\u0629 \u0643\u0645\u0628\u064A\u0648\u062A\u0631 \u0648\u0645\u0643\u0627\u062A\u0628",
-    phrases: [
-      "\u0644\u0648\u062D\u0629 \u0645\u0641\u0627\u062A\u064A\u062D",
-      "\u0641\u0623\u0631\u0629 \u0643\u0645\u0628\u064A\u0648\u062A\u0631",
-      "\u0645\u0627\u0648\u0633 \u0623\u0644\u0639\u0627\u0628",
-      "\u062D\u0627\u0645\u0644 \u0644\u0627\u0628\u062A\u0648\u0628",
-      "\u0645\u062D\u0648\u0644 \u064A\u0648 \u0627\u0633 \u0628\u064A",
-      "\u0641\u0644\u0627\u0634 \u0645\u064A\u0645\u0648\u0631\u064A",
-      "\u0634\u0627\u0634\u0629 \u0643\u0645\u0628\u064A\u0648\u062A\u0631",
-      "\u0644\u0648\u062D\u0629 \u0631\u0633\u0645",
-      "\u0642\u0627\u0639\u062F\u0629 \u062A\u0628\u0631\u064A\u062F",
-      "\u0643\u0627\u0645\u064A\u0631\u0627 \u0648\u064A\u0628",
-      "mechanical keyboard",
-      "gaming mouse",
-      "mouse pad",
-      "laptop stand",
-      "usb hub",
-      "type-c hub",
-      "external ssd",
-      "flash drive",
-      "graphic tablet",
-      "displayport cable",
-      "hdmi adapter",
-      "thermal paste"
-    ],
-    words: [
-      "\u0643\u0645\u0628\u064A\u0648\u062A\u0631",
-      "\u0644\u0627\u0628\u062A\u0648\u0628",
-      "\u062D\u0627\u0633\u0648\u0628",
-      "\u0645\u0627\u0648\u0633",
-      "\u0643\u064A\u0628\u0648\u0631\u062F",
-      "\u0637\u0627\u0628\u0639\u0629",
-      "laptop",
-      "desktop",
-      "keyboard",
-      "mousepad",
-      "webcam",
-      "printer",
-      "monitor",
-      "keycap",
-      "keycaps"
-    ]
-  },
-  // 9. Cameras & Drones
-  {
-    categoryName: "\u0643\u0627\u0645\u064A\u0631\u0627\u062A \u0648\u0628\u0635\u0631\u064A\u0627\u062A \u0648\u0637\u0627\u0626\u0631\u0627\u062A \u062F\u0631\u0648\u0646",
-    phrases: [
-      "\u0637\u0627\u0626\u0631\u0629 \u062F\u0631\u0648\u0646",
-      "\u0637\u0627\u0626\u0631\u0629 \u0628\u062F\u0648\u0646 \u0637\u064A\u0627\u0631",
-      "\u062A\u0631\u0627\u064A\u0628\u0648\u062F \u0643\u0627\u0645\u064A\u0631\u0627",
-      "\u062D\u0627\u0645\u0644 \u062B\u0644\u0627\u062B\u064A",
-      "\u0645\u0627\u0646\u0639 \u0627\u0647\u062A\u0632\u0627\u0632",
-      "\u0639\u062F\u0633\u0629 \u0643\u0627\u0645\u064A\u0631\u0627",
-      "\u0645\u0646\u0638\u0627\u0631 \u0631\u0624\u064A\u0629",
-      "\u062A\u0644\u0633\u0643\u0648\u0628 \u0641\u0644\u0643\u064A",
-      "\u0643\u0627\u0645\u064A\u0631\u0627 \u0631\u064A\u0627\u0636\u064A\u0629",
-      "rc drone",
-      "drone 4k",
-      "camera tripod",
-      "gimbal stabilizer",
-      "binoculars",
-      "telescope",
-      "action camera",
-      "monocular"
-    ],
-    words: [
-      "\u062F\u0631\u0648\u0646",
-      "\u062A\u0631\u0627\u064A\u0628\u0648\u062F",
-      "\u062C\u064A\u0645\u0628\u0627\u0644",
-      "\u0645\u0646\u0638\u0627\u0631",
-      "\u062A\u0644\u0633\u0643\u0648\u0628",
-      "\u0639\u062F\u0633\u0629",
-      "drone",
-      "drones",
-      "quadcopter",
-      "tripod",
-      "gimbal",
-      "telescope",
-      "binoculars",
-      "gopro"
-    ]
-  },
-  // 10. Lights & Lighting
-  {
-    categoryName: "\u0623\u0636\u0648\u0627\u0621 \u0648\u0625\u0646\u0627\u0631\u0629 \u0630\u0643\u064A\u0629",
-    phrases: [
-      "\u0634\u0631\u064A\u0637 \u0644\u064A\u062F",
-      "\u0625\u0636\u0627\u0621\u0629 \u0644\u064A\u062F",
-      "\u0645\u0635\u0628\u0627\u062D \u0645\u0643\u062A\u0628\u064A",
-      "\u062B\u0631\u064A\u0627 \u0633\u0642\u0641",
-      "\u0625\u0636\u0627\u0621\u0629 \u0644\u064A\u0644\u064A\u0629",
-      "\u0633\u0644\u0633\u0644\u0629 \u0625\u0636\u0627\u0621\u0629",
-      "\u0645\u0635\u0628\u0627\u062D \u0637\u0627\u0642\u0629 \u0634\u0645\u0633\u064A\u0629",
-      "\u0643\u0634\u0627\u0641 \u0644\u064A\u062F",
-      "\u0645\u0635\u0628\u0627\u062D \u062D\u0627\u0626\u0637",
-      "\u0625\u0636\u0627\u0621\u0629 \u0637\u0627\u0648\u0644\u0629",
-      "led strip",
-      "rgb strip",
-      "desk lamp",
-      "night light",
-      "string lights",
-      "solar light",
-      "ceiling light",
-      "neon sign",
-      "floodlight",
-      "fairy lights"
-    ],
-    words: [
-      "\u0625\u0646\u0627\u0631\u0629",
-      "\u0625\u0636\u0627\u0621\u0629",
-      "\u0645\u0635\u0628\u0627\u062D",
-      "\u0645\u0635\u0627\u0628\u064A\u062D",
-      "\u0644\u0645\u0628\u0629",
-      "\u0644\u0645\u0628\u0627\u062A",
-      "\u0644\u064A\u062F",
-      "\u062B\u0631\u064A\u0627",
-      "\u0623\u0628\u0627\u062C\u0648\u0631\u0629",
-      "\u0643\u0634\u0627\u0641",
-      "\u0646\u064A\u0648\u0646",
-      "lamp",
-      "lamps",
-      "lighting",
-      "led",
-      "chandelier",
-      "flashlight",
-      "bulb",
-      "bulbs",
-      "spotlight"
-    ]
-  },
-  // 11. Security & Protection
-  {
-    categoryName: "\u0623\u0645\u0646 \u0648\u062D\u0645\u0627\u064A\u0629 \u0648\u0643\u0627\u0645\u064A\u0631\u0627\u062A \u0645\u0631\u0627\u0642\u0628\u0629",
-    phrases: [
-      "\u0643\u0627\u0645\u064A\u0631\u0627 \u0645\u0631\u0627\u0642\u0628\u0629",
-      "\u0643\u0627\u0645\u064A\u0631\u0627 \u0623\u0645\u0627\u0646",
-      "\u0643\u0627\u0645\u064A\u0631\u0627 \u0648\u0627\u064A \u0641\u0627\u064A",
-      "\u0642\u0641\u0644 \u0628\u0627\u0628 \u0630\u0643\u064A",
-      "\u0642\u0641\u0644 \u0625\u0644\u0643\u062A\u0631\u0648\u0646\u064A",
-      "\u062C\u0631\u0633 \u0628\u0627\u0628 \u0630\u0643\u064A",
-      "\u062C\u0647\u0627\u0632 \u0625\u0646\u0630\u0627\u0631",
-      "\u0643\u0627\u0634\u0641 \u062F\u062E\u0627\u0646",
-      "security camera",
-      "cctv camera",
-      "ip camera",
-      "smart door lock",
-      "video doorbell",
-      "alarm system",
-      "motion sensor alarm"
-    ],
-    words: [
-      "\u0645\u0631\u0627\u0642\u0628\u0629",
-      "\u0623\u0645\u0627\u0646",
-      "\u0625\u0646\u0630\u0627\u0631",
-      "cctv",
-      "surveillance",
-      "doorbell"
-    ]
-  },
-  // 12. Pet Supplies
-  {
-    categoryName: "\u0645\u0633\u062A\u0644\u0632\u0645\u0627\u062A \u0627\u0644\u062D\u064A\u0648\u0627\u0646\u0627\u062A \u0627\u0644\u0623\u0644\u064A\u0641\u0629",
-    phrases: [
-      "\u0637\u0648\u0642 \u0642\u0637\u0637",
-      "\u0637\u0648\u0642 \u0643\u0644\u0627\u0628",
-      "\u0633\u0631\u064A\u0631 \u0642\u0637\u0637",
-      "\u0633\u0631\u064A\u0631 \u0643\u0644\u0627\u0628",
-      "\u0623\u0644\u0639\u0627\u0628 \u0642\u0637\u0637",
-      "\u0646\u0627\u0641\u0648\u0631\u0629 \u0642\u0637\u0637",
-      "\u0631\u0645\u0644 \u0642\u0637\u0637",
-      "\u0641\u0631\u0634\u0627\u0629 \u0634\u0639\u0631 \u0642\u0637\u0637",
-      "\u0634\u062C\u0631\u0629 \u0642\u0637\u0637",
-      "\u0645\u0644\u0627\u0628\u0633 \u0643\u0644\u0627\u0628",
-      "pet collar",
-      "cat bed",
-      "dog bed",
-      "cat toys",
-      "pet fountain",
-      "cat tree",
-      "dog leash",
-      "litter box"
-    ],
-    words: [
-      "\u0642\u0637\u0637",
-      "\u0642\u0637\u0629",
-      "\u0643\u0644\u0627\u0628",
-      "\u0643\u0644\u0628",
-      "pet",
-      "pets",
-      "cat",
-      "cats",
-      "dog",
-      "dogs",
-      "puppy",
-      "kitten"
-    ]
-  },
-  // 13. Office & School
-  {
-    categoryName: "\u0623\u062F\u0648\u0627\u062A \u0645\u0643\u062A\u0628\u064A\u0629 \u0648\u0645\u062F\u0631\u0633\u064A\u0629",
-    phrases: [
-      "\u0637\u0642\u0645 \u0623\u0642\u0644\u0627\u0645",
-      "\u062F\u0641\u062A\u0631 \u0645\u0644\u0627\u062D\u0638\u0627\u062A",
-      "\u0645\u0642\u0644\u0645\u0629 \u0645\u062F\u0631\u0633\u064A\u0629",
-      "\u0645\u0644\u0635\u0642\u0627\u062A \u0643\u064A\u0648\u062A",
-      "\u0648\u0631\u0642 \u0645\u0644\u0627\u062D\u0638\u0627\u062A",
-      "\u0623\u0642\u0644\u0627\u0645 \u062D\u0628\u0631",
-      "\u062F\u0628\u0627\u0633\u0629 \u0648\u0631\u0642",
-      "\u0623\u0642\u0644\u0627\u0645 \u062A\u0644\u0648\u064A\u0646",
-      "ballpoint pen",
-      "pencil case",
-      "notebook journal",
-      "cute stickers",
-      "sticky notes",
-      "highlighter pens"
-    ],
-    words: [
-      "\u062F\u0641\u062A\u0631",
-      "\u062F\u0641\u0627\u062A\u0631",
-      "\u0623\u0642\u0644\u0627\u0645",
-      "\u0642\u0631\u0637\u0627\u0633\u064A\u0629",
-      "\u0645\u0642\u0644\u0645\u0629",
-      "\u0645\u0644\u0635\u0642\u0627\u062A",
-      "\u0633\u062A\u064A\u0643\u0631\u0627\u062A",
-      "notebook",
-      "stationery",
-      "stickers",
-      "stapler",
-      "highlighter"
-    ]
-  },
-  // 14. Smart Home & IoT
-  {
-    categoryName: "\u0623\u062C\u0647\u0632\u0629 \u0630\u0643\u064A\u0629 \u0648\u0625\u0646\u062A\u0631\u0646\u062A \u0627\u0644\u0623\u0634\u064A\u0627\u0621",
-    phrases: [
-      "\u0645\u0641\u062A\u0627\u062D \u0630\u0643\u064A",
-      "\u0642\u0627\u0628\u0633 \u0630\u0643\u064A",
-      "\u0641\u064A\u0634 \u0630\u0643\u064A",
-      "\u062D\u0633\u0627\u0633 \u062D\u0631\u0643\u0629 \u0630\u0643\u064A",
-      "\u062A\u062D\u0643\u0645 \u0630\u0643\u064A",
-      "smart switch",
-      "smart plug",
-      "smart socket",
-      "tuya smart",
-      "zigbee switch",
-      "sonoff switch"
-    ],
-    words: [
-      "\u062A\u0648\u064A\u0627",
-      "\u0633\u0648\u0646\u0648\u0641",
-      "\u0632\u064A\u062C\u0628\u064A",
-      "tuya",
-      "sonoff",
-      "zigbee"
-    ]
-  },
-  // 15. Women's Clothing
-  {
-    categoryName: "\u0623\u0632\u064A\u0627\u0621 \u0648\u0645\u0644\u0627\u0628\u0633 \u0646\u0633\u0627\u0626\u064A\u0629",
-    phrases: [
-      "\u0641\u0633\u062A\u0627\u0646 \u0646\u0633\u0627\u0626",
-      "\u0639\u0628\u0627\u064A\u0629 \u0646\u0633\u0627\u0626",
-      "\u062A\u0646\u0648\u0631\u0629 \u0646\u0633\u0627\u0626",
-      "\u0628\u0644\u0648\u0632\u0629 \u0646\u0633\u0627\u0626",
-      "\u0641\u0633\u062A\u0627\u0646 \u0633\u0647\u0631\u0629",
-      "\u0641\u0633\u062A\u0627\u0646 \u0635\u064A\u0641\u064A",
-      "\u0645\u0644\u0627\u0628\u0633 \u0646\u0633\u0627\u0626",
-      "\u0644\u0627\u0646\u062C\u0631\u064A \u0646\u0633\u0627\u0626",
-      "\u0642\u0645\u064A\u0635 \u0646\u0648\u0645 \u0646\u0633\u0627\u0626",
-      "women dress",
-      "women blouse",
-      "women skirt",
-      "women abaya",
-      "summer dress",
-      "women lingerie",
-      "women cardigan",
-      "women coat"
-    ],
-    words: [
-      "\u0641\u0633\u062A\u0627\u0646",
-      "\u0641\u0633\u0627\u062A\u064A\u0646",
-      "\u0639\u0628\u0627\u064A\u0629",
-      "\u0639\u0628\u0627\u064A\u0627\u062A",
-      "\u062A\u0646\u0648\u0631\u0629",
-      "\u062A\u0646\u0627\u0646\u064A\u0631",
-      "\u0628\u0644\u0648\u0632\u0629",
-      "\u0628\u0644\u0648\u0632\u0627\u062A",
-      "\u0644\u0627\u0646\u062C\u0631\u064A",
-      "dress",
-      "dresses",
-      "abaya",
-      "skirt",
-      "blouse",
-      "lingerie"
-    ]
-  },
-  // 16. Men's Clothing
-  {
+    categoryId: 13,
     categoryName: "\u0623\u0632\u064A\u0627\u0621 \u0648\u0645\u0644\u0627\u0628\u0633 \u0631\u062C\u0627\u0644\u064A\u0629",
+    strongKeywords: [
+      "\u0642\u0645\u064A\u0635 \u0631\u062C\u0627\u0644\u064A",
+      "\u0628\u0646\u0637\u0644\u0648\u0646 \u0631\u062C\u0627\u0644\u064A",
+      "\u0647\u0648\u062F\u064A \u0631\u062C\u0627\u0644\u064A",
+      "\u062C\u0627\u0643\u064A\u062A \u0631\u062C\u0627\u0644\u064A",
+      "\u0628\u062F\u0644\u0629 \u0631\u062C\u0627\u0644\u064A\u0629",
+      "\u0645\u0639\u0637\u0641 \u0631\u062C\u0627\u0644\u064A",
+      "\u0633\u0631\u0648\u0627\u0644 \u0631\u062C\u0627\u0644\u064A",
+      "\u062A\u064A\u0634\u0631\u062A \u0631\u062C\u0627\u0644\u064A",
+      "\u0634\u0648\u0631\u062A \u0631\u062C\u0627\u0644\u064A",
+      "\u0634\u0645\u0627\u063A \u0631\u062C\u0627\u0644\u064A",
+      "\u062B\u0648\u0628 \u0631\u062C\u0627\u0644\u064A",
+      "men shirt",
+      "men hoodie",
+      "men jacket",
+      "men pants",
+      "men suit",
+      "men blazer"
+    ],
     phrases: [
       "\u0642\u0645\u064A\u0635 \u0631\u062C\u0627\u0644\u064A",
       "\u0628\u0646\u0637\u0644\u0648\u0646 \u0631\u062C\u0627\u0644\u064A",
@@ -93136,14 +92904,18 @@ var CATEGORY_RULES = [
       "\u0645\u0644\u0627\u0628\u0633 \u0631\u062C\u0627\u0644\u064A",
       "\u0633\u0631\u0648\u0627\u0644 \u0631\u062C\u0627\u0644\u064A",
       "\u0645\u0639\u0637\u0641 \u0631\u062C\u0627\u0644\u064A",
+      "\u062A\u064A \u0634\u064A\u0631\u062A \u0631\u062C\u0627\u0644\u064A",
+      "\u0645\u0644\u0627\u0628\u0633 \u062F\u0627\u062E\u0644\u064A\u0629 \u0631\u062C\u0627\u0644\u064A\u0629",
       "men shirt",
       "men pants",
       "men hoodie",
       "men jacket",
       "men suit",
-      "men blazer"
+      "men blazer",
+      "men t-shirt"
     ],
     words: [
+      "\u0631\u062C\u0627\u0644\u064A",
       "\u0647\u0648\u062F\u064A",
       "\u0647\u0648\u062F\u064A\u0632",
       "\u0633\u0631\u0648\u0627\u0644",
@@ -93154,139 +92926,47 @@ var CATEGORY_RULES = [
       "blazer"
     ]
   },
-  // 17. Beauty & Health
+  // 24. Arts, Crafts & Sewing
   {
-    categoryName: "\u0627\u0644\u062C\u0645\u0627\u0644 \u0648\u0627\u0644\u0635\u062D\u0629 \u0648\u0627\u0644\u0639\u0646\u0627\u064A\u0629 \u0627\u0644\u0634\u062E\u0635\u064A\u0629",
-    phrases: [
-      "\u0639\u0646\u0627\u064A\u0629 \u0628\u0627\u0644\u0628\u0634\u0631\u0629",
-      "\u0643\u0631\u064A\u0645 \u062A\u0631\u0637\u064A\u0628",
-      "\u0633\u064A\u0631\u0648\u0645 \u0648\u062C\u0647",
-      "\u0623\u062D\u0645\u0631 \u0634\u0641\u0627\u0647",
-      "\u0641\u0631\u0634\u0627\u0629 \u0645\u0643\u064A\u0627\u062C",
-      "\u0645\u0633\u0643\u0631\u0629 \u0631\u0645\u0648\u0634",
-      "\u0645\u0643\u0648\u0627\u0629 \u0634\u0639\u0631",
-      "\u0645\u062C\u0641\u0641 \u0634\u0639\u0631",
-      "\u0645\u0627\u0643\u064A\u0646\u0629 \u062D\u0644\u0627\u0642\u0629",
-      "\u062A\u0634\u0630\u064A\u0628 \u0644\u062D\u064A\u0629",
-      "\u0639\u0637\u0631 \u0631\u062C\u0627\u0644\u064A",
-      "\u0639\u0637\u0631 \u0646\u0633\u0627\u0626\u064A",
-      "\u0645\u062D\u062F\u062F \u0639\u064A\u0648\u0646",
-      "\u0637\u0644\u0627\u0621 \u0623\u0638\u0627\u0641\u0631",
-      "skincare serum",
-      "face cream",
-      "makeup brush",
-      "hair straightener",
-      "hair dryer",
-      "electric shaver",
-      "beard trimmer",
-      "perfume spray",
-      "nail polish",
-      "lip balm"
+    categoryId: 24,
+    categoryName: "\u0641\u0646\u0648\u0646 \u0648\u062D\u0631\u0641 \u0648\u062E\u064A\u0627\u0637\u0629",
+    strongKeywords: [
+      "\u0645\u0627\u0643\u064A\u0646\u0629 \u062E\u064A\u0627\u0637\u0629",
+      "\u0623\u0642\u0645\u0634\u0629 \u062E\u064A\u0627\u0637\u0629",
+      "\u062E\u064A\u0648\u0637 \u062D\u064A\u0627\u0643\u0629",
+      "\u0635\u0648\u0641 \u0643\u0631\u0648\u0634\u064A\u0647",
+      "\u0637\u0642\u0645 \u062A\u0637\u0631\u064A\u0632",
+      "\u0642\u0627\u0637\u0639 \u0623\u0642\u0645\u0634\u0629",
+      "\u0645\u0633\u0637\u0631\u0629 \u062E\u064A\u0627\u0637\u0629",
+      "\u0634\u0641\u0631\u0627\u062A \u0642\u0637\u0639 \u0623\u0642\u0645\u0634\u0629",
+      "\u062D\u0635\u064A\u0631\u0629 \u0642\u0637\u0639",
+      "\u062E\u0631\u0632 \u062A\u0637\u0631\u064A\u0632",
+      "\u0625\u0628\u0631 \u062E\u064A\u0627\u0637\u0629",
+      "sewing machine",
+      "knitting yarn",
+      "crochet yarn",
+      "embroidery kit",
+      "rotary cutter",
+      "cutting mat"
     ],
-    words: [
-      "\u0645\u0643\u064A\u0627\u062C",
-      "\u0623\u062D\u0645\u0631 \u0634\u0641\u0627\u0647",
-      "\u0645\u0633\u0643\u0631\u0629",
-      "\u0639\u0637\u0631",
-      "\u0639\u0637\u0648\u0631",
-      "\u0633\u064A\u0631\u0648\u0645",
-      "\u0643\u0631\u064A\u0645",
-      "\u0634\u0627\u0645\u0628\u0648",
-      "\u062D\u0644\u0627\u0642\u0629",
-      "\u0623\u0638\u0627\u0641\u0631",
-      "skincare",
-      "serum",
-      "lipstick",
-      "mascara",
-      "perfume",
-      "fragrance",
-      "makeup",
-      "shaver",
-      "trimmer"
-    ]
-  },
-  // 18. Furniture
-  {
-    categoryName: "\u0623\u062B\u0627\u062B \u0648\u062F\u064A\u0643\u0648\u0631 \u0645\u0646\u0632\u0644\u064A",
-    phrases: [
-      "\u0643\u0631\u0633\u064A \u0623\u0644\u0639\u0627\u0628",
-      "\u0643\u0631\u0633\u064A \u0642\u064A\u0645\u0646\u0642",
-      "\u0643\u0631\u0633\u064A \u0645\u0643\u062A\u0628",
-      "\u0637\u0627\u0648\u0644\u0629 \u0637\u0639\u0627\u0645",
-      "\u0637\u0627\u0648\u0644\u0629 \u0634\u0627\u064A",
-      "\u0623\u0631\u064A\u0643\u0629 \u0627\u0633\u062A\u0631\u062E\u0627\u0621",
-      "\u0643\u0646\u0628 \u0635\u0627\u0644\u0629",
-      "\u0631\u0641 \u062C\u062F\u0627\u0631\u064A",
-      "gaming chair",
-      "office chair",
-      "dining table",
-      "coffee table",
-      "sofa couch"
-    ],
-    words: [
-      "\u0637\u0627\u0648\u0644\u0629",
-      "\u0637\u0627\u0648\u0644\u0627\u062A",
-      "\u0623\u0631\u064A\u0643\u0629",
-      "\u0623\u062B\u0627\u062B",
-      "\u062F\u0648\u0644\u0627\u0628",
-      "sofa",
-      "couch",
-      "furniture",
-      "wardrobe"
-    ]
-  },
-  // 19. Wigs
-  {
-    categoryName: "\u0634\u0639\u0631 \u0645\u0633\u062A\u0639\u0627\u0631 \u0648\u0628\u0627\u0631\u0648\u0643\u0627\u062A",
-    phrases: [
-      "\u0634\u0639\u0631 \u0645\u0633\u062A\u0639\u0627\u0631",
-      "\u0628\u0627\u0631\u0648\u0643\u0629 \u0634\u0639\u0631",
-      "\u062E\u0635\u0644\u0627\u062A \u0634\u0639\u0631",
-      "lace wig",
-      "human hair wig",
-      "hair extensions"
-    ],
-    words: [
-      "\u0628\u0627\u0631\u0648\u0643\u0629",
-      "\u0628\u0627\u0631\u0648\u0643\u0627\u062A",
-      "wig",
-      "wigs",
-      "hairpiece"
-    ]
-  },
-  // 20. Party Supplies
-  {
-    categoryName: "\u0645\u0633\u062A\u0644\u0632\u0645\u0627\u062A \u0627\u0644\u062D\u0641\u0644\u0627\u062A \u0648\u0627\u0644\u0645\u0646\u0627\u0633\u0628\u0627\u062A",
-    phrases: [
-      "\u0628\u0627\u0644\u0648\u0646\u0627\u062A \u0647\u064A\u0644\u064A\u0648\u0645",
-      "\u0642\u0648\u0633 \u0628\u0627\u0644\u0648\u0646\u0627\u062A",
-      "\u0632\u064A\u0646\u0629 \u0639\u064A\u062F \u0645\u064A\u0644\u0627\u062F",
-      "\u0632\u064A\u0646\u0629 \u062D\u0641\u0644\u0627\u062A",
-      "party balloons",
-      "balloon arch",
-      "birthday decor"
-    ],
-    words: [
-      "\u0628\u0627\u0644\u0648\u0646",
-      "\u0628\u0627\u0644\u0648\u0646\u0627\u062A",
-      "balloon",
-      "balloons",
-      "cosplay",
-      "confetti"
-    ]
-  },
-  // 21. Crafts & Sewing
-  {
-    categoryName: "\u0623\u0642\u0645\u0634\u0629 \u0648\u062D\u0631\u0641 \u064A\u062F\u0648\u064A\u0629 \u0648\u062E\u064A\u0627\u0637\u0629",
     phrases: [
       "\u0645\u0627\u0643\u064A\u0646\u0629 \u062E\u064A\u0627\u0637\u0629",
       "\u0623\u0642\u0645\u0634\u0629 \u062E\u064A\u0627\u0637\u0629",
       "\u062E\u064A\u0648\u0637 \u062D\u064A\u0627\u0643\u0629",
       "\u0635\u0648\u0641 \u0643\u0631\u0648\u0634\u064A\u0647",
       "\u0637\u0642\u0645 \u062A\u0637\u0631\u064A\u0632",
+      "\u0623\u062F\u0648\u0627\u062A \u062E\u064A\u0627\u0637\u0629",
+      "\u062E\u064A\u0627\u0637\u0629 \u064A\u062F\u0648\u064A\u0629",
+      "\u0634\u0641\u0631\u0627\u062A \u062F\u0648\u0627\u0631\u0629",
+      "\u062D\u0635\u064A\u0631\u0629 \u0642\u0635",
+      "\u0623\u0639\u0645\u0627\u0644 \u062D\u0631\u0641\u064A\u0629",
+      "\u062E\u064A\u0627\u0637\u0629 \u0648\u062A\u0637\u0631\u064A\u0632",
       "sewing machine",
       "knitting yarn",
-      "crochet yarn"
+      "crochet yarn",
+      "embroidery kit",
+      "rotary cutter",
+      "sewing craft"
     ],
     words: [
       "\u062E\u064A\u0627\u0637\u0629",
@@ -93295,15 +92975,36 @@ var CATEGORY_RULES = [
       "\u062D\u064A\u0627\u0643\u0629",
       "\u0635\u0648\u0641",
       "\u062E\u0631\u0632",
+      "\u0623\u0642\u0645\u0634\u0629",
       "sewing",
       "knitting",
       "crochet",
-      "yarn"
+      "yarn",
+      "fabric"
     ]
   },
-  // 22. Tools & Hardware
+  // 14. Tools & Home Improvement
   {
-    categoryName: "\u062A\u062D\u0633\u064A\u0646 \u0627\u0644\u0645\u0646\u0632\u0644 \u0648\u0627\u0644\u0639\u062F\u062F \u0648\u0627\u0644\u0623\u062F\u0648\u0627\u062A",
+    categoryId: 14,
+    categoryName: "\u0623\u062F\u0648\u0627\u062A \u0648\u062A\u062D\u0633\u064A\u0646 \u0627\u0644\u0645\u0646\u0632\u0644",
+    strongKeywords: [
+      "\u062F\u0631\u064A\u0644 \u0643\u0647\u0631\u0628\u0627\u0626\u064A",
+      "\u0634\u0646\u064A\u0648\u0631 \u0644\u0627\u0633\u0644\u0643\u064A",
+      "\u0637\u0642\u0645 \u0645\u0641\u0643\u0627\u062A",
+      "\u0645\u0641\u062A\u0627\u062D \u0639\u0632\u0645",
+      "\u0645\u064A\u0632\u0627\u0646 \u0644\u064A\u0632\u0631",
+      "\u0645\u0643\u0648\u0627\u0629 \u0644\u062D\u0627\u0645",
+      "\u0645\u0646\u0634\u0627\u0631 \u0643\u0647\u0631\u0628\u0627\u0626\u064A",
+      "\u0632\u0631\u0627\u062F\u064A\u0629 \u0623\u062F\u0648\u0627\u062A",
+      "\u0643\u0645\u0627\u0634\u0629 \u0623\u0633\u0644\u0627\u0643",
+      "\u0645\u062A\u0631 \u0644\u064A\u0632\u0631",
+      "cordless drill",
+      "power drill",
+      "screwdriver set",
+      "socket wrench",
+      "laser level",
+      "soldering iron"
+    ],
     phrases: [
       "\u062F\u0631\u064A\u0644 \u0643\u0647\u0631\u0628\u0627\u0626\u064A",
       "\u0634\u0646\u064A\u0648\u0631 \u0644\u0627\u0633\u0644\u0643\u064A",
@@ -93312,6 +93013,10 @@ var CATEGORY_RULES = [
       "\u0645\u064A\u0632\u0627\u0646 \u0644\u064A\u0632\u0631",
       "\u0645\u0643\u0648\u0627\u0629 \u0644\u062D\u0627\u0645",
       "\u0645\u0646\u0634\u0627\u0631 \u0643\u0647\u0631\u0628\u0627\u0626\u064A",
+      "\u0623\u062F\u0648\u0627\u062A \u064A\u062F\u0648\u064A\u0629",
+      "\u0645\u0641\u062A\u0627\u062D \u0625\u0646\u062C\u0644\u064A\u0632\u064A",
+      "\u0645\u0633\u062F\u0633 \u063A\u0631\u0627\u0621",
+      "\u0645\u0639\u062F\u0627\u062A \u0635\u064A\u0627\u0646\u0629",
       "cordless drill",
       "screwdriver set",
       "socket wrench",
@@ -93335,9 +93040,537 @@ var CATEGORY_RULES = [
       "saw"
     ]
   },
-  // 23. Sports & Fitness
+  // 11. Computers & Office
   {
-    categoryName: "\u0631\u064A\u0627\u0636\u0629 \u0648\u0644\u064A\u0627\u0642\u0629 \u0628\u062F\u0646\u064A\u0629 \u0648\u062E\u0627\u0631\u062C\u064A\u0629",
+    categoryId: 11,
+    categoryName: "\u0643\u0645\u0628\u064A\u0648\u062A\u0631 \u0648\u0644\u0627\u0628\u062A\u0648\u0628",
+    strongKeywords: [
+      "\u0644\u0648\u062D\u0629 \u0645\u0641\u0627\u062A\u064A\u062D \u0645\u064A\u0643\u0627\u0646\u064A\u0643\u064A\u0629",
+      "\u0641\u0623\u0631\u0629 \u0623\u0644\u0639\u0627\u0628",
+      "\u0645\u0627\u0648\u0633 \u0643\u0645\u0628\u064A\u0648\u062A\u0631",
+      "\u062D\u0627\u0645\u0644 \u0644\u0627\u0628\u062A\u0648\u0628",
+      "\u0645\u062D\u0648\u0644 \u064A\u0648 \u0627\u0633 \u0628\u064A",
+      "\u0644\u0648\u062D\u0629 \u0643\u062A\u0627\u0628\u0629 \u0625\u0644\u0643\u062A\u0631\u0648\u0646\u064A\u0629",
+      "\u0634\u0627\u0634\u0629 \u0644\u0627\u0628\u062A\u0648\u0628",
+      "\u0642\u0627\u0639\u062F\u0629 \u062A\u0628\u0631\u064A\u062F \u0644\u0627\u0628\u062A\u0648\u0628",
+      "\u0641\u0644\u0627\u0634 \u0645\u064A\u0645\u0648\u0631\u064A usb",
+      "mechanical keyboard",
+      "gaming mouse",
+      "laptop stand",
+      "usb hub",
+      "type-c hub",
+      "external ssd"
+    ],
+    phrases: [
+      "\u0644\u0648\u062D\u0629 \u0645\u0641\u0627\u062A\u064A\u062D",
+      "\u0641\u0623\u0631\u0629 \u0643\u0645\u0628\u064A\u0648\u062A\u0631",
+      "\u0645\u0627\u0648\u0633 \u0623\u0644\u0639\u0627\u0628",
+      "\u062D\u0627\u0645\u0644 \u0644\u0627\u0628\u062A\u0648\u0628",
+      "\u0645\u062D\u0648\u0644 \u064A\u0648 \u0627\u0633 \u0628\u064A",
+      "\u0641\u0644\u0627\u0634 \u0645\u064A\u0645\u0648\u0631\u064A",
+      "\u0634\u0627\u0634\u0629 \u0643\u0645\u0628\u064A\u0648\u062A\u0631",
+      "\u0644\u0648\u062D\u0629 \u0631\u0633\u0645",
+      "\u0642\u0627\u0639\u062F\u0629 \u062A\u0628\u0631\u064A\u062F",
+      "\u0643\u0627\u0645\u064A\u0631\u0627 \u0648\u064A\u0628",
+      "mechanical keyboard",
+      "gaming mouse",
+      "mouse pad",
+      "laptop stand",
+      "usb hub",
+      "type-c hub",
+      "external ssd",
+      "flash drive"
+    ],
+    words: [
+      "\u0643\u0645\u0628\u064A\u0648\u062A\u0631",
+      "\u0644\u0627\u0628\u062A\u0648\u0628",
+      "\u062D\u0627\u0633\u0648\u0628",
+      "\u0645\u0627\u0648\u0633",
+      "\u0643\u064A\u0628\u0648\u0631\u062F",
+      "\u0637\u0627\u0628\u0639\u0629",
+      "laptop",
+      "desktop",
+      "keyboard",
+      "mousepad",
+      "webcam",
+      "printer",
+      "monitor"
+    ]
+  },
+  // 6. Health & Beauty
+  {
+    categoryId: 6,
+    categoryName: "\u0627\u0644\u0635\u062D\u0629 \u0648\u0627\u0644\u062C\u0645\u0627\u0644",
+    strongKeywords: [
+      "\u0633\u064A\u0631\u0648\u0645 \u0648\u062C\u0647",
+      "\u0643\u0631\u064A\u0645 \u062A\u0631\u0637\u064A\u0628",
+      "\u0623\u062D\u0645\u0631 \u0634\u0641\u0627\u0647",
+      "\u0641\u0631\u0634\u0627\u0629 \u0645\u0643\u064A\u0627\u062C",
+      "\u0645\u0633\u0643\u0631\u0629 \u0631\u0645\u0648\u0634",
+      "\u0645\u0643\u0648\u0627\u0629 \u0634\u0639\u0631",
+      "\u0645\u062C\u0641\u0641 \u0634\u0639\u0631",
+      "\u0645\u0627\u0643\u064A\u0646\u0629 \u062D\u0644\u0627\u0642\u0629 \u0643\u0647\u0631\u0628\u0627\u0626\u064A\u0629",
+      "\u062A\u0634\u0630\u064A\u0628 \u0644\u062D\u064A\u0629",
+      "\u0639\u0637\u0631 \u0631\u062C\u0627\u0644\u064A",
+      "\u0639\u0637\u0631 \u0646\u0633\u0627\u0626\u064A",
+      "\u0637\u0644\u0627\u0621 \u0623\u0638\u0627\u0641\u0631",
+      "skincare serum",
+      "face cream",
+      "makeup brush",
+      "hair straightener",
+      "electric shaver",
+      "beard trimmer",
+      "perfume"
+    ],
+    phrases: [
+      "\u0639\u0646\u0627\u064A\u0629 \u0628\u0627\u0644\u0628\u0634\u0631\u0629",
+      "\u0643\u0631\u064A\u0645 \u062A\u0631\u0637\u064A\u0628",
+      "\u0633\u064A\u0631\u0648\u0645 \u0648\u062C\u0647",
+      "\u0623\u062D\u0645\u0631 \u0634\u0641\u0627\u0647",
+      "\u0641\u0631\u0634\u0627\u0629 \u0645\u0643\u064A\u0627\u062C",
+      "\u0645\u0633\u0643\u0631\u0629 \u0631\u0645\u0648\u0634",
+      "\u0645\u0643\u0648\u0627\u0629 \u0634\u0639\u0631",
+      "\u0645\u062C\u0641\u0641 \u0634\u0639\u0631",
+      "\u0645\u0627\u0643\u064A\u0646\u0629 \u062D\u0644\u0627\u0642\u0629",
+      "\u062A\u0634\u0630\u064A\u0628 \u0644\u062D\u064A\u0629",
+      "\u0639\u0637\u0631 \u0631\u062C\u0627\u0644\u064A",
+      "\u0639\u0637\u0631 \u0646\u0633\u0627\u0626\u064A",
+      "skincare serum",
+      "face cream",
+      "makeup brush",
+      "hair straightener",
+      "hair dryer",
+      "electric shaver",
+      "beard trimmer",
+      "perfume spray",
+      "nail polish"
+    ],
+    words: [
+      "\u0645\u0643\u064A\u0627\u062C",
+      "\u0623\u062D\u0645\u0631 \u0634\u0641\u0627\u0647",
+      "\u0645\u0633\u0643\u0631\u0629",
+      "\u0639\u0637\u0631",
+      "\u0639\u0637\u0648\u0631",
+      "\u0633\u064A\u0631\u0648\u0645",
+      "\u0643\u0631\u064A\u0645",
+      "\u0634\u0627\u0645\u0628\u0648",
+      "\u062D\u0644\u0627\u0642\u0629",
+      "\u0623\u0638\u0627\u0641\u0631",
+      "\u0628\u0634\u0631\u0629",
+      "skincare",
+      "serum",
+      "lipstick",
+      "mascara",
+      "perfume",
+      "fragrance",
+      "makeup",
+      "shaver",
+      "trimmer"
+    ]
+  },
+  // 20. Cameras & Drones
+  {
+    categoryId: 20,
+    categoryName: "\u0643\u0627\u0645\u064A\u0631\u0627\u062A \u0648\u0637\u0627\u0626\u0631\u0627\u062A \u062F\u0631\u0648\u0646",
+    strongKeywords: [
+      "\u0637\u0627\u0626\u0631\u0629 \u062F\u0631\u0648\u0646",
+      "\u062F\u0631\u0648\u0646 \u062A\u0635\u0648\u064A\u0631",
+      "\u0637\u0627\u0626\u0631\u0629 \u0628\u062F\u0648\u0646 \u0637\u064A\u0627\u0631",
+      "\u062A\u0631\u0627\u064A\u0628\u0648\u062F \u0643\u0627\u0645\u064A\u0631\u0627",
+      "\u062C\u064A\u0645\u0628\u0627\u0644 \u0645\u0627\u0646\u0639 \u0627\u0647\u062A\u0632\u0627\u0632",
+      "\u0645\u0646\u0638\u0627\u0631 \u062A\u0642\u0631\u064A\u0628",
+      "\u062A\u0644\u0633\u0643\u0648\u0628 \u0641\u0644\u0643\u064A",
+      "\u0643\u0627\u0645\u064A\u0631\u0627 \u0631\u064A\u0627\u0636\u064A\u0629 4k",
+      "rc drone",
+      "drone 4k",
+      "camera tripod",
+      "gimbal stabilizer",
+      "action camera",
+      "telescope",
+      "binoculars"
+    ],
+    phrases: [
+      "\u0637\u0627\u0626\u0631\u0629 \u062F\u0631\u0648\u0646",
+      "\u0637\u0627\u0626\u0631\u0629 \u0628\u062F\u0648\u0646 \u0637\u064A\u0627\u0631",
+      "\u062A\u0631\u0627\u064A\u0628\u0648\u062F \u0643\u0627\u0645\u064A\u0631\u0627",
+      "\u062D\u0627\u0645\u0644 \u062B\u0644\u0627\u062B\u064A",
+      "\u0645\u0627\u0646\u0639 \u0627\u0647\u062A\u0632\u0627\u0632",
+      "\u0639\u062F\u0633\u0629 \u0643\u0627\u0645\u064A\u0631\u0627",
+      "\u0645\u0646\u0638\u0627\u0631 \u0631\u0624\u064A\u0629",
+      "\u062A\u0644\u0633\u0643\u0648\u0628 \u0641\u0644\u0643\u064A",
+      "\u0643\u0627\u0645\u064A\u0631\u0627 \u0631\u064A\u0627\u0636\u064A\u0629",
+      "rc drone",
+      "drone 4k",
+      "camera tripod",
+      "gimbal stabilizer",
+      "binoculars",
+      "telescope",
+      "action camera"
+    ],
+    words: [
+      "\u062F\u0631\u0648\u0646",
+      "\u062A\u0631\u0627\u064A\u0628\u0648\u062F",
+      "\u062C\u064A\u0645\u0628\u0627\u0644",
+      "\u0645\u0646\u0638\u0627\u0631",
+      "\u062A\u0644\u0633\u0643\u0648\u0628",
+      "drone",
+      "drones",
+      "quadcopter",
+      "tripod",
+      "gimbal",
+      "telescope"
+    ]
+  },
+  // 15. Lights & Lighting
+  {
+    categoryId: 15,
+    categoryName: "\u0625\u0636\u0627\u0621\u0629 \u0648\u0645\u0635\u0627\u0628\u064A\u062D",
+    strongKeywords: [
+      "\u0634\u0631\u064A\u0637 \u0644\u064A\u062F rgb",
+      "\u0625\u0636\u0627\u0621\u0629 \u0644\u064A\u062F \u0630\u0643\u064A\u0629",
+      "\u0645\u0635\u0628\u0627\u062D \u0645\u0643\u062A\u0628\u064A",
+      "\u062B\u0631\u064A\u0627 \u0633\u0642\u0641",
+      "\u0645\u0635\u0628\u0627\u062D \u0637\u0627\u0642\u0629 \u0634\u0645\u0633\u064A\u0629",
+      "\u0643\u0634\u0627\u0641 \u0644\u064A\u062F",
+      "led strip rgb",
+      "desk lamp",
+      "ceiling light",
+      "solar light",
+      "neon sign",
+      "chandelier"
+    ],
+    phrases: [
+      "\u0634\u0631\u064A\u0637 \u0644\u064A\u062F",
+      "\u0625\u0636\u0627\u0621\u0629 \u0644\u064A\u062F",
+      "\u0645\u0635\u0628\u0627\u062D \u0645\u0643\u062A\u0628\u064A",
+      "\u062B\u0631\u064A\u0627 \u0633\u0642\u0641",
+      "\u0625\u0636\u0627\u0621\u0629 \u0644\u064A\u0644\u064A\u0629",
+      "\u0633\u0644\u0633\u0644\u0629 \u0625\u0636\u0627\u0621\u0629",
+      "\u0645\u0635\u0628\u0627\u062D \u0637\u0627\u0642\u0629 \u0634\u0645\u0633\u064A\u0629",
+      "\u0643\u0634\u0627\u0641 \u0644\u064A\u062F",
+      "\u0645\u0635\u0628\u0627\u062D \u062D\u0627\u0626\u0637",
+      "\u0625\u0636\u0627\u0621\u0629 \u0637\u0627\u0648\u0644\u0629",
+      "led strip",
+      "rgb strip",
+      "desk lamp",
+      "night light",
+      "string lights",
+      "solar light",
+      "ceiling light",
+      "neon sign"
+    ],
+    words: [
+      "\u0625\u0646\u0627\u0631\u0629",
+      "\u0625\u0636\u0627\u0621\u0629",
+      "\u0645\u0635\u0628\u0627\u062D",
+      "\u0645\u0635\u0627\u0628\u064A\u062D",
+      "\u0644\u0645\u0628\u0629",
+      "\u0644\u0645\u0628\u0627\u062A",
+      "\u0644\u064A\u062F",
+      "\u062B\u0631\u064A\u0627",
+      "\u0643\u0634\u0627\u0641",
+      "\u0646\u064A\u0648\u0646",
+      "lamp",
+      "lamps",
+      "lighting",
+      "led",
+      "chandelier",
+      "flashlight",
+      "bulb",
+      "bulbs"
+    ]
+  },
+  // 16. Security & Protection
+  {
+    categoryId: 16,
+    categoryName: "\u0623\u0645\u0627\u0646 \u0648\u062D\u0645\u0627\u064A\u0629 \u0630\u0643\u064A\u0629",
+    strongKeywords: [
+      "\u0643\u0627\u0645\u064A\u0631\u0627 \u0645\u0631\u0627\u0642\u0628\u0629 \u062E\u0627\u0631\u062C\u064A\u0629",
+      "\u0643\u0627\u0645\u064A\u0631\u0627 \u0623\u0645\u0627\u0646 wifi",
+      "\u0642\u0641\u0644 \u0628\u0627\u0628 \u0630\u0643\u064A \u0628\u0628\u0635\u0645\u0629",
+      "\u062C\u0631\u0633 \u0628\u0627\u0628 \u0630\u0643\u064A \u0628\u0627\u0644\u0641\u064A\u062F\u064A\u0648",
+      "\u062C\u0647\u0627\u0632 \u0625\u0646\u0630\u0627\u0631 \u0633\u0631\u0642\u0629",
+      "security camera wifi",
+      "cctv camera",
+      "smart door lock",
+      "video doorbell",
+      "alarm system"
+    ],
+    phrases: [
+      "\u0643\u0627\u0645\u064A\u0631\u0627 \u0645\u0631\u0627\u0642\u0628\u0629",
+      "\u0643\u0627\u0645\u064A\u0631\u0627 \u0623\u0645\u0627\u0646",
+      "\u0643\u0627\u0645\u064A\u0631\u0627 \u0648\u0627\u064A \u0641\u0627\u064A",
+      "\u0642\u0641\u0644 \u0628\u0627\u0628 \u0630\u0643\u064A",
+      "\u0642\u0641\u0644 \u0625\u0644\u0643\u062A\u0631\u0648\u0646\u064A",
+      "\u062C\u0631\u0633 \u0628\u0627\u0628 \u0630\u0643\u064A",
+      "\u062C\u0647\u0627\u0632 \u0625\u0646\u0630\u0627\u0631",
+      "\u0643\u0627\u0634\u0641 \u062F\u062E\u0627\u0646",
+      "security camera",
+      "cctv camera",
+      "ip camera",
+      "smart door lock",
+      "video doorbell",
+      "alarm system"
+    ],
+    words: [
+      "\u0645\u0631\u0627\u0642\u0628\u0629",
+      "\u0623\u0645\u0627\u0646",
+      "\u0625\u0646\u0630\u0627\u0631",
+      "cctv",
+      "surveillance",
+      "doorbell"
+    ]
+  },
+  // 17. Pet Supplies
+  {
+    categoryId: 17,
+    categoryName: "\u0645\u0633\u062A\u0644\u0632\u0645\u0627\u062A \u0627\u0644\u062D\u064A\u0648\u0627\u0646\u0627\u062A \u0627\u0644\u0623\u0644\u064A\u0641\u0629",
+    strongKeywords: [
+      "\u0637\u0648\u0642 \u0642\u0637\u0637",
+      "\u0637\u0648\u0642 \u0643\u0644\u0627\u0628",
+      "\u0633\u0631\u064A\u0631 \u0642\u0637\u0637",
+      "\u0633\u0631\u064A\u0631 \u0643\u0644\u0627\u0628",
+      "\u0623\u0644\u0639\u0627\u0628 \u0642\u0637\u0637",
+      "\u0646\u0627\u0641\u0648\u0631\u0629 \u0642\u0637\u0637",
+      "\u0634\u062C\u0631\u0629 \u0642\u0637\u0637",
+      "\u062D\u0632\u0627\u0645 \u0643\u0644\u0627\u0628",
+      "cat collar",
+      "dog collar",
+      "cat bed",
+      "dog bed",
+      "cat tree",
+      "pet fountain"
+    ],
+    phrases: [
+      "\u0637\u0648\u0642 \u0642\u0637\u0637",
+      "\u0637\u0648\u0642 \u0643\u0644\u0627\u0628",
+      "\u0633\u0631\u064A\u0631 \u0642\u0637\u0637",
+      "\u0633\u0631\u064A\u0631 \u0643\u0644\u0627\u0628",
+      "\u0623\u0644\u0639\u0627\u0628 \u0642\u0637\u0637",
+      "\u0646\u0627\u0641\u0648\u0631\u0629 \u0642\u0637\u0637",
+      "\u0631\u0645\u0644 \u0642\u0637\u0637",
+      "\u0641\u0631\u0634\u0627\u0629 \u0634\u0639\u0631 \u0642\u0637\u0637",
+      "\u0634\u062C\u0631\u0629 \u0642\u0637\u0637",
+      "\u0645\u0644\u0627\u0628\u0633 \u0643\u0644\u0627\u0628",
+      "pet collar",
+      "cat bed",
+      "dog bed",
+      "cat toys",
+      "pet fountain",
+      "cat tree",
+      "dog leash"
+    ],
+    words: [
+      "\u0642\u0637\u0637",
+      "\u0642\u0637\u0629",
+      "\u0643\u0644\u0627\u0628",
+      "\u0643\u0644\u0628",
+      "pet",
+      "pets",
+      "cat",
+      "cats",
+      "dog",
+      "dogs",
+      "puppy",
+      "kitten"
+    ]
+  },
+  // 18. Office & School Supplies
+  {
+    categoryId: 18,
+    categoryName: "\u0623\u062F\u0648\u0627\u062A \u0645\u0643\u062A\u0628\u064A\u0629 \u0648\u0645\u062F\u0631\u0633\u064A\u0629",
+    strongKeywords: [
+      "\u0637\u0642\u0645 \u0623\u0642\u0644\u0627\u0645 \u062D\u0628\u0631",
+      "\u062F\u0641\u062A\u0631 \u0645\u0644\u0627\u062D\u0638\u0627\u062A \u062C\u0644\u062F\u064A",
+      "\u0645\u0642\u0644\u0645\u0629 \u0645\u062F\u0631\u0633\u064A\u0629",
+      "\u0623\u0644\u0648\u0627\u0646 \u062A\u0644\u0648\u064A\u0646 \u0645\u0627\u0626\u064A\u0629",
+      "\u062F\u0628\u0627\u0633\u0629 \u0648\u0631\u0642 \u0645\u0643\u062A\u0628\u064A\u0629",
+      "ballpoint pens",
+      "notebook journal",
+      "pencil case",
+      "colored pencils",
+      "office stapler"
+    ],
+    phrases: [
+      "\u0637\u0642\u0645 \u0623\u0642\u0644\u0627\u0645",
+      "\u062F\u0641\u062A\u0631 \u0645\u0644\u0627\u062D\u0638\u0627\u062A",
+      "\u0645\u0642\u0644\u0645\u0629 \u0645\u062F\u0631\u0633\u064A\u0629",
+      "\u0645\u0644\u0635\u0642\u0627\u062A \u0643\u064A\u0648\u062A",
+      "\u0648\u0631\u0642 \u0645\u0644\u0627\u062D\u0638\u0627\u062A",
+      "\u0623\u0642\u0644\u0627\u0645 \u062D\u0628\u0631",
+      "\u062F\u0628\u0627\u0633\u0629 \u0648\u0631\u0642",
+      "\u0623\u0642\u0644\u0627\u0645 \u062A\u0644\u0648\u064A\u0646",
+      "ballpoint pen",
+      "pencil case",
+      "notebook journal",
+      "sticky notes"
+    ],
+    words: [
+      "\u062F\u0641\u062A\u0631",
+      "\u062F\u0641\u0627\u062A\u0631",
+      "\u0623\u0642\u0644\u0627\u0645",
+      "\u0642\u0631\u0637\u0627\u0633\u064A\u0629",
+      "\u0645\u0642\u0644\u0645\u0629",
+      "\u0645\u0644\u0635\u0642\u0627\u062A",
+      "\u0633\u062A\u064A\u0643\u0631\u0627\u062A",
+      "notebook",
+      "stationery",
+      "stickers"
+    ]
+  },
+  // 19. Furniture & Home Decor
+  {
+    categoryId: 19,
+    categoryName: "\u0623\u062B\u0627\u062B \u0648\u062F\u064A\u0643\u0648\u0631 \u0645\u0646\u0632\u0644\u064A",
+    strongKeywords: [
+      "\u0643\u0631\u0633\u064A \u0623\u0644\u0639\u0627\u0628 \u0642\u064A\u0645\u0646\u0642",
+      "\u0643\u0631\u0633\u064A \u0645\u0643\u062A\u0628 \u062F\u0648\u0627\u0631",
+      "\u0637\u0627\u0648\u0644\u0629 \u0637\u0639\u0627\u0645 \u062E\u0634\u0628",
+      "\u0637\u0627\u0648\u0644\u0629 \u0634\u0627\u064A \u0642\u0647\u0648\u0629",
+      "\u0623\u0631\u064A\u0643\u0629 \u0627\u0633\u062A\u0631\u062E\u0627\u0621 \u0643\u0646\u0628",
+      "gaming chair",
+      "office chair ergonomic",
+      "coffee table",
+      "sofa couch"
+    ],
+    phrases: [
+      "\u0643\u0631\u0633\u064A \u0623\u0644\u0639\u0627\u0628",
+      "\u0643\u0631\u0633\u064A \u0642\u064A\u0645\u0646\u0642",
+      "\u0643\u0631\u0633\u064A \u0645\u0643\u062A\u0628",
+      "\u0637\u0627\u0648\u0644\u0629 \u0637\u0639\u0627\u0645",
+      "\u0637\u0627\u0648\u0644\u0629 \u0634\u0627\u064A",
+      "\u0623\u0631\u064A\u0643\u0629 \u0627\u0633\u062A\u0631\u062E\u0627\u0621",
+      "\u0643\u0646\u0628 \u0635\u0627\u0644\u0629",
+      "\u0631\u0641 \u062C\u062F\u0627\u0631\u064A",
+      "gaming chair",
+      "office chair",
+      "dining table",
+      "coffee table",
+      "sofa couch"
+    ],
+    words: [
+      "\u0623\u0631\u064A\u0643\u0629",
+      "\u0623\u062B\u0627\u062B",
+      "\u062F\u0648\u0644\u0627\u0628",
+      "\u0643\u0646\u0628",
+      "sofa",
+      "couch",
+      "furniture",
+      "wardrobe"
+    ]
+  },
+  // 21. Smart Home & IoT
+  {
+    categoryId: 21,
+    categoryName: "\u0627\u0644\u0645\u0646\u0632\u0644 \u0627\u0644\u0630\u0643\u064A \u0648\u0625\u0646\u062A\u0631\u0646\u062A \u0627\u0644\u0623\u0634\u064A\u0627\u0621",
+    strongKeywords: [
+      "\u0645\u0641\u062A\u0627\u062D \u0630\u0643\u064A \u0648\u0627\u064A \u0641\u0627\u064A",
+      "\u0642\u0627\u0628\u0633 \u0630\u0643\u064A \u062A\u0648\u064A\u0627",
+      "\u0641\u064A\u0634 \u0630\u0643\u064A \u0632\u064A\u062C\u0628\u064A",
+      "\u0645\u0641\u062A\u0627\u062D \u062C\u062F\u0627\u0631\u064A \u0630\u0643\u064A",
+      "tuya smart switch",
+      "smart plug wifi",
+      "zigbee smart plug",
+      "sonoff switch"
+    ],
+    phrases: [
+      "\u0645\u0641\u062A\u0627\u062D \u0630\u0643\u064A",
+      "\u0642\u0627\u0628\u0633 \u0630\u0643\u064A",
+      "\u0641\u064A\u0634 \u0630\u0643\u064A",
+      "\u062D\u0633\u0627\u0633 \u062D\u0631\u0643\u0629 \u0630\u0643\u064A",
+      "\u062A\u062D\u0643\u0645 \u0630\u0643\u064A",
+      "smart switch",
+      "smart plug",
+      "smart socket",
+      "tuya smart",
+      "zigbee switch",
+      "sonoff switch"
+    ],
+    words: [
+      "\u062A\u0648\u064A\u0627",
+      "\u0633\u0648\u0646\u0648\u0641",
+      "\u0632\u064A\u062C\u0628\u064A",
+      "tuya",
+      "sonoff",
+      "zigbee"
+    ]
+  },
+  // 22. Hair Extensions & Wigs
+  {
+    categoryId: 22,
+    categoryName: "\u0648\u0635\u0644\u0627\u062A \u0648\u0634\u0639\u0631 \u0645\u0633\u062A\u0639\u0627\u0631",
+    strongKeywords: [
+      "\u0628\u0627\u0631\u0648\u0643\u0629 \u0634\u0639\u0631 \u0637\u0628\u064A\u0639\u064A",
+      "\u0628\u0627\u0631\u0648\u0643\u0629 \u062F\u0627\u0646\u062A\u064A\u0644",
+      "\u0634\u0639\u0631 \u0645\u0633\u062A\u0639\u0627\u0631 \u0643\u0627\u0645\u0644",
+      "\u062E\u0635\u0644\u0627\u062A \u0634\u0639\u0631 \u0637\u0628\u064A\u0639\u064A",
+      "lace wig",
+      "human hair wig",
+      "synthetic wig",
+      "hair extensions clip"
+    ],
+    phrases: [
+      "\u0634\u0639\u0631 \u0645\u0633\u062A\u0639\u0627\u0631",
+      "\u0628\u0627\u0631\u0648\u0643\u0629 \u0634\u0639\u0631",
+      "\u062E\u0635\u0644\u0627\u062A \u0634\u0639\u0631",
+      "lace wig",
+      "human hair wig",
+      "hair extensions"
+    ],
+    words: [
+      "\u0628\u0627\u0631\u0648\u0643\u0629",
+      "\u0628\u0627\u0631\u0648\u0643\u0627\u062A",
+      "wig",
+      "wigs",
+      "hairpiece"
+    ]
+  },
+  // 23. Event & Party Supplies
+  {
+    categoryId: 23,
+    categoryName: "\u0645\u0633\u062A\u0644\u0632\u0645\u0627\u062A \u0627\u0644\u062D\u0641\u0644\u0627\u062A \u0648\u0627\u0644\u0645\u0646\u0627\u0633\u0628\u0627\u062A",
+    strongKeywords: [
+      "\u0628\u0627\u0644\u0648\u0646\u0627\u062A \u0647\u064A\u0644\u064A\u0648\u0645",
+      "\u0642\u0648\u0633 \u0628\u0627\u0644\u0648\u0646\u0627\u062A \u062D\u0641\u0644\u0627\u062A",
+      "\u0632\u064A\u0646\u0629 \u0639\u064A\u062F \u0645\u064A\u0644\u0627\u062F \u0633\u0639\u064A\u062F",
+      "\u0632\u064A\u0646\u0629 \u0643\u064A\u0643 \u062D\u0641\u0644\u0629",
+      "party balloons",
+      "balloon garland arch",
+      "birthday party decor",
+      "cake topper"
+    ],
+    phrases: [
+      "\u0628\u0627\u0644\u0648\u0646\u0627\u062A \u0647\u064A\u0644\u064A\u0648\u0645",
+      "\u0642\u0648\u0633 \u0628\u0627\u0644\u0648\u0646\u0627\u062A",
+      "\u0632\u064A\u0646\u0629 \u0639\u064A\u062F \u0645\u064A\u0644\u0627\u062F",
+      "\u0632\u064A\u0646\u0629 \u062D\u0641\u0644\u0627\u062A",
+      "party balloons",
+      "balloon arch",
+      "birthday decor"
+    ],
+    words: [
+      "\u0628\u0627\u0644\u0648\u0646",
+      "\u0628\u0627\u0644\u0648\u0646\u0627\u062A",
+      "balloon",
+      "balloons",
+      "confetti"
+    ]
+  },
+  // 7. Sports & Outdoors
+  {
+    categoryId: 7,
+    categoryName: "\u0631\u064A\u0627\u0636\u0629 \u0648\u062A\u0631\u0641\u064A\u0647",
+    strongKeywords: [
+      "\u0623\u062D\u0632\u0645\u0629 \u0645\u0642\u0627\u0648\u0645\u0629 \u062A\u0645\u0627\u0631\u064A\u0646",
+      "\u0628\u0633\u0627\u0637 \u064A\u0648\u062C\u0627 \u0631\u064A\u0627\u0636\u064A",
+      "\u0645\u0633\u062F\u0633 \u0645\u0633\u0627\u062C \u0639\u0636\u0644\u0627\u062A",
+      "\u062D\u0628\u0644 \u0642\u0641\u0632 \u0631\u064A\u0627\u0636\u064A",
+      "\u062E\u064A\u0645\u0629 \u062A\u062E\u064A\u064A\u0645 \u062E\u0627\u0631\u062C\u064A\u0629",
+      "resistance bands workout",
+      "yoga mat fitness",
+      "massage gun deep tissue",
+      "camping tent waterproof"
+    ],
     phrases: [
       "\u0623\u062D\u0632\u0645\u0629 \u0645\u0642\u0627\u0648\u0645\u0629",
       "\u0628\u0633\u0627\u0637 \u064A\u0648\u062C\u0627",
@@ -93348,6 +93581,8 @@ var CATEGORY_RULES = [
       "\u062D\u0642\u064A\u0628\u0629 \u0631\u064A\u0627\u0636\u064A\u0629",
       "\u062F\u0631\u0627\u062C\u0629 \u0647\u0648\u0627\u0626\u064A\u0629",
       "\u062F\u0627\u0645\u0628\u0644\u0632 \u0623\u0648\u0632\u0627\u0646",
+      "\u062A\u0645\u0627\u0631\u064A\u0646 \u062C\u064A\u0645",
+      "\u0644\u064A\u0627\u0642\u0629 \u0628\u062F\u0646\u064A\u0629",
       "resistance bands",
       "yoga mat",
       "massage gun",
@@ -93363,6 +93598,7 @@ var CATEGORY_RULES = [
       "\u062F\u0631\u0627\u062C\u0629",
       "\u062F\u0627\u0645\u0628\u0644",
       "\u062A\u0645\u0627\u0631\u064A\u0646",
+      "\u0631\u064A\u0627\u0636\u064A",
       "fitness",
       "workout",
       "gym",
@@ -93371,14 +93607,144 @@ var CATEGORY_RULES = [
       "cycling"
     ]
   },
-  // 24. Home & Garden (Default baseline)
+  // 8. Toys, Kids & Babies
   {
-    categoryName: "\u0627\u0644\u0645\u0646\u0632\u0644 \u0648\u0627\u0644\u062D\u062F\u064A\u0642\u0629 \u0648\u0627\u0644\u0645\u0637\u0628\u062E",
+    categoryId: 8,
+    categoryName: "\u0623\u0644\u0639\u0627\u0628 \u0648\u0623\u0637\u0641\u0627\u0644",
+    strongKeywords: [
+      "\u0633\u064A\u0627\u0631\u0629 \u062A\u062D\u0643\u0645 \u0639\u0646 \u0628\u0639\u062F rc",
+      "\u0645\u0643\u0639\u0628\u0627\u062A \u0628\u0646\u0627\u0621 \u0623\u0637\u0641\u0627\u0644",
+      "\u062F\u0645\u064A\u0629 \u0642\u0637\u0646\u064A\u0629 \u0645\u062D\u0634\u0648\u0629",
+      "\u0639\u0631\u0628\u0629 \u0623\u0637\u0641\u0627\u0644 \u0642\u0627\u0628\u0644\u0629 \u0644\u0644\u0637\u064A",
+      "\u0644\u0647\u0627\u064A\u0629 \u0633\u064A\u0644\u064A\u0643\u0648\u0646 \u0623\u0637\u0641\u0627\u0644",
+      "\u062D\u0641\u0627\u0636\u0627\u062A \u0645\u0648\u0627\u0644\u064A\u062F",
+      "\u0645\u0644\u0627\u0628\u0633 \u0623\u0637\u0641\u0627\u0644 \u0631\u0636\u0639",
+      "rc car remote control",
+      "building blocks kids",
+      "plush doll toy",
+      "baby stroller foldable",
+      "baby romper"
+    ],
+    phrases: [
+      "\u0645\u0644\u0627\u0628\u0633 \u0623\u0637\u0641\u0627\u0644",
+      "\u0628\u064A\u062C\u0627\u0645\u0627\u062A \u0623\u0637\u0641\u0627\u0644",
+      "\u0637\u0642\u0645 \u0645\u0648\u0627\u0644\u064A\u062F",
+      "\u0639\u0631\u0628\u0629 \u0623\u0637\u0641\u0627\u0644",
+      "\u062D\u0641\u0627\u0636\u0627\u062A \u0623\u0637\u0641\u0627\u0644",
+      "\u0623\u0644\u0639\u0627\u0628 \u0623\u0637\u0641\u0627\u0644",
+      "\u0633\u064A\u0627\u0631\u0629 \u062A\u062D\u0643\u0645 \u0639\u0646 \u0628\u0639\u062F",
+      "\u0645\u0643\u0639\u0628\u0627\u062A \u0628\u0646\u0627\u0621",
+      "\u0637\u0627\u0626\u0631\u0629 \u0644\u0639\u0628\u0629",
+      "\u062F\u0645\u064A\u0629 \u0642\u0637\u0646\u064A\u0629",
+      "\u0644\u0647\u0627\u064A\u0629 \u0623\u0637\u0641\u0627\u0644",
+      "\u0631\u0636\u0627\u0639\u0629 \u0623\u0637\u0641\u0627\u0644",
+      "\u0623\u0644\u0639\u0627\u0628 \u0631\u0636\u0639",
+      "baby clothes",
+      "kids pajamas",
+      "baby romper",
+      "baby stroller",
+      "rc car",
+      "building blocks"
+    ],
+    words: [
+      "\u0623\u0637\u0641\u0627\u0644",
+      "\u0637\u0641\u0644",
+      "\u0631\u0636\u064A\u0639",
+      "\u0645\u0648\u0627\u0644\u064A\u062F",
+      "\u0648\u0644\u0627\u062F\u064A",
+      "\u0628\u0646\u0627\u062A\u064A",
+      "\u062D\u0641\u0627\u0636\u0627\u062A",
+      "\u0644\u0647\u0627\u064A\u0629",
+      "\u0644\u0639\u0628\u0629",
+      "\u0623\u0644\u0639\u0627\u0628",
+      "\u062F\u0645\u064A\u0629",
+      "baby",
+      "infant",
+      "toddler",
+      "kids",
+      "toy",
+      "toys",
+      "puzzle",
+      "doll",
+      "stroller"
+    ]
+  },
+  // 9. Automotive & Motorcycles
+  {
+    categoryId: 9,
+    categoryName: "\u0633\u064A\u0627\u0631\u0627\u062A \u0648\u062F\u0631\u0627\u062C\u0627\u062A \u0646\u0627\u0631\u064A\u0629",
+    strongKeywords: [
+      "\u062F\u0627\u0634 \u0643\u0627\u0645 \u0633\u064A\u0627\u0631\u0629",
+      "\u0643\u0627\u0645\u064A\u0631\u0627 \u0633\u064A\u0627\u0631\u0629 \u0623\u0645\u0627\u0645\u064A\u0629",
+      "\u0634\u0627\u062D\u0646 \u0633\u064A\u0627\u0631\u0629 \u0633\u0631\u064A\u0639",
+      "\u0645\u0636\u062E\u0629 \u0625\u0637\u0627\u0631\u0627\u062A \u0633\u064A\u0627\u0631\u0629",
+      "\u063A\u0637\u0627\u0621 \u0645\u0642\u0627\u0639\u062F \u0633\u064A\u0627\u0631\u0629",
+      "\u062D\u0627\u0645\u0644 \u062C\u0648\u0627\u0644 \u0644\u0644\u0633\u064A\u0627\u0631\u0629",
+      "\u0645\u0643\u0646\u0633\u0629 \u0633\u064A\u0627\u0631\u0629 \u0644\u0627\u0633\u0644\u0643\u064A\u0629",
+      "car dash cam",
+      "car charger fast",
+      "tire inflator car",
+      "car seat cover",
+      "car phone holder"
+    ],
+    phrases: [
+      "\u0625\u0643\u0633\u0633\u0648\u0627\u0631\u0627\u062A \u0633\u064A\u0627\u0631\u0627\u062A",
+      "\u0643\u0627\u0645\u064A\u0631\u0627 \u0633\u064A\u0627\u0631\u0629",
+      "\u062F\u0627\u0634 \u0643\u0627\u0645",
+      "\u0634\u0627\u062D\u0646 \u0633\u064A\u0627\u0631\u0629",
+      "\u0645\u0636\u062E\u0629 \u0625\u0637\u0627\u0631\u0627\u062A",
+      "\u063A\u0637\u0627\u0621 \u0633\u064A\u0627\u0631\u0629",
+      "\u0634\u0627\u062D\u0646 \u0633\u064A\u0627\u0631\u0627\u062A",
+      "\u0625\u0636\u0627\u0621\u0629 \u0633\u064A\u0627\u0631\u0629",
+      "\u0645\u0643\u0646\u0633\u0629 \u0633\u064A\u0627\u0631\u0629",
+      "\u0645\u0646\u0641\u0627\u062E \u0625\u0637\u0627\u0631\u0627\u062A",
+      "\u0645\u0631\u0622\u0629 \u0633\u064A\u0627\u0631\u0629",
+      "\u062D\u0627\u0645\u0644 \u0633\u064A\u0627\u0631\u0629",
+      "car dash cam",
+      "car charger",
+      "tire inflator",
+      "car seat cover",
+      "car led",
+      "car vacuum"
+    ],
+    words: [
+      "\u0633\u064A\u0627\u0631\u0629",
+      "\u0633\u064A\u0627\u0631\u0627\u062A",
+      "\u0645\u0631\u0643\u0628\u0629",
+      "\u0625\u0637\u0627\u0631\u0627\u062A",
+      "\u062F\u0631\u0627\u062C\u0629 \u0646\u0627\u0631\u064A\u0629",
+      "car",
+      "automobile",
+      "vehicle",
+      "motorcycle",
+      "dashcam"
+    ]
+  },
+  // 5. Home & Kitchen (Kitchen Gadgets, Home Utensils, Cookware)
+  {
+    categoryId: 5,
+    categoryName: "\u0627\u0644\u0645\u0646\u0632\u0644 \u0648\u0627\u0644\u0645\u0637\u0628\u062E",
+    strongKeywords: [
+      "\u0637\u0642\u0645 \u0633\u0643\u0627\u0643\u064A\u0646 \u0645\u0637\u0628\u062E",
+      "\u0623\u0648\u0627\u0646\u064A \u0637\u0647\u064A \u062C\u0631\u0627\u0646\u064A\u062A",
+      "\u0645\u0642\u0644\u0627\u0629 \u063A\u064A\u0631 \u0644\u0627\u0635\u0642\u0629",
+      "\u0641\u062A\u0627\u062D\u0629 \u0639\u0644\u0628 \u0623\u0648\u062A\u0648\u0645\u0627\u062A\u064A\u0643",
+      "\u062E\u0644\u0627\u0637 \u0639\u0635\u064A\u0631 \u0645\u062D\u0645\u0648\u0644",
+      "\u0642\u0644\u0627\u064A\u0629 \u0647\u0648\u0627\u0626\u064A\u0629 \u0643\u0647\u0631\u0628\u0627\u0626\u064A\u0629",
+      "\u0635\u0627\u0646\u0639\u0629 \u0642\u0647\u0648\u0629 \u0627\u0633\u0628\u0631\u064A\u0633\u0648",
+      "\u063A\u0644\u0627\u064A\u0629 \u0645\u0627\u0621 \u0643\u0647\u0631\u0628\u0627\u0626\u064A\u0629",
+      "\u0639\u0644\u0628 \u062A\u062E\u0632\u064A\u0646 \u0637\u0639\u0627\u0645",
+      "kitchen knife set",
+      "cookware set",
+      "frying pan non-stick",
+      "can opener",
+      "portable blender",
+      "coffee maker"
+    ],
     phrases: [
       "\u0623\u062F\u0648\u0627\u062A \u0645\u0637\u0628\u062E",
       "\u0637\u0642\u0645 \u0633\u0643\u0627\u0643\u064A\u0646",
       "\u0623\u0648\u0627\u0646\u064A \u0637\u0647\u064A",
-      "\u062F\u064A\u0643\u0648\u0631 \u0645\u0646\u0632\u0644\u064A",
       "\u0648\u0633\u0627\u0626\u062F \u0633\u0631\u064A\u0631",
       "\u063A\u0637\u0627\u0621 \u0633\u0631\u064A\u0631",
       "\u0633\u062A\u0627\u0626\u0631 \u0646\u0627\u0641\u0630\u0629",
@@ -93386,13 +93752,22 @@ var CATEGORY_RULES = [
       "\u0639\u0644\u0628 \u062A\u062E\u0632\u064A\u0646",
       "\u0633\u0644\u0627\u0644 \u062A\u062E\u0632\u064A\u0646",
       "\u0643\u0648\u0628 \u0642\u0647\u0648\u0629",
+      "\u0645\u0643\u0646\u0633\u0629 \u0643\u0647\u0631\u0628\u0627\u0626\u064A\u0629",
+      "\u0645\u0643\u0646\u0633\u0629 \u0631\u0648\u0628\u0648\u062A",
+      "\u0642\u0644\u0627\u064A\u0629 \u0647\u0648\u0627\u0626\u064A\u0629",
+      "\u0645\u0627\u0643\u064A\u0646\u0629 \u0642\u0647\u0648\u0629",
+      "\u063A\u0644\u0627\u064A\u0629 \u0645\u0627\u0621",
+      "\u0645\u0643\u0648\u0627\u0629 \u0628\u062E\u0627\u0631",
+      "\u062E\u0644\u0627\u0637 \u0643\u0647\u0631\u0628\u0627\u0626\u064A",
       "kitchen knife",
       "knife set",
       "cookware set",
-      "home decor",
       "storage box",
       "coffee mug",
-      "water bottle"
+      "water bottle",
+      "robot vacuum",
+      "air fryer",
+      "electric kettle"
     ],
     words: [
       "\u0645\u0637\u0628\u062E",
@@ -93400,22 +93775,52 @@ var CATEGORY_RULES = [
       "\u0643\u0648\u0628",
       "\u0635\u062D\u0646",
       "\u0633\u062A\u0627\u0631\u0629",
-      "\u0633\u062A\u0627\u0626\u0631",
       "\u0648\u0633\u0627\u062F\u0629",
-      "\u0648\u0633\u0627\u0626\u062F",
       "\u0645\u0628\u062E\u0631\u0629",
-      "\u0645\u0632\u0647\u0631\u064A\u0629",
       "\u0645\u0646\u0638\u0645",
-      "\u0633\u062C\u0627\u062F",
+      "\u0645\u0643\u0646\u0633\u0629",
+      "\u0642\u0644\u0627\u064A\u0629",
+      "\u063A\u0644\u0627\u064A\u0629",
+      "\u062E\u0644\u0627\u0637",
       "kitchen",
       "cookware",
       "mug",
       "cushion",
       "pillow",
-      "curtain",
-      "decor",
-      "towel",
-      "carpet"
+      "vacuum",
+      "blender",
+      "kettle"
+    ]
+  },
+  // 1. Electronics & Smart Devices (Baseline Electronics)
+  {
+    categoryId: 1,
+    categoryName: "\u0625\u0644\u0643\u062A\u0631\u0648\u0646\u064A\u0627\u062A \u0648\u0623\u062C\u0647\u0632\u0629 \u0630\u0643\u064A\u0629",
+    strongKeywords: [
+      "\u0628\u0627\u0648\u0631 \u0628\u0627\u0646\u0643 \u0634\u062D\u0646 \u0633\u0631\u064A\u0639",
+      "\u0645\u062D\u0648\u0644 \u0637\u0627\u0642\u0629 \u0630\u0643\u064A",
+      "\u0634\u0627\u0634\u0629 \u0639\u0631\u0636 \u0631\u0642\u0645\u064A\u0629",
+      "power bank 20000mah",
+      "smart electronic device",
+      "digital display tester"
+    ],
+    phrases: [
+      "\u062C\u0647\u0627\u0632 \u0630\u0643\u064A",
+      "\u0623\u062C\u0647\u0632\u0629 \u0625\u0644\u0643\u062A\u0631\u0648\u0646\u064A\u0629",
+      "\u0628\u0627\u0648\u0631 \u0628\u0627\u0646\u0643",
+      "\u0628\u0627\u0648\u0631\u0628\u0627\u0646\u0643",
+      "\u0645\u062D\u0648\u0644 \u0637\u0627\u0642\u0629",
+      "\u0634\u0627\u062D\u0646 \u0644\u0627\u0633\u0644\u0643\u064A",
+      "smart device",
+      "electronic gadget",
+      "power bank",
+      "digital meter"
+    ],
+    words: [
+      "\u0625\u0644\u0643\u062A\u0631\u0648\u0646\u064A\u0627\u062A",
+      "\u0625\u0644\u0643\u062A\u0631\u0648\u0646\u064A",
+      "electronics",
+      "electronic"
     ]
   }
 ];
@@ -93423,30 +93828,33 @@ async function matchCategoryId(text2, providedCatId, officialCatName) {
   const cats = await getCategories();
   if (!cats.length) return null;
   if (providedCatId && providedCatId > 0) {
+    if (ALI_NUMERIC_CAT_ID_MAP[String(providedCatId)]) {
+      const targetId = ALI_NUMERIC_CAT_ID_MAP[String(providedCatId)];
+      if (cats.some((c) => c.id === targetId)) return targetId;
+    }
     const directMatch = cats.find((c) => c.id === providedCatId);
     if (directMatch) return directMatch.id;
-    const mappedName = ALI_CAT_TO_DB_NAME[String(providedCatId)];
-    if (mappedName) {
-      const foundByMap = cats.find((c) => c.name_ar === mappedName || c.name_en.toLowerCase() === mappedName.toLowerCase());
-      if (foundByMap) return foundByMap.id;
-    }
   }
   if (officialCatName) {
     const normOfficial = officialCatName.trim().toLowerCase();
-    const mappedOfficialName = ALI_OFFICIAL_CAT_MAP[normOfficial];
-    if (mappedOfficialName) {
-      const found2 = cats.find((c) => c.name_ar === mappedOfficialName || c.name_en.toLowerCase() === mappedOfficialName.toLowerCase());
-      if (found2) return found2.id;
+    const mappedTargetId = ALI_OFFICIAL_CAT_ID_MAP[normOfficial];
+    if (mappedTargetId && cats.some((c) => c.id === mappedTargetId)) {
+      return mappedTargetId;
     }
   }
   const t = (text2 || "").toLowerCase();
-  let bestCatName = "\u0627\u0644\u0645\u0646\u0632\u0644 \u0648\u0627\u0644\u062D\u062F\u064A\u0642\u0629 \u0648\u0627\u0644\u0645\u0637\u0628\u062E";
+  let bestCategoryId = 5;
   let maxScore = 0;
   for (const rule of CATEGORY_RULES) {
     let score = 0;
+    for (const sk of rule.strongKeywords) {
+      if (t.includes(sk.toLowerCase())) {
+        score += 50;
+      }
+    }
     for (const phrase of rule.phrases) {
       if (t.includes(phrase.toLowerCase())) {
-        score += 15;
+        score += 25;
       }
     }
     for (const w of rule.words) {
@@ -93455,24 +93863,23 @@ async function matchCategoryId(text2, providedCatId, officialCatName) {
         const escaped = w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
         const re = new RegExp(`(^|[\\s\u060C.,!?;:"'()\\[\\]{}/-])${escaped}([\\s\u060C.,!?;:"'()\\[\\]{}/-]|$)`, "i");
         if (re.test(t)) {
-          score += 5;
+          score += 10;
         }
       } else {
         const re = new RegExp(`\\b${w}\\b`, "i");
         if (re.test(t)) {
-          score += 5;
+          score += 10;
         }
       }
     }
     if (score > maxScore) {
       maxScore = score;
-      bestCatName = rule.categoryName;
+      bestCategoryId = rule.categoryId;
     }
   }
-  const found = cats.find((c) => c.name_ar === bestCatName || c.name_en.toLowerCase() === bestCatName.toLowerCase());
-  if (found) return found.id;
-  const safeHome = cats.find((c) => c.name_ar === "\u0627\u0644\u0645\u0646\u0632\u0644 \u0648\u0627\u0644\u062D\u062F\u064A\u0642\u0629 \u0648\u0627\u0644\u0645\u0637\u0628\u062E");
-  return safeHome?.id || cats[0]?.id || null;
+  const verifiedCat = cats.find((c) => c.id === bestCategoryId);
+  if (verifiedCat) return verifiedCat.id;
+  return cats.find((c) => c.id === 5)?.id || cats[0]?.id || 5;
 }
 
 // src/lib/supplier-stock.ts
