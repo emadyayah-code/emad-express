@@ -22,49 +22,75 @@ const HERO_SLIDES = [
     titleEn: "Emad Express Super Sale with up to 70% OFF!",
     descAr: "استيراد مباشر وفوري من المصانع العالمية مع ضمان الجودة، فحص المخزون الفوري وشحن سريع ومباشر لباب منزلك.",
     descEn: "Direct import from verified international suppliers with quality guarantee, live stock check and express home delivery.",
-    bg: "from-amber-600 via-amber-500 to-yellow-500",
-    textColor: "text-black",
+    image: "https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=1600&auto=format&fit=crop&q=85",
+    categoryId: "",
     tagAr: "صفقات سوبر حصرية",
     tagEn: "Exclusive Deals",
   },
   {
     id: 2,
-    badgeAr: "⚡ شحن عالمي مباشر وسريع",
-    badgeEn: "⚡ Fast Global Direct Shipping",
+    badgeAr: "⚡ أحدث التكنولوجيا 2026",
+    badgeEn: "⚡ Latest Tech & Electronics 2026",
     titleAr: "أحدث الإلكترونيات والهواتف الذكية بأسعار الجملة المباشرة!",
     titleEn: "Latest Electronics & Smart Tech at Wholesale Prices!",
     descAr: "سماعات بلوتوث، ساعات ذكية، ملحقات الهواتف وأجهزة المنزل الذكي مع ضمان الاستبدال والاسترجاع.",
     descEn: "Bluetooth earbuds, smartwatches, phone accessories, and smart devices with full warranty.",
-    bg: "from-blue-700 via-indigo-600 to-amber-500",
-    textColor: "text-white",
+    image: "https://images.unsplash.com/photo-1550009158-9ebf69173e03?w=1600&auto=format&fit=crop&q=85",
+    categoryId: "1",
     tagAr: "تكنولوجيا وإلكترونيات",
     tagEn: "Tech & Gadgets",
   },
   {
     id: 3,
-    badgeAr: "✨ أحدث صيحات الموضة 2026",
-    badgeEn: "✨ Trendy Fashion 2026",
+    badgeAr: "✨ أرقى تشكيلات الموضة العالمية",
+    badgeEn: "✨ Curated Luxury Fashion",
     titleAr: "أزياء نسائية ورجالية وإكسسوارات راقية بأسعار استثنائية!",
     titleEn: "Men's & Women's Fashion & Accessories at Unbeatable Prices!",
     descAr: "تشكيلة واسعة من الملابس، الحقائب، والأحذية الرياضية المنتقاة بعناية وبأفضل جودة تصنيع عالمية.",
     descEn: "Curated collection of clothing, luxury bags, and sneakers with premium manufacturing standards.",
-    bg: "from-purple-800 via-pink-700 to-amber-500",
-    textColor: "text-white",
+    image: "https://images.unsplash.com/photo-1445205170230-053b83016050?w=1600&auto=format&fit=crop&q=85",
+    categoryId: "2",
     tagAr: "موضة وأزياء فاخرة",
     tagEn: "Fashion & Style",
   },
   {
     id: 4,
-    badgeAr: "🚀 منصة الدروب شيبينغ الرسمية",
-    badgeEn: "🚀 Official Dropshipping Platform",
-    titleAr: "عماد إكسبرس - مزامنة لحظية لملايين المنتجات!",
-    titleEn: "Emad Express - Real-Time Sync of Millions of Products!",
-    descAr: "تسوق بكل ثقة وأمان عبر بوابتنا الرسمية مع دعم كامل لخيارات الدفع السريع وخدمة عملاء على مدار الساعة.",
-    descEn: "Shop with confidence through our verified platform with fast express checkout and 24/7 dedicated support.",
-    bg: "from-emerald-700 via-teal-600 to-amber-500",
-    textColor: "text-white",
-    tagAr: "خدمة موثوقة 100%",
-    tagEn: "100% Reliable",
+    badgeAr: "💎 ساعات ومجوهرات كلاسيكية وذكية",
+    badgeEn: "💎 Luxury Watches & Fine Jewelry",
+    titleAr: "أرقى الساعات الذكية والمجوهرات العصرية لأصحاب الذوق الرفيع!",
+    titleEn: "Refined Luxury Watches & Jewelry with Modern Elegance!",
+    descAr: "ساعات كرونوغراف فخمة، أساور وسلاسل مطلية بتصاميم ساحرة ومقاومة للماء مع علبة فاخرة.",
+    descEn: "Waterproof chronographs, luxury smartwatches and crafted jewelry with verified authenticity.",
+    image: "https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?w=1600&auto=format&fit=crop&q=85",
+    categoryId: "4",
+    tagAr: "ساعات ومجوهرات",
+    tagEn: "Watches & Jewelry",
+  },
+  {
+    id: 5,
+    badgeAr: "🏡 مستلزمات المنزل والمطبخ الذكي",
+    badgeEn: "🏡 Modern Home & Smart Kitchen",
+    titleAr: "كل ما يحتاجه منزلك ومطبخك من أدوات حديثة ومبتكرة!",
+    titleEn: "Innovative Gadgets & Decor for Modern Home & Kitchen!",
+    descAr: "أجهزة تحضير طعام عصرية، أدوات تنظيم مبتكرة وإضاءات ديكور راقية تجعل حياتك أسهل.",
+    descEn: "Smart food prep appliances, organizers, and elegant home decor for everyday convenience.",
+    image: "https://images.unsplash.com/photo-1556911220-e15b29be8c8f?w=1600&auto=format&fit=crop&q=85",
+    categoryId: "5",
+    tagAr: "المنزل والمطبخ",
+    tagEn: "Home & Kitchen",
+  },
+  {
+    id: 6,
+    badgeAr: "🚀 منصة الدروب شيبينغ والاستيراد السريع",
+    badgeEn: "🚀 Official Express Dropshipping",
+    titleAr: "عماد إكسبرس - استيراد فوري وشحن مباشر لباب منزلك!",
+    titleEn: "Emad Express - Express Global Import & Home Delivery!",
+    descAr: "ربط فوري بأكبر المصانع والموردين العالميين مع فحص الجودة وتوصيل سريع وموثوق.",
+    descEn: "Instant connection to top global manufacturers with verified quality check and express delivery.",
+    image: "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=1600&auto=format&fit=crop&q=85",
+    categoryId: "",
+    tagAr: "شحن واستيراد دولي",
+    tagEn: "Global Shipping",
   },
 ];
 
@@ -300,10 +326,20 @@ export default function StoreHome() {
                     onClick={() => {
                       setLocation(`/category/${cat.id}`);
                     }}
-                    className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-semibold transition-all cursor-pointer text-slate-300 hover:bg-slate-800/80 hover:text-amber-400 group"
+                    className="w-full flex items-center justify-between px-3 py-2 rounded-2xl text-xs font-semibold transition-all cursor-pointer text-slate-300 hover:bg-slate-800/80 hover:text-amber-400 group"
                   >
                     <span className="flex items-center gap-2.5 truncate">
-                      <span className="text-base shrink-0 group-hover:scale-110 transition-transform">{cat.icon || "📦"}</span>
+                      {cat.image ? (
+                        <img
+                          src={getOptimizedImageUrl(cat.image, "thumb")}
+                          alt=""
+                          className="w-6 h-6 rounded-lg object-cover ring-1 ring-amber-500/25 shrink-0 group-hover:scale-110 transition-transform shadow-sm"
+                          loading="lazy"
+                          decoding="async"
+                        />
+                      ) : (
+                        <span className="text-base shrink-0 group-hover:scale-110 transition-transform">{cat.icon || "📦"}</span>
+                      )}
                       <span className="truncate">{language === "en" ? (cat.name_en || cat.name || cat.name_ar) : (cat.name_ar || cat.name || cat.name_en)}</span>
                     </span>
                     <ChevronLeft size={14} className="text-slate-500 group-hover:text-amber-400 group-hover:-translate-x-1 transition-all" />
@@ -316,22 +352,33 @@ export default function StoreHome() {
           {/* Hero Banner with Interactive Auto-Rotating Carousel */}
           <div className="lg:col-span-9 flex flex-col gap-4">
             <div
-              className={`relative rounded-3xl overflow-hidden bg-gradient-to-r ${currentSlideData.bg} p-8 sm:p-12 shadow-2xl flex flex-col justify-between min-h-[340px] transition-all duration-700`}
+              className="relative rounded-3xl overflow-hidden p-8 sm:p-12 shadow-2xl flex flex-col justify-between min-h-[360px] transition-all duration-700 bg-slate-950 border border-amber-500/20"
               onMouseEnter={() => setIsCarouselPaused(true)}
               onMouseLeave={() => setIsCarouselPaused(false)}
             >
-              {/* Slide Background Subtle Patterns & Glow */}
-              <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20" />
-              <div className="absolute bottom-0 left-0 w-72 h-72 bg-black/20 rounded-full blur-2xl pointer-events-none -ml-10 -mb-10" />
+              {/* Slide Background Image matching each topic with dark gradient overlay */}
+              <div className="absolute inset-0 z-0 overflow-hidden">
+                <img
+                  key={currentSlideData.id}
+                  src={currentSlideData.image}
+                  alt=""
+                  className="w-full h-full object-cover transition-all duration-700 ease-out transform scale-105 animate-in fade-in"
+                  decoding="async"
+                />
+                {/* Multi-layer Dark Gradient Overlays for maximum text contrast & readability */}
+                <div className="absolute inset-0 bg-gradient-to-r from-black/95 via-black/80 to-black/35" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-transparent to-black/30" />
+                <div className="absolute top-0 right-0 w-96 h-96 bg-amber-500/15 rounded-full blur-3xl pointer-events-none" />
+              </div>
 
               {/* Slide Top Badge & App Logo Showcase */}
               <div className="relative z-10 flex items-center justify-between gap-4">
-                <span className="inline-flex items-center gap-2 bg-black/85 text-amber-400 font-black text-xs px-4 py-1.5 rounded-full shadow-lg border border-amber-500/30">
+                <span className="inline-flex items-center gap-2 bg-black/85 text-amber-400 font-black text-xs px-4 py-1.5 rounded-full shadow-lg border border-amber-500/40 backdrop-blur-md">
                   <Sparkles size={14} /> {slideBadge}
                 </span>
 
                 {/* Official Luxury Logo Badge inside Banner */}
-                <div className="hidden sm:flex items-center gap-2.5 bg-black/60 backdrop-blur-md px-3.5 py-1.5 rounded-2xl border border-white/20">
+                <div className="hidden sm:flex items-center gap-2.5 bg-black/75 backdrop-blur-md px-3.5 py-1.5 rounded-2xl border border-amber-500/30">
                   <img
                     src="/app-logo.png"
                     alt="Emad Express"
@@ -346,10 +393,10 @@ export default function StoreHome() {
 
               {/* Slide Text Content */}
               <div className="relative z-10 max-w-xl space-y-3.5 my-4">
-                <h1 className={`text-2xl sm:text-4xl lg:text-5xl font-black tracking-tight leading-tight ${currentSlideData.textColor}`}>
+                <h1 className="text-2xl sm:text-4xl lg:text-5xl font-black tracking-tight leading-tight text-white drop-shadow-lg">
                   {slideTitle}
                 </h1>
-                <p className={`text-xs sm:text-sm font-bold opacity-90 leading-relaxed ${currentSlideData.textColor}`}>
+                <p className="text-xs sm:text-sm font-semibold text-slate-200/90 leading-relaxed max-w-lg drop-shadow">
                   {slideDesc}
                 </p>
               </div>
@@ -359,12 +406,16 @@ export default function StoreHome() {
                 <div className="flex flex-wrap items-center gap-3">
                   <button
                     onClick={() => {
-                      setSelectedCategory("");
-                      setSearchQuery("");
-                      const catalogEl = document.getElementById("products-catalog");
-                      catalogEl?.scrollIntoView({ behavior: "smooth" });
+                      if (currentSlideData.categoryId) {
+                        setLocation(`/category/${currentSlideData.categoryId}`);
+                      } else {
+                        setSelectedCategory("");
+                        setSearchQuery("");
+                        const catalogEl = document.getElementById("products-catalog");
+                        catalogEl?.scrollIntoView({ behavior: "smooth" });
+                      }
                     }}
-                    className="bg-black hover:bg-slate-900 text-amber-400 font-black text-sm px-7 py-3.5 rounded-2xl shadow-xl transition-all hover:scale-105 active:scale-95 cursor-pointer flex items-center gap-2"
+                    className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-black text-sm px-7 py-3.5 rounded-2xl shadow-xl shadow-amber-500/25 transition-all hover:scale-105 active:scale-95 cursor-pointer flex items-center gap-2"
                   >
                     <ShoppingBag size={18} />
                     <span>{language === "en" ? "Browse Deals Now" : "تصفح العروض الآن"}</span>
@@ -372,15 +423,17 @@ export default function StoreHome() {
 
                   <button
                     onClick={() => {
-                      if (categoriesList.length > 0) {
+                      if (currentSlideData.categoryId) {
+                        setLocation(`/category/${currentSlideData.categoryId}`);
+                      } else if (categoriesList.length > 0) {
                         setSelectedCategory(String(categoriesList[0].id));
+                        const catalogEl = document.getElementById("products-catalog");
+                        catalogEl?.scrollIntoView({ behavior: "smooth" });
                       }
-                      const catalogEl = document.getElementById("products-catalog");
-                      catalogEl?.scrollIntoView({ behavior: "smooth" });
                     }}
-                    className="bg-white/25 hover:bg-white text-black font-black text-xs sm:text-sm px-5 py-3.5 rounded-2xl backdrop-blur-md transition-all shadow-md flex items-center gap-2 cursor-pointer hover:scale-105 active:scale-95"
+                    className="bg-black/60 hover:bg-black/90 text-white border border-white/20 hover:border-amber-400 font-black text-xs sm:text-sm px-5 py-3.5 rounded-2xl backdrop-blur-md transition-all shadow-md flex items-center gap-2 cursor-pointer hover:scale-105 active:scale-95"
                   >
-                    <span>{language === "en" ? "Top Categories" : "أقوى الأقسام المميزة"}</span>
+                    <span>{language === "en" ? "Explore Category" : "استكشف هذا القسم"}</span>
                     <ArrowRight size={16} />
                   </button>
                 </div>
@@ -389,7 +442,7 @@ export default function StoreHome() {
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => setCurrentSlide((prev) => (prev - 1 + HERO_SLIDES.length) % HERO_SLIDES.length)}
-                    className="w-9 h-9 rounded-xl bg-black/60 hover:bg-black text-white flex items-center justify-center transition-all cursor-pointer"
+                    className="w-9 h-9 rounded-xl bg-black/75 hover:bg-amber-500 hover:text-black text-white border border-white/10 flex items-center justify-center transition-all cursor-pointer backdrop-blur-md"
                     title="السابق"
                   >
                     <ChevronRight size={18} />
@@ -402,7 +455,7 @@ export default function StoreHome() {
                         key={i}
                         onClick={() => setCurrentSlide(i)}
                         className={`h-2.5 rounded-full transition-all cursor-pointer ${
-                          currentSlide === i ? "w-7 bg-white shadow-md" : "w-2.5 bg-white/40 hover:bg-white/70"
+                          currentSlide === i ? "w-7 bg-amber-400 shadow-lg shadow-amber-400/50" : "w-2.5 bg-white/40 hover:bg-white/70"
                         }`}
                       />
                     ))}
@@ -410,7 +463,7 @@ export default function StoreHome() {
 
                   <button
                     onClick={() => setCurrentSlide((prev) => (prev + 1) % HERO_SLIDES.length)}
-                    className="w-9 h-9 rounded-xl bg-black/60 hover:bg-black text-white flex items-center justify-center transition-all cursor-pointer"
+                    className="w-9 h-9 rounded-xl bg-black/75 hover:bg-amber-500 hover:text-black text-white border border-white/10 flex items-center justify-center transition-all cursor-pointer backdrop-blur-md"
                     title="التالي"
                   >
                     <ChevronLeft size={18} />
@@ -479,9 +532,19 @@ export default function StoreHome() {
               onClick={() => {
                 setLocation(`/category/${cat.id}`);
               }}
-              className="px-4 py-2 rounded-2xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5 shrink-0 bg-slate-900/90 text-slate-300 border border-slate-800 hover:border-amber-500/50 hover:text-white"
+              className="px-3.5 py-1.5 rounded-2xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer flex items-center gap-2 shrink-0 bg-slate-900/90 text-slate-300 border border-slate-800 hover:border-amber-500/50 hover:text-white group"
             >
-              <span>{cat.icon || "📦"}</span>
+              {cat.image ? (
+                <img
+                  src={getOptimizedImageUrl(cat.image, "thumb")}
+                  alt=""
+                  className="w-5 h-5 rounded-md object-cover ring-1 ring-amber-500/20 shrink-0 group-hover:scale-110 transition-transform"
+                  loading="lazy"
+                  decoding="async"
+                />
+              ) : (
+                <span>{cat.icon || "📦"}</span>
+              )}
               <span>{language === "en" ? (cat.name_en || cat.name || cat.name_ar) : (cat.name_ar || cat.name || cat.name_en)}</span>
             </button>
           ))}
