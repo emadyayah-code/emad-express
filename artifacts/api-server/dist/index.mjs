@@ -98130,12 +98130,13 @@ async function verifyAndSyncDropshipProductStock(productId, options = {}) {
     return { available: true };
   }
 }
-router2.post("/admin/dropship/sync-stock", requireAuth, requireRole("admin", "manager"), async (_req, res, next) => {
+router2.post("/admin/dropship/sync-stock", requireAuth, requireRole("admin", "manager"), async (req, res, next) => {
   try {
-    const result = await syncAllDropshipPricesAndStock();
+    const limit = req.query.all === "true" ? 200 : Number(req.query.limit) || 80;
+    const result = await syncAllDropshipPricesAndStock(limit);
     return res.json({
       success: true,
-      message: `\u062A\u0645\u062A \u0645\u0632\u0627\u0645\u0646\u0629 \u0648\u0641\u062D\u0635 \u0627\u0644\u0645\u062E\u0632\u0648\u0646 \u0628\u0646\u062C\u0627\u062D (\u0641\u062D\u0635 ${result.total} \u0645\u0646\u062A\u062C\u060C \u062A\u062D\u062F\u064A\u062B ${result.synced}\u060C \u0648\u062D\u0630\u0641/\u0625\u062E\u0641\u0627\u0621 ${result.deletedOutOfStock} \u0645\u0646\u062A\u062C \u0646\u0641\u062F \u0645\u0646 \u0627\u0644\u0645\u0635\u062F\u0631)!`,
+      message: `\u062A\u0645\u062A \u0645\u0632\u0627\u0645\u0646\u0629 \u0648\u0641\u062D\u0635 \u0627\u0644\u0645\u062E\u0632\u0648\u0646 \u0628\u0646\u062C\u0627\u062D (\u0641\u062D\u0635 ${result.total} \u0645\u0646\u062A\u062C\u060C \u062A\u062D\u062F\u064A\u062B ${result.synced}\u060C \u0648\u062D\u0630\u0641 ${result.deletedOutOfStock} \u0645\u0646\u062A\u062C \u0646\u0641\u062F \u0645\u0646 \u0627\u0644\u0645\u0635\u062F\u0631)!`,
       total_checked: result.total,
       synced_count: result.synced,
       deleted_count: result.deletedOutOfStock
@@ -98416,16 +98417,19 @@ router2.get("/admin/dropship/api-search", requireAuth, requireRole("admin", "man
     next(err);
   }
 });
-async function syncAllDropshipPricesAndStock() {
+var syncOffset = 0;
+async function syncAllDropshipPricesAndStock(maxProducts = 80) {
   try {
     const creds = await getAliExpressCreds2();
-    const dps = await db.select().from(dropship_products);
-    if (!dps.length) {
-      const purged = await purgeZeroStockAndDeletedProducts();
-      return { total: 0, synced: 0, deletedOutOfStock: purged };
+    let deletedOutOfStock = await purgeZeroStockAndDeletedProducts();
+    const [totalRow] = await db.select({ count: sql`count(*)` }).from(dropship_products);
+    const totalCount = Number(totalRow?.count) || 0;
+    if (totalCount === 0) {
+      return { total: 0, totalCatalog: 0, synced: 0, deletedOutOfStock };
     }
+    const dps = await db.select().from(dropship_products).orderBy(dropship_products.id).limit(maxProducts).offset(syncOffset % Math.max(1, totalCount));
+    syncOffset = (syncOffset + maxProducts) % Math.max(1, totalCount);
     let synced = 0;
-    let deletedOutOfStock = 0;
     const aliDropships = dps.filter((d) => d.platform === "aliexpress" && d.source_id && d.product_id);
     const otherDropships = dps.filter((d) => d.platform !== "aliexpress");
     if (creds && aliDropships.length > 0) {
@@ -98464,12 +98468,9 @@ async function syncAllDropshipPricesAndStock() {
             synced++;
           }
         }
-        if (i + BATCH_SIZE < aliDropships.length) {
-          await new Promise((r) => setTimeout(r, 200));
-        }
       }
     }
-    for (const dp of otherDropships) {
+    for (const dp of otherDropships.slice(0, 10)) {
       if (dp.product_id) {
         try {
           const res = await verifyAndSyncDropshipProductStock(dp.product_id, { forceLive: true });
@@ -98483,11 +98484,11 @@ async function syncAllDropshipPricesAndStock() {
     const extraPurged = await purgeZeroStockAndDeletedProducts();
     deletedOutOfStock += extraPurged;
     clearProductsCache();
-    logger.info({ total: dps.length, synced, deletedOutOfStock }, "Background price and stock sync finished. All out-of-stock and zero-stock items permanently deleted from database.");
-    return { total: dps.length, synced, deletedOutOfStock };
+    logger.info({ totalChecked: dps.length, totalCatalog: totalCount, synced, deletedOutOfStock }, "Background price and stock sync finished. All out-of-stock items permanently removed.");
+    return { total: dps.length, totalCatalog: totalCount, synced, deletedOutOfStock };
   } catch (e) {
     logger.error({ err: e.message }, "Background price & stock sync job error");
-    return { total: 0, synced: 0, deletedOutOfStock: 0 };
+    return { total: 0, totalCatalog: 0, synced: 0, deletedOutOfStock: 0 };
   }
 }
 function startPriceSyncJob() {
@@ -98689,9 +98690,10 @@ router2.all("/cron/auto-import", async (req, res, next) => {
     next(err);
   }
 });
-router2.all("/cron/sync-stock", async (_req, res, next) => {
+router2.all("/cron/sync-stock", async (req, res, next) => {
   try {
-    const result = await syncAllDropshipPricesAndStock();
+    const limit = Number(req.query.limit) || 80;
+    const result = await syncAllDropshipPricesAndStock(limit);
     return res.json({
       success: true,
       message: "\u062A\u0645\u062A \u0627\u0644\u0645\u0632\u0627\u0645\u0646\u0629 \u0648\u062D\u0630\u0641 \u0627\u0644\u0645\u0646\u062A\u062C\u0627\u062A \u0627\u0644\u0646\u0627\u0641\u062F\u0629 \u0646\u0647\u0627\u0626\u064A\u0627\u064B \u0645\u0646 \u0642\u0627\u0639\u062F\u0629 \u0627\u0644\u0628\u064A\u0627\u0646\u0627\u062A \u0648\u0627\u0644\u0645\u062A\u062C\u0631 \u0648\u0627\u0644\u062A\u0637\u0628\u064A\u0642 \u0628\u0646\u062C\u0627\u062D",

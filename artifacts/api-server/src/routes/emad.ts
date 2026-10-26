@@ -3755,12 +3755,13 @@ export async function verifyAndSyncDropshipProductStock(
 }
 
 // ========== SYNC LIVE STOCK & PRICES FROM ALL PLATFORMS (ALIEXPRESS, AMAZON, EXTERNAL) ==========
-router.post("/admin/dropship/sync-stock", requireAuth, requireRole("admin", "manager"), async (_req, res, next) => {
+router.post("/admin/dropship/sync-stock", requireAuth, requireRole("admin", "manager"), async (req, res, next) => {
   try {
-    const result = await syncAllDropshipPricesAndStock();
+    const limit = req.query.all === "true" ? 200 : (Number(req.query.limit) || 80);
+    const result = await syncAllDropshipPricesAndStock(limit);
     return res.json({
       success: true,
-      message: `تمت مزامنة وفحص المخزون بنجاح (فحص ${result.total} منتج، تحديث ${result.synced}، وحذف/إخفاء ${result.deletedOutOfStock} منتج نفد من المصدر)!`,
+      message: `تمت مزامنة وفحص المخزون بنجاح (فحص ${result.total} منتج، تحديث ${result.synced}، وحذف ${result.deletedOutOfStock} منتج نفد من المصدر)!`,
       total_checked: result.total,
       synced_count: result.synced,
       deleted_count: result.deletedOutOfStock,
@@ -4023,16 +4024,31 @@ router.get("/admin/dropship/api-search", requireAuth, requireRole("admin", "mana
 });
 
 // ========== AUTO PRICE & STOCK SYNC (ALL PLATFORMS) ==========
-export async function syncAllDropshipPricesAndStock() {
+let syncOffset = 0;
+
+export async function syncAllDropshipPricesAndStock(maxProducts: number = 80) {
   try {
     const creds = await getAliExpressCreds();
-    const dps = await db.select().from(dropship_products);
-    if (!dps.length) {
-      const purged = await purgeZeroStockAndDeletedProducts();
-      return { total: 0, synced: 0, deletedOutOfStock: purged };
+    
+    // First, purge any 0-stock products from previous cycles
+    let deletedOutOfStock = await purgeZeroStockAndDeletedProducts();
+
+    const [totalRow] = await db.select({ count: sql<number>`count(*)` }).from(dropship_products);
+    const totalCount = Number(totalRow?.count) || 0;
+    if (totalCount === 0) {
+      return { total: 0, totalCatalog: 0, synced: 0, deletedOutOfStock };
     }
+
+    // Limit to maxProducts per cycle (e.g. 80) using rotating offset so all products are covered smoothly
+    const dps = await db.select()
+      .from(dropship_products)
+      .orderBy(dropship_products.id)
+      .limit(maxProducts)
+      .offset(syncOffset % Math.max(1, totalCount));
+
+    syncOffset = (syncOffset + maxProducts) % Math.max(1, totalCount);
+
     let synced = 0;
-    let deletedOutOfStock = 0;
 
     const aliDropships = dps.filter(d => d.platform === "aliexpress" && d.source_id && d.product_id);
     const otherDropships = dps.filter(d => d.platform !== "aliexpress");
@@ -4079,14 +4095,11 @@ export async function syncAllDropshipPricesAndStock() {
             synced++;
           }
         }
-        if (i + BATCH_SIZE < aliDropships.length) {
-          await new Promise(r => setTimeout(r, 200));
-        }
       }
     }
 
-    // Process other platforms
-    for (const dp of otherDropships) {
+    // Process other platforms (up to 10 per cycle)
+    for (const dp of otherDropships.slice(0, 10)) {
       if (dp.product_id) {
         try {
           const res = await verifyAndSyncDropshipProductStock(dp.product_id, { forceLive: true });
@@ -4103,11 +4116,11 @@ export async function syncAllDropshipPricesAndStock() {
     deletedOutOfStock += extraPurged;
 
     clearProductsCache();
-    logger.info({ total: dps.length, synced, deletedOutOfStock }, "Background price and stock sync finished. All out-of-stock and zero-stock items permanently deleted from database.");
-    return { total: dps.length, synced, deletedOutOfStock };
+    logger.info({ totalChecked: dps.length, totalCatalog: totalCount, synced, deletedOutOfStock }, "Background price and stock sync finished. All out-of-stock items permanently removed.");
+    return { total: dps.length, totalCatalog: totalCount, synced, deletedOutOfStock };
   } catch (e: any) {
     logger.error({ err: e.message }, "Background price & stock sync job error");
-    return { total: 0, synced: 0, deletedOutOfStock: 0 };
+    return { total: 0, totalCatalog: 0, synced: 0, deletedOutOfStock: 0 };
   }
 }
 
@@ -4345,9 +4358,10 @@ router.all("/cron/auto-import", async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
-router.all("/cron/sync-stock", async (_req, res, next) => {
+router.all("/cron/sync-stock", async (req, res, next) => {
   try {
-    const result = await syncAllDropshipPricesAndStock();
+    const limit = Number(req.query.limit) || 80;
+    const result = await syncAllDropshipPricesAndStock(limit);
     return res.json({
       success: true,
       message: "تمت المزامنة وحذف المنتجات النافدة نهائياً من قاعدة البيانات والمتجر والتطبيق بنجاح",
