@@ -10,7 +10,7 @@ import {
   ChevronRight, ChevronLeft, ArrowRight, Layers, Tag, Check, Filter,
   Clock, X, Plus, Minus, MessageCircle, Heart, Share2, Award, Zap
 } from "lucide-react";
-import { useI18n, getProductLocalizedName, getProductLocalizedDesc } from "@/lib/i18n";
+import { useI18n, getProductLocalizedName, getProductLocalizedDesc, getCategoryLocalizedName } from "@/lib/i18n";
 import { getOptimizedImageUrl } from "@/lib/image-optimizer";
 
 const HERO_SLIDES = [
@@ -340,7 +340,7 @@ export default function StoreHome() {
                       ) : (
                         <span className="text-base shrink-0 group-hover:scale-110 transition-transform">{cat.icon || "📦"}</span>
                       )}
-                      <span className="truncate">{language === "en" ? (cat.name_en || cat.name || cat.name_ar) : (cat.name_ar || cat.name || cat.name_en)}</span>
+                      <span className="truncate">{getCategoryLocalizedName(cat, language)}</span>
                     </span>
                     <ChevronLeft size={14} className="text-slate-500 group-hover:text-amber-400 group-hover:-translate-x-1 transition-all" />
                   </button>
@@ -545,7 +545,7 @@ export default function StoreHome() {
               ) : (
                 <span>{cat.icon || "📦"}</span>
               )}
-              <span>{language === "en" ? (cat.name_en || cat.name || cat.name_ar) : (cat.name_ar || cat.name || cat.name_en)}</span>
+              <span>{getCategoryLocalizedName(cat, language)}</span>
             </button>
           ))}
         </div>
@@ -703,7 +703,7 @@ export default function StoreHome() {
                 >
                   <span className="text-2xl group-hover:scale-110 transition-transform">{sec.icon || "📦"}</span>
                   <h2 className="text-xl font-black text-white group-hover:text-amber-400 transition-colors">
-                    {language === "en" ? (sec.name_en || sec.name || sec.name_ar) : (sec.name_ar || sec.name || sec.name_en)}
+                    {getCategoryLocalizedName(sec, language)}
                   </h2>
                   <span className="text-xs font-bold text-amber-400/90 bg-amber-400/10 px-2.5 py-0.5 rounded-full border border-amber-400/20">
                     {language === "en" ? "Trending" : "رائج ومطلوب"}
@@ -749,7 +749,7 @@ export default function StoreHome() {
               {searchQuery
                 ? (language === "en" ? `Search results for: "${searchQuery}"` : `نتائج البحث عن: "${searchQuery}"`)
                 : activeCategoryObj
-                ? (language === "en" ? `Category: ${activeCategoryObj.name_en || activeCategoryObj.name || activeCategoryObj.name_ar}` : `منتجات قسم: ${activeCategoryObj.name_ar || activeCategoryObj.name}`)
+                ? (language === "en" ? `Category: ${getCategoryLocalizedName(activeCategoryObj, language)}` : `منتجات قسم: ${getCategoryLocalizedName(activeCategoryObj, language)}`)
                 : (language === "en" ? "All Top-Selling Products" : "جميع المنتجات الأكثر طلباً في المتجر")}
             </h2>
             <span className="text-xs bg-slate-800 text-slate-300 px-3 py-1 rounded-full font-bold">

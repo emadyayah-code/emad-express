@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 
 import { ALL_COUNTRIES } from "@/lib/countries";
+import { useI18n } from "@/lib/i18n";
 
 export function CheckoutModal({
   isOpen,
@@ -18,6 +19,7 @@ export function CheckoutModal({
   isOpen: boolean;
   onClose: () => void;
 }) {
+  const { language, dir } = useI18n();
   const { items, subtotal, clearCart } = useCart();
   const { customer, customerToken, register, openLoginModal } = useCustomerAuth();
 
@@ -94,9 +96,11 @@ export function CheckoutModal({
   const yemenShippingOptions = [
     {
       id: "dhl",
-      title: "دي إتش إل إكسبريس لليمن (DHL Express)",
-      badge: "شحن سريع جوي لليمن ✈️",
-      desc: "شحن جوي سريع ومباشر إلى كافة المحافظات اليمنية عبر عماد اكسبرس • تسليم 7-15 يوم عمل (خاص باليمن فقط)",
+      title: language === "ar" ? "دي إتش إل إكسبريس لليمن (DHL Express)" : "DHL Express to Yemen",
+      badge: language === "ar" ? "شحن سريع جوي لليمن ✈️" : "Express Air to Yemen ✈️",
+      desc: language === "ar"
+        ? "شحن جوي سريع ومباشر إلى كافة المحافظات اليمنية عبر عماد اكسبرس • تسليم 7-15 يوم عمل (خاص باليمن فقط)"
+        : "Direct air express shipping to all Yemen provinces via Emad Express • 7-15 business days",
       fee: 529,
     },
   ];
@@ -104,18 +108,20 @@ export function CheckoutModal({
   const globalShippingOptions = [
     {
       id: "standard",
-      title: subtotal >= 100 ? "شحن مجاني عماد اكسبرس (emadexpress Choice)" : "شحن قياسي عماد اكسبرس (emadexpress Standard)",
-      badge: subtotal >= 100 ? "Choice مجاني 🎉" : "توصيل قياسي",
+      title: subtotal >= 100
+        ? (language === "ar" ? "شحن مجاني عماد اكسبرس (emadexpress Choice)" : "Free Choice Shipping")
+        : (language === "ar" ? "شحن قياسي عماد اكسبرس (emadexpress Standard)" : "Standard Shipping"),
+      badge: subtotal >= 100 ? (language === "ar" ? "Choice مجاني 🎉" : "Free Choice 🎉") : (language === "ar" ? "توصيل قياسي" : "Standard Delivery"),
       desc: subtotal >= 100
-        ? "شحن مجاني رسمي لطلبك بقيمة 100+ ر.س • تسليم 10-18 يوم عمل"
-        : "شحن قياسي دولي موثوق مع رقم تتبع • تسليم 10-18 يوم عمل (مجاني عند الشراء بـ 100 ر.س)",
+        ? (language === "ar" ? "شحن مجاني رسمي لطلبك بقيمة 100+ ر.س • تسليم 10-18 يوم عمل" : "Free shipping for orders over 100 SAR • 10-18 business days")
+        : (language === "ar" ? "شحن قياسي دولي موثوق مع رقم تتبع • تسليم 10-18 يوم عمل (مجاني عند الشراء بـ 100 ر.س)" : "Reliable international standard shipping with tracking • 10-18 business days"),
       fee: subtotal >= 100 ? 0 : 15,
     },
     {
       id: "premium",
-      title: "شحن سريع بريميوم (emadexpress Premium)",
-      badge: "أولوية فائقة ⚡",
-      desc: "شحن جوي سريع بأعلى أولوية وتسليم للباب • تسليم 5-9 أيام عمل",
+      title: language === "ar" ? "شحن سريع بريميوم (emadexpress Premium)" : "Premium Express Shipping",
+      badge: language === "ar" ? "أولوية فائقة ⚡" : "Top Priority ⚡",
+      desc: language === "ar" ? "شحن جوي سريع بأعلى أولوية وتسليم للباب • تسليم 5-9 أيام عمل" : "Priority express air shipping to your door • 5-9 business days",
       fee: 35,
     },
   ];
@@ -133,28 +139,28 @@ export function CheckoutModal({
     setErrorMsg("");
 
     if (!recipientName.trim() || !recipientPhone.trim() || !addressDetails.trim()) {
-      setErrorMsg("يرجى إكمال بيانات المستلم والعنوان بالتفصيل");
+      setErrorMsg(language === "ar" ? "يرجى إكمال بيانات المستلم والعنوان بالتفصيل" : "Please complete all recipient and address details");
       return;
     }
 
     if (paymentMethod === "paypal" && paySubMode === "card") {
       const cleanNum = cardNumber.replace(/\s/g, "");
       if (cleanNum.length < 15) {
-        setErrorMsg("يرجى إدخال رقم البطاقة البنكية المكون من 16 رقماً");
+        setErrorMsg(language === "ar" ? "يرجى إدخال رقم البطاقة البنكية المكون من 16 رقماً" : "Please enter a valid 16-digit card number");
         return;
       }
       if (!cardExp.includes("/") || cardExp.length < 4) {
-        setErrorMsg("يرجى إدخال تاريخ انتهاء البطاقة (شهر/سنة مثل 08/28)");
+        setErrorMsg(language === "ar" ? "يرجى إدخال تاريخ انتهاء البطاقة (شهر/سنة مثل 08/28)" : "Please enter card expiration date (MM/YY)");
         return;
       }
       if (cardCvv.length < 3) {
-        setErrorMsg("يرجى إدخال رمز أمان البطاقة CVV (3 أرقام)");
+        setErrorMsg(language === "ar" ? "يرجى إدخال رمز أمان البطاقة CVV (3 أرقام)" : "Please enter CVV code (3 digits)");
         return;
       }
     }
 
     if (items.length === 0) {
-      setErrorMsg("سلة المشتريات فارغة");
+      setErrorMsg(language === "ar" ? "سلة المشتريات فارغة" : "Shopping cart is empty");
       return;
     }
 
@@ -257,7 +263,7 @@ export function CheckoutModal({
   if (typeof document === "undefined") return null;
 
   return createPortal(
-    <div className="fixed inset-0 z-[99999] flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-200" dir="rtl">
+    <div className="fixed inset-0 z-[99999] flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-200" dir={dir}>
       <div className="bg-slate-900 border border-amber-500/40 rounded-3xl max-w-2xl w-full max-h-[92vh] flex flex-col overflow-hidden shadow-2xl relative">
         {/* Header */}
         <div className="p-5 border-b border-slate-800 flex items-center justify-between bg-slate-950/60">
@@ -266,8 +272,14 @@ export function CheckoutModal({
               <ShieldCheck size={22} />
             </div>
             <div>
-              <h3 className="text-base font-black text-white">إتمام الطلب والدفع الآمن</h3>
-              <p className="text-xs text-amber-300/80">مطابق لخيارات الدفع والشحن في تطبيق عماد إكسبرس</p>
+              <h3 className="text-base font-black text-white">
+                {language === "ar" ? "إتمام الطلب والدفع الآمن" : "Checkout & Secure Payment"}
+              </h3>
+              <p className="text-xs text-amber-300/80">
+                {language === "ar"
+                  ? "مطابق لخيارات الدفع والشحن في تطبيق عماد إكسبرس"
+                  : "Synchronized with Emad Express payment & shipping"}
+              </p>
             </div>
           </div>
 
@@ -289,32 +301,39 @@ export function CheckoutModal({
               </div>
 
               <div className="space-y-1.5">
-                <h4 className="text-xl font-black text-white">تم تأكيد طلبك بنجاح!</h4>
+                <h4 className="text-xl font-black text-white">
+                  {language === "ar" ? "تم تأكيد طلبك بنجاح!" : "Order Confirmed Successfully!"}
+                </h4>
                 <p className="text-xs text-slate-300">
-                  رقم الطلب الرسمي: <span className="text-amber-400 font-mono font-black text-sm">#{orderSuccess.orderId}</span>
+                  {language === "ar" ? "رقم الطلب الرسمي: " : "Official Order Number: "}
+                  <span className="text-amber-400 font-mono font-black text-sm">#{orderSuccess.orderId}</span>
                 </p>
                 <p className="text-xs text-slate-400 max-w-md mx-auto">
-                  شكراً لتسوقك من متجر عماد إكسبرس. يتم الآن مراجعة الطلب والمزامنة مع الموردين لبدء الشحن الفوري.
+                  {language === "ar"
+                    ? "شكراً لتسوقك من متجر عماد إكسبرس. يتم الآن مراجعة الطلب والمزامنة مع الموردين لبدء الشحن الفوري."
+                    : "Thank you for shopping at Emad Express. Your order is now being processed and synced with suppliers for immediate shipping."}
                 </p>
               </div>
 
               {/* Order Summary Receipt Box */}
-              <div className="bg-slate-950 border border-slate-800 rounded-2xl p-4 text-xs text-right max-w-md mx-auto space-y-2">
+              <div className={`bg-slate-950 border border-slate-800 rounded-2xl p-4 text-xs ${dir === "rtl" ? "text-right" : "text-left"} max-w-md mx-auto space-y-2`}>
                 <div className="flex justify-between border-b border-slate-800 pb-2">
-                  <span className="text-slate-400">المستلم:</span>
+                  <span className="text-slate-400">{language === "ar" ? "المستلم:" : "Recipient:"}</span>
                   <span className="text-white font-bold">{orderSuccess.recipientName} ({orderSuccess.recipientPhone})</span>
                 </div>
                 <div className="flex justify-between border-b border-slate-800 pb-2">
-                  <span className="text-slate-400">طريقة الشحن:</span>
+                  <span className="text-slate-400">{language === "ar" ? "طريقة الشحن:" : "Shipping Method:"}</span>
                   <span className="text-white font-bold">{orderSuccess.shippingTitle}</span>
                 </div>
                 <div className="flex justify-between border-b border-slate-800 pb-2">
-                  <span className="text-slate-400">المبلغ الإجمالي:</span>
-                  <span className="text-amber-400 font-black text-sm">{orderSuccess.grandTotal.toLocaleString()} ر.س</span>
+                  <span className="text-slate-400">{language === "ar" ? "المبلغ الإجمالي:" : "Total Amount:"}</span>
+                  <span className="text-amber-400 font-black text-sm">{orderSuccess.grandTotal.toLocaleString()} {language === "ar" ? "ر.س" : "SAR"}</span>
                 </div>
                 <div className="flex justify-between pt-1">
-                  <span className="text-slate-400">حالة الدفع:</span>
-                  <span className="text-emerald-400 font-bold">بانتظار المعالجة / تأكيد التحويل</span>
+                  <span className="text-slate-400">{language === "ar" ? "حالة الدفع:" : "Payment Status:"}</span>
+                  <span className="text-emerald-400 font-bold">
+                    {language === "ar" ? "بانتظار المعالجة / تأكيد التحويل" : "Processing / Awaiting Confirmation"}
+                  </span>
                 </div>
               </div>
 
@@ -333,8 +352,8 @@ export function CheckoutModal({
                   >
                     <span>
                       {orderSuccess.paymentMethod === "aliexpress_direct"
-                        ? "فتح وإتمام الدفع الآمن عبر عماد اكسبرس (emadexpress)"
-                        : "فتح بوابة الدفع عبر PayPal والبطاقات المعتمدة"}
+                        ? (language === "ar" ? "فتح وإتمام الدفع الآمن عبر عماد اكسبرس (emadexpress)" : "Open & Complete Secure Payment via Emad Express")
+                        : (language === "ar" ? "فتح بوابة الدفع عبر PayPal والبطاقات المعتمدة" : "Open PayPal & Card Secure Payment Gateway")}
                     </span>
                     <ExternalLink size={16} />
                   </a>
@@ -345,21 +364,23 @@ export function CheckoutModal({
               <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-3">
                 <a
                   href={`https://wa.me/967772223645?text=${encodeURIComponent(
-                    `مرحباً عماد إكسبرس، تم تأكيد طلبي برقم: #${orderSuccess.orderId} بمبلغ: ${orderSuccess.grandTotal} ر.س. أرجو المتابعة.`
+                    language === "ar"
+                      ? `مرحباً عماد إكسبرس، تم تأكيد طلبي برقم: #${orderSuccess.orderId} بمبلغ: ${orderSuccess.grandTotal} ر.س. أرجو المتابعة.`
+                      : `Hello Emad Express, my order #${orderSuccess.orderId} for ${orderSuccess.grandTotal} SAR has been placed. Please follow up.`
                   )}`}
                   target="_blank"
                   rel="noreferrer"
                   className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs px-6 py-3 rounded-xl transition-all shadow-lg shadow-emerald-500/20"
                 >
                   <MessageCircle size={16} />
-                  <span>متابعة الطلب عبر واتساب فوراً</span>
+                  <span>{language === "ar" ? "متابعة الطلب عبر واتساب فوراً" : "Follow up on WhatsApp"}</span>
                 </a>
 
                 <button
                   onClick={onClose}
                   className="w-full sm:w-auto bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs px-6 py-3 rounded-xl transition-all"
                 >
-                  العودة للمتجر
+                  {language === "ar" ? "العودة للمتجر" : "Back to Store"}
                 </button>
               </div>
             </div>
@@ -394,30 +415,34 @@ export function CheckoutModal({
               <div className="space-y-3">
                 <h4 className="text-xs font-black text-amber-400 flex items-center gap-1.5 border-b border-slate-800 pb-2">
                   <MapPin size={15} />
-                  <span>1. بيانات المستلم وعنوان التوصيل</span>
+                  <span>{language === "ar" ? "1. بيانات المستلم وعنوان التوصيل" : "1. Recipient & Delivery Address"}</span>
                 </h4>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-400 mb-1">اسم المستلم الكامل</label>
+                    <label className="block text-[11px] font-bold text-slate-400 mb-1">
+                      {language === "ar" ? "اسم المستلم الكامل" : "Full Name"}
+                    </label>
                     <input
                       type="text"
                       value={recipientName}
                       onChange={(e) => setRecipientName(e.target.value)}
                       required
-                      placeholder="الاسم الثلاثي"
+                      placeholder={language === "ar" ? "الاسم الثلاثي" : "Full legal name"}
                       className="w-full bg-slate-950 text-white text-xs px-3.5 py-2.5 rounded-xl border border-slate-800 focus:border-amber-400 focus:outline-none"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-400 mb-1">رقم الهاتف للتواصل</label>
+                    <label className="block text-[11px] font-bold text-slate-400 mb-1">
+                      {language === "ar" ? "رقم الهاتف للتواصل" : "Phone Number"}
+                    </label>
                     <input
                       type="tel"
                       value={recipientPhone}
                       onChange={(e) => setRecipientPhone(e.target.value)}
                       required
-                      placeholder="أدخل رقم الهاتف للتوصيل..."
+                      placeholder={language === "ar" ? "أدخل رقم الهاتف للتوصيل..." : "Enter delivery phone number..."}
                       className="w-full bg-slate-950 text-white text-xs px-3.5 py-2.5 rounded-xl border border-slate-800 focus:border-amber-400 focus:outline-none"
                     />
                   </div>
@@ -425,7 +450,9 @@ export function CheckoutModal({
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-400 mb-1">دولة الشحن</label>
+                    <label className="block text-[11px] font-bold text-slate-400 mb-1">
+                      {language === "ar" ? "دولة الشحن" : "Shipping Country"}
+                    </label>
                     <select
                       value={country}
                       onChange={(e) => setCountry(e.target.value)}
@@ -433,33 +460,37 @@ export function CheckoutModal({
                     >
                       {ALL_COUNTRIES.map((c) => (
                         <option key={c.code} value={c.code}>
-                          {c.flag} {c.nameAr} ({c.nameEn})
+                          {c.flag} {language === "ar" ? c.nameAr : c.nameEn} ({c.dialCode})
                         </option>
                       ))}
                     </select>
                   </div>
 
                   <div className="sm:col-span-2">
-                    <label className="block text-[11px] font-bold text-slate-400 mb-1">المدينة / المحافظة</label>
+                    <label className="block text-[11px] font-bold text-slate-400 mb-1">
+                      {language === "ar" ? "المدينة / المحافظة" : "City / Province"}
+                    </label>
                     <input
                       type="text"
                       value={city}
                       onChange={(e) => setCity(e.target.value)}
                       required
-                      placeholder="صنعاء / عدن / تعز / الرياض / جدة..."
+                      placeholder={language === "ar" ? "صنعاء / عدن / تعز / الرياض / جدة..." : "City or Province..."}
                       className="w-full bg-slate-950 text-white text-xs px-3.5 py-2.5 rounded-xl border border-slate-800 focus:border-amber-400 focus:outline-none"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-400 mb-1">العنوان التفصيلي (الشارع، الحي، أقرب معلم)</label>
+                  <label className="block text-[11px] font-bold text-slate-400 mb-1">
+                    {language === "ar" ? "العنوان التفصيلي (الشارع، الحي، أقرب معلم)" : "Detailed Address (Street, District, Landmark)"}
+                  </label>
                   <input
                     type="text"
                     value={addressDetails}
                     onChange={(e) => setAddressDetails(e.target.value)}
                     required
-                    placeholder="مثال: شارع الستين، بجوار مجمع النصر، عمارة 4"
+                    placeholder={language === "ar" ? "مثال: شارع الستين، بجوار مجمع النصر، عمارة 4" : "e.g. Main St, District 4, Building 12"}
                     className="w-full bg-slate-950 text-white text-xs px-3.5 py-2.5 rounded-xl border border-slate-800 focus:border-amber-400 focus:outline-none"
                   />
                 </div>
@@ -468,7 +499,9 @@ export function CheckoutModal({
                 {!customer && (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
                     <div>
-                      <label className="block text-[11px] font-bold text-slate-400 mb-1">البريد الإلكتروني (لحفظ الحساب)</label>
+                      <label className="block text-[11px] font-bold text-slate-400 mb-1">
+                        {language === "ar" ? "البريد الإلكتروني (لحفظ الحساب)" : "Email (to save account)"}
+                      </label>
                       <input
                         type="email"
                         value={recipientEmail}
@@ -478,12 +511,14 @@ export function CheckoutModal({
                       />
                     </div>
                     <div>
-                      <label className="block text-[11px] font-bold text-slate-400 mb-1">كلمة المرور (اختياري لحفظ بياناتك ومتابعة طلباتك)</label>
+                      <label className="block text-[11px] font-bold text-slate-400 mb-1">
+                        {language === "ar" ? "كلمة المرور (اختياري لحفظ بياناتك ومتابعة طلباتك)" : "Password (optional to save account)"}
+                      </label>
                       <input
                         type="password"
                         value={quickPassword}
                         onChange={(e) => setQuickPassword(e.target.value)}
-                        placeholder="•••••••• (اختياري لحفظ الحساب)"
+                        placeholder="••••••••"
                         className="w-full bg-slate-950 text-white text-xs px-3.5 py-2.5 rounded-xl border border-slate-800 focus:border-amber-400 focus:outline-none"
                       />
                     </div>
@@ -495,7 +530,7 @@ export function CheckoutModal({
               <div className="space-y-3">
                 <h4 className="text-xs font-black text-amber-400 flex items-center gap-1.5 border-b border-slate-800 pb-2">
                   <Truck size={15} />
-                  <span>2. طريقة الشحن المعتمدة (emadexpress Shipping)</span>
+                  <span>{language === "ar" ? "2. طريقة الشحن المعتمدة (emadexpress Shipping)" : "2. Shipping Method"}</span>
                 </h4>
 
                 <div className="space-y-2">
@@ -527,7 +562,7 @@ export function CheckoutModal({
                         </div>
                       </div>
                       <span className="text-xs font-black text-amber-400 shrink-0">
-                        {opt.fee === 0 ? "مجاني" : `${opt.fee} ر.س`}
+                        {opt.fee === 0 ? (language === "ar" ? "مجاني" : "Free") : `${opt.fee} ${language === "ar" ? "ر.س" : "SAR"}`}
                       </span>
                     </label>
                   ))}
@@ -538,7 +573,7 @@ export function CheckoutModal({
               <div className="space-y-3">
                 <h4 className="text-xs font-black text-amber-400 flex items-center gap-1.5 border-b border-slate-800 pb-2">
                   <CreditCard size={15} />
-                  <span>3. طريقة الدفع المعتمدة (PayPal / emadexpress Direct)</span>
+                  <span>{language === "ar" ? "3. طريقة الدفع المعتمدة (PayPal / emadexpress Direct)" : "3. Payment Method"}</span>
                 </h4>
 
                 <div className="space-y-2">
@@ -561,16 +596,20 @@ export function CheckoutModal({
                         />
                         <div>
                           <div className="flex items-center gap-2 flex-wrap">
-                            <span className="font-bold text-xs text-white">الدفع الإلكتروني عبر PayPal والبطاقات المعتمدة عالمياً</span>
+                            <span className="font-bold text-xs text-white">
+                              {language === "ar" ? "الدفع الإلكتروني عبر PayPal والبطاقات المعتمدة عالمياً" : "Pay via PayPal & International Accepted Cards"}
+                            </span>
                             <span className="text-[10px] bg-blue-900/60 text-blue-300 border border-blue-500/30 px-2 py-0.5 rounded-md font-bold">
                               PayPal Live 💳
                             </span>
                             <span className="text-[10px] bg-emerald-950/60 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-md font-bold">
-                              حماية 100% 🛡️
+                              {language === "ar" ? "حماية 100% 🛡️" : "100% Protection 🛡️"}
                             </span>
                           </div>
                           <p className="text-[11px] text-slate-400 mt-1">
-                            يقبل كافة البطاقات البنكية المعتمدة عالمياً أو رصيد حساب PayPal الفوري
+                            {language === "ar"
+                              ? "يقبل كافة البطاقات البنكية المعتمدة عالمياً أو رصيد حساب PayPal الفوري"
+                              : "Accepts all major cards worldwide or instant PayPal balance"}
                           </p>
 
                           {/* International Accepted Payment Badges Row */}
@@ -630,7 +669,7 @@ export function CheckoutModal({
                             }`}
                           >
                             <CreditCard size={14} />
-                            <span>💳 البطاقة البنكية المباشرة</span>
+                            <span>{language === "ar" ? "💳 البطاقة البنكية المباشرة" : "💳 Direct Credit/Debit Card"}</span>
                           </button>
 
                           <button
@@ -642,7 +681,7 @@ export function CheckoutModal({
                                 : "text-slate-400 hover:text-white"
                             }`}
                           >
-                            <span>حساب بايبال السريع</span>
+                            <span>{language === "ar" ? "حساب بايبال السريع" : "PayPal Express Checkout"}</span>
                           </button>
                         </div>
 
@@ -689,11 +728,15 @@ export function CheckoutModal({
 
                               <div className="flex justify-between items-end mt-3 text-[11px] text-slate-300">
                                 <div>
-                                  <span className="text-[9px] text-slate-400 font-bold block">حامل البطاقة / CARDHOLDER</span>
+                                  <span className="text-[9px] text-slate-400 font-bold block">
+                                    {language === "ar" ? "حامل البطاقة / CARDHOLDER" : "CARDHOLDER NAME"}
+                                  </span>
                                   <span className="font-bold uppercase tracking-wide text-white">{cardHolder || recipientName || "CARDHOLDER NAME"}</span>
                                 </div>
                                 <div className="text-left font-mono">
-                                  <span className="text-[9px] text-slate-400 font-bold block">صالحة حتى / EXPIRES</span>
+                                  <span className="text-[9px] text-slate-400 font-bold block">
+                                    {language === "ar" ? "صالحة حتى / EXPIRES" : "EXPIRATION DATE"}
+                                  </span>
                                   <span className="font-bold text-white">{cardExp || "MM/YY"}</span>
                                 </div>
                               </div>
@@ -702,7 +745,9 @@ export function CheckoutModal({
                             {/* Card Inputs */}
                             <div>
                               <div className="flex justify-between items-center mb-1">
-                                <label className="text-[11px] font-bold text-slate-300">رقم البطاقة البنكية</label>
+                                <label className="text-[11px] font-bold text-slate-300">
+                                  {language === "ar" ? "رقم البطاقة البنكية" : "Card Number"}
+                                </label>
                                 <span className="text-[10px] text-amber-400 font-bold">{getCardBrand(cardNumber)}</span>
                               </div>
                               <div className="relative">
@@ -714,41 +759,47 @@ export function CheckoutModal({
                                   maxLength={19}
                                   className="w-full bg-slate-950 text-white font-mono text-xs px-3.5 py-2.5 rounded-xl border border-slate-800 focus:border-amber-400 focus:outline-none"
                                 />
-                                <CreditCard size={16} className="absolute left-3 top-3 text-slate-500" />
+                                <CreditCard size={16} className={`absolute top-3 text-slate-500 ${dir === "rtl" ? "left-3" : "right-3"}`} />
                               </div>
                             </div>
 
                             <div>
-                              <label className="block text-[11px] font-bold text-slate-300 mb-1">اسم حامل البطاقة (المطبوع عليها)</label>
+                              <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                                {language === "ar" ? "اسم حامل البطاقة (المطبوع عليها)" : "Cardholder Name (Printed on card)"}
+                              </label>
                               <input
                                 type="text"
                                 value={cardHolder}
                                 onChange={(e) => setCardHolder(e.target.value)}
-                                placeholder="مثال: MOHAMMED ALI"
+                                placeholder="e.g. MOHAMMED ALI"
                                 className="w-full bg-slate-950 text-white text-xs px-3.5 py-2.5 rounded-xl border border-slate-800 focus:border-amber-400 focus:outline-none uppercase"
                               />
                             </div>
 
                             <div className="grid grid-cols-2 gap-3">
                               <div>
-                                <label className="block text-[11px] font-bold text-slate-300 mb-1">تاريخ الانتهاء (شهر / سنة)</label>
+                                <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                                  {language === "ar" ? "تاريخ الانتهاء (شهر / سنة)" : "Expiration (MM/YY)"}
+                                </label>
                                 <input
                                   type="text"
                                   value={cardExp}
                                   onChange={(e) => setCardExp(formatCardExp(e.target.value))}
-                                  placeholder="MM/YY (مثال: 08/28)"
+                                  placeholder="MM/YY (08/28)"
                                   maxLength={5}
                                   className="w-full bg-slate-950 text-white font-mono text-xs px-3.5 py-2.5 rounded-xl border border-slate-800 focus:border-amber-400 focus:outline-none text-center"
                                 />
                               </div>
 
                               <div>
-                                <label className="block text-[11px] font-bold text-slate-300 mb-1">رمز الأمان (CVV/CVC)</label>
+                                <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                                  {language === "ar" ? "رمز الأمان (CVV/CVC)" : "Security Code (CVV)"}
+                                </label>
                                 <input
                                   type="password"
                                   value={cardCvv}
                                   onChange={(e) => setCardCvv(e.target.value.replace(/\D/g, "").slice(0, 4))}
-                                  placeholder="••• (3 أو 4 أرقام)"
+                                  placeholder="•••"
                                   maxLength={4}
                                   className="w-full bg-slate-950 text-white font-mono text-xs px-3.5 py-2.5 rounded-xl border border-slate-800 focus:border-amber-400 focus:outline-none text-center"
                                 />
@@ -757,17 +808,25 @@ export function CheckoutModal({
 
                             <div className="flex items-center gap-2 pt-1 text-[10px] text-emerald-400 bg-emerald-950/30 border border-emerald-500/20 p-2.5 rounded-xl">
                               <ShieldCheck size={14} className="shrink-0" />
-                              <span>دفع مشفر بحماية 256-bit وحماية المشتري المعتمدة من PayPal عالمياً</span>
+                              <span>
+                                {language === "ar"
+                                  ? "دفع مشفر بحماية 256-bit وحماية المشتري المعتمدة من PayPal عالمياً"
+                                  : "256-bit encrypted checkout with PayPal verified Buyer Protection"}
+                              </span>
                             </div>
                           </div>
                         ) : (
                           /* PayPal Express Mode */
                           <div className="p-4 bg-slate-950 rounded-2xl border border-slate-800 text-center space-y-2">
                             <div className="text-xs text-slate-300">
-                              سيتم فتح نافذة <span className="font-bold text-blue-400">PayPal Express Checkout</span> الرسمية فور تأكيد الطلب لتسجيل الدخول والسداد برصيدك أو محفظتك بضغطة واحدة.
+                              {language === "ar" ? (
+                                <>سيتم فتح نافذة <span className="font-bold text-blue-400">PayPal Express Checkout</span> الرسمية فور تأكيد الطلب لتسجيل الدخول والسداد برصيدك أو محفظتك بضغطة واحدة.</>
+                              ) : (
+                                <>The official <span className="font-bold text-blue-400">PayPal Express Checkout</span> modal will open upon confirming order to complete payment securely.</>
+                              )}
                             </div>
                             <div className="text-[11px] text-amber-300/80 font-bold">
-                              ✓ ضمان استرداد الأموال الكامل وحماية المشترين
+                              {language === "ar" ? "✓ ضمان استرداد الأموال الكامل وحماية المشترين" : "✓ 100% Money-back guarantee and Buyer Protection"}
                             </div>
                           </div>
                         )}
@@ -793,13 +852,17 @@ export function CheckoutModal({
                       />
                       <div>
                         <div className="flex items-center gap-2">
-                          <span className="font-bold text-xs text-white">الدفع والشراء المباشر عبر عماد اكسبرس (emadexpress Direct)</span>
+                          <span className="font-bold text-xs text-white">
+                            {language === "ar" ? "الدفع والشراء المباشر عبر عماد اكسبرس (emadexpress Direct)" : "Direct Payment via Emad Express"}
+                          </span>
                           <span className="text-[10px] bg-red-950/60 text-red-300 border border-red-500/30 px-2 py-0.5 rounded-md font-bold">
                             emadexpress Direct 🛍️
                           </span>
                         </div>
                         <p className="text-[11px] text-slate-400 mt-0.5">
-                          الدفع والتسديد المباشر والآمن عبر منصة عماد اكسبرس لتأكيد الشحن فوراً
+                          {language === "ar"
+                            ? "الدفع والتسديد المباشر والآمن عبر منصة عماد اكسبرس لتأكيد الشحن فوراً"
+                            : "Direct and secure checkout via Emad Express for immediate fulfillment"}
                         </p>
                       </div>
                     </div>
@@ -810,22 +873,26 @@ export function CheckoutModal({
               {/* Order Total Breakdown */}
               <div className="bg-slate-950 border border-slate-800 rounded-2xl p-4 space-y-2 text-xs">
                 <div className="flex justify-between text-slate-400">
-                  <span>إجمالي المنتجات ({items.length} صنف):</span>
-                  <span className="text-white font-bold">{subtotal.toLocaleString()} ر.س</span>
+                  <span>
+                    {language === "ar" ? `إجمالي المنتجات (${items.length} صنف):` : `Products Total (${items.length} items):`}
+                  </span>
+                  <span className="text-white font-bold">{subtotal.toLocaleString()} {language === "ar" ? "ر.س" : "SAR"}</span>
                 </div>
                 <div className="flex justify-between text-slate-400">
-                  <span>تكلفة الشحن ({currentShipping.title}):</span>
-                  <span className="text-white font-bold">{shippingFee === 0 ? "مجاني" : `${shippingFee} ر.س`}</span>
+                  <span>
+                    {language === "ar" ? `تكلفة الشحن (${currentShipping.title}):` : `Shipping Fee (${currentShipping.title}):`}
+                  </span>
+                  <span className="text-white font-bold">{shippingFee === 0 ? (language === "ar" ? "مجاني" : "Free") : `${shippingFee} ${language === "ar" ? "ر.س" : "SAR"}`}</span>
                 </div>
                 {tax > 0 && (
                   <div className="flex justify-between text-slate-400">
-                    <span>ضريبة القيمة المضافة (15%):</span>
-                    <span className="text-white font-bold">{tax.toLocaleString()} ر.س</span>
+                    <span>{language === "ar" ? "ضريبة القيمة المضافة (15%):" : "VAT (15%):"}</span>
+                    <span className="text-white font-bold">{tax.toLocaleString()} {language === "ar" ? "ر.س" : "SAR"}</span>
                   </div>
                 )}
                 <div className="border-t border-slate-800 pt-2 flex justify-between items-baseline">
-                  <span className="font-black text-white text-sm">المجموع الإجمالي النهائي:</span>
-                  <span className="font-black text-amber-400 text-lg">{grandTotal.toLocaleString()} ر.س</span>
+                  <span className="font-black text-white text-sm">{language === "ar" ? "المجموع الإجمالي النهائي:" : "Grand Total:"}</span>
+                  <span className="font-black text-amber-400 text-lg">{grandTotal.toLocaleString()} {language === "ar" ? "ر.س" : "SAR"}</span>
                 </div>
               </div>
 
@@ -836,11 +903,15 @@ export function CheckoutModal({
                 className="w-full bg-gradient-to-r from-amber-500 via-amber-400 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-black text-sm py-4 rounded-2xl transition-all shadow-xl shadow-amber-500/20 cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 {loading ? (
-                  <span>جارٍ معالجة وتأكيد الطلب...</span>
+                  <span>{language === "ar" ? "جارٍ معالجة وتأكيد الطلب..." : "Processing & Confirming Order..."}</span>
                 ) : (
                   <>
                     <ShieldCheck size={18} />
-                    <span>تأكيد الطلب والدفع النهائي ({grandTotal.toLocaleString()} ر.س)</span>
+                    <span>
+                      {language === "ar"
+                        ? `تأكيد الطلب والدفع النهائي (${grandTotal.toLocaleString()} ر.س)`
+                        : `Confirm Order & Pay (${grandTotal.toLocaleString()} SAR)`}
+                    </span>
                   </>
                 )}
               </button>

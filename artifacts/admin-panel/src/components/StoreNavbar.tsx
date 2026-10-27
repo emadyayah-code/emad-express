@@ -98,14 +98,18 @@ export function StoreNavbar({ onSearch }: { onSearch?: (q: string) => void }) {
           <div className="relative">
             <img
               src="/app-logo.png"
-              alt="عماد إكسبرس - الشعار الرسمي"
+              alt={language === "ar" ? "عماد إكسبرس - الشعار الرسمي" : "Emad Express - Official Logo"}
               className="h-11 w-11 rounded-2xl object-cover ring-2 ring-amber-500/50 shadow-lg shadow-amber-500/30 group-hover:scale-105 group-hover:ring-amber-400 transition-all duration-300 bg-slate-900"
             />
-            <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-emerald-500 rounded-full border-2 border-slate-900 shadow-sm" title="المتجر يعمل بنجاح" />
+            <span className={`absolute -bottom-0.5 ${dir === "rtl" ? "-right-0.5" : "-left-0.5"} w-3.5 h-3.5 bg-emerald-500 rounded-full border-2 border-slate-900 shadow-sm`} title={language === "ar" ? "المتجر يعمل بنجاح" : "Store is active"} />
           </div>
           <div className="flex flex-col">
             <span className="text-xl font-black tracking-tight text-white flex items-center gap-1 group-hover:text-amber-300 transition-colors">
-              عماد <span className="text-amber-400">إكسبرس</span>
+              {language === "ar" ? (
+                <>عماد <span className="text-amber-400">إكسبرس</span></>
+              ) : (
+                <>Emad <span className="text-amber-400">Express</span></>
+              )}
             </span>
             <span className="text-[10px] text-amber-200/70 font-semibold tracking-wider">
               EMAD EXPRESS • GLOBAL STORE
@@ -120,15 +124,28 @@ export function StoreNavbar({ onSearch }: { onSearch?: (q: string) => void }) {
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="ابحث عن أكثر من 10,000 منتج، ملابس، إلكترونيات، ساعات، أجهزة منزلية..."
-              className="w-full bg-slate-900/90 text-white text-sm pr-11 pl-28 py-2.5 rounded-2xl border-2 border-amber-500/40 focus:border-amber-400 focus:outline-none focus:ring-4 focus:ring-amber-500/10 placeholder-slate-400 transition-all"
+              placeholder={
+                language === "ar"
+                  ? "ابحث عن أكثر من 10,000 منتج، ملابس، إلكترونيات، ساعات، أجهزة منزلية..."
+                  : "Search over 10,000 products, clothes, electronics, watches, home goods..."
+              }
+              className={`w-full bg-slate-900/90 text-white text-sm py-2.5 rounded-2xl border-2 border-amber-500/40 focus:border-amber-400 focus:outline-none focus:ring-4 focus:ring-amber-500/10 placeholder-slate-400 transition-all ${
+                dir === "rtl" ? "pr-11 pl-28 text-right" : "pl-11 pr-28 text-left"
+              }`}
             />
-            <Search className="absolute right-3.5 text-amber-400 pointer-events-none" size={18} />
+            <Search
+              className={`absolute text-amber-400 pointer-events-none ${
+                dir === "rtl" ? "right-3.5" : "left-3.5"
+              }`}
+              size={18}
+            />
             <button
               type="submit"
-              className="absolute left-1.5 top-1.5 bottom-1.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-black text-xs px-5 rounded-xl shadow-md transition-all cursor-pointer flex items-center gap-1"
+              className={`absolute top-1.5 bottom-1.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-black text-xs px-5 rounded-xl shadow-md transition-all cursor-pointer flex items-center gap-1 ${
+                dir === "rtl" ? "left-1.5" : "right-1.5"
+              }`}
             >
-              بحث
+              {language === "ar" ? "بحث" : "Search"}
             </button>
           </div>
         </form>
@@ -141,14 +158,14 @@ export function StoreNavbar({ onSearch }: { onSearch?: (q: string) => void }) {
               <div className="w-6 h-6 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 text-black font-black text-xs flex items-center justify-center">
                 {customer.name.charAt(0)}
               </div>
-              <div className="flex flex-col text-right">
+              <div className={`flex flex-col ${dir === "rtl" ? "text-right" : "text-left"}`}>
                 <span className="text-xs font-bold text-white max-w-[100px] truncate">{customer.name}</span>
-                <span className="text-[9px] text-emerald-400 font-semibold">حسابي</span>
+                <span className="text-[9px] text-emerald-400 font-semibold">{language === "ar" ? "حسابي" : "My Account"}</span>
               </div>
               <button
                 onClick={logout}
-                className="text-red-400 hover:text-red-300 pr-1 text-xs"
-                title="تسجيل الخروج"
+                className="text-red-400 hover:text-red-300 px-1 text-xs cursor-pointer"
+                title={language === "ar" ? "تسجيل الخروج" : "Logout"}
               >
                 <LogOut size={13} />
               </button>
@@ -159,7 +176,7 @@ export function StoreNavbar({ onSearch }: { onSearch?: (q: string) => void }) {
               className="hidden sm:flex items-center gap-1.5 bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700 text-white px-3.5 py-2 rounded-2xl text-xs font-bold transition-all cursor-pointer hover:border-amber-500/40"
             >
               <User size={16} className="text-amber-400" />
-              <span>تسجيل الدخول / حساب</span>
+              <span>{language === "ar" ? "تسجيل الدخول / حساب" : "Sign In / Account"}</span>
             </button>
           )}
 
@@ -171,14 +188,16 @@ export function StoreNavbar({ onSearch }: { onSearch?: (q: string) => void }) {
             <div className="relative">
               <ShoppingCart size={20} className="text-amber-400 group-hover:scale-110 transition-transform" />
               {totalItems > 0 && (
-                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-black w-4 h-4 rounded-full flex items-center justify-center animate-bounce">
+                <span className={`absolute -top-2 ${dir === "rtl" ? "-right-2" : "-left-2"} bg-red-500 text-white text-[10px] font-black w-4 h-4 rounded-full flex items-center justify-center animate-bounce`}>
                   {totalItems}
                 </span>
               )}
             </div>
-            <div className="hidden lg:flex flex-col text-right">
-              <span className="text-[10px] text-slate-400">السلة</span>
-              <span className="text-xs font-bold text-amber-300">{subtotal.toLocaleString()} ر.س</span>
+            <div className={`hidden lg:flex flex-col ${dir === "rtl" ? "text-right" : "text-left"}`}>
+              <span className="text-[10px] text-slate-400">{language === "ar" ? "السلة" : "Cart"}</span>
+              <span className="text-xs font-bold text-amber-300">
+                {subtotal.toLocaleString()} {language === "ar" ? "ر.س" : "SAR"}
+              </span>
             </div>
           </button>
 
@@ -199,15 +218,19 @@ export function StoreNavbar({ onSearch }: { onSearch?: (q: string) => void }) {
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="ابحث في آلاف المنتجات..."
-            className="w-full bg-slate-900 text-white text-xs pr-10 pl-20 py-2.5 rounded-xl border border-amber-500/30 focus:border-amber-400 focus:outline-none"
+            placeholder={language === "ar" ? "ابحث في آلاف المنتجات..." : "Search thousands of products..."}
+            className={`w-full bg-slate-900 text-white text-xs py-2.5 rounded-xl border border-amber-500/30 focus:border-amber-400 focus:outline-none ${
+              dir === "rtl" ? "pr-10 pl-20 text-right" : "pl-10 pr-20 text-left"
+            }`}
           />
-          <Search className="absolute right-3 top-3 text-amber-400" size={16} />
+          <Search className={`absolute top-3 text-amber-400 ${dir === "rtl" ? "right-3" : "left-3"}`} size={16} />
           <button
             type="submit"
-            className="absolute left-1.5 top-1.5 bottom-1.5 bg-amber-500 text-black font-bold text-xs px-3.5 rounded-lg"
+            className={`absolute top-1.5 bottom-1.5 bg-amber-500 text-black font-bold text-xs px-3.5 rounded-lg ${
+              dir === "rtl" ? "left-1.5" : "right-1.5"
+            }`}
           >
-            بحث
+            {language === "ar" ? "بحث" : "Search"}
           </button>
         </form>
       </div>
@@ -228,7 +251,7 @@ export function StoreNavbar({ onSearch }: { onSearch?: (q: string) => void }) {
                 }}
                 className="text-xs text-red-400 font-bold"
               >
-                تسجيل الخروج
+                {language === "ar" ? "تسجيل الخروج" : "Logout"}
               </button>
             </div>
           ) : (
@@ -240,7 +263,7 @@ export function StoreNavbar({ onSearch }: { onSearch?: (q: string) => void }) {
                 }}
                 className="bg-amber-500 text-black font-bold text-xs py-2.5 rounded-xl text-center"
               >
-                تسجيل الدخول
+                {language === "ar" ? "تسجيل الدخول" : "Sign In"}
               </button>
               <button
                 onClick={() => {
@@ -249,7 +272,7 @@ export function StoreNavbar({ onSearch }: { onSearch?: (q: string) => void }) {
                 }}
                 className="bg-slate-800 text-white font-bold text-xs py-2.5 rounded-xl text-center border border-slate-700"
               >
-                حساب جديد
+                {language === "ar" ? "حساب جديد" : "Register"}
               </button>
             </div>
           )}
@@ -260,7 +283,7 @@ export function StoreNavbar({ onSearch }: { onSearch?: (q: string) => void }) {
               onClick={() => setMobileMenuOpen(false)}
               className="block text-xs text-slate-300 py-1.5"
             >
-              سياسة الخصوصية
+              {language === "ar" ? "سياسة الخصوصية والشروط" : "Privacy Policy & Terms"}
             </Link>
           </div>
         </div>
@@ -268,19 +291,21 @@ export function StoreNavbar({ onSearch }: { onSearch?: (q: string) => void }) {
 
       {/* Slide-out Cart Drawer with Portal */}
       {showCartDrawer && typeof document !== "undefined" && createPortal(
-        <div className="fixed inset-0 z-[99999] overflow-hidden" dir="rtl">
+        <div className="fixed inset-0 z-[99999] overflow-hidden" dir={dir}>
           {/* Backdrop */}
           <div
             className="fixed inset-0 bg-black/80 backdrop-blur-sm transition-opacity cursor-pointer"
             onClick={() => setShowCartDrawer(false)}
           />
           {/* Drawer Slide Panel */}
-          <div className="fixed inset-y-0 left-0 max-w-full flex z-10">
-            <div className="w-screen max-w-md bg-slate-950 border-r border-slate-800 p-6 flex flex-col shadow-2xl h-full animate-in slide-in-from-left duration-300">
+          <div className={`fixed inset-y-0 ${dir === "rtl" ? "left-0" : "right-0"} max-w-full flex z-10`}>
+            <div className={`w-screen max-w-md bg-slate-950 ${dir === "rtl" ? "border-r slide-in-from-left" : "border-l slide-in-from-right"} border-slate-800 p-6 flex flex-col shadow-2xl h-full animate-in duration-300`}>
               <div className="flex items-center justify-between pb-4 border-b border-slate-800">
                 <div className="flex items-center gap-2">
                   <ShoppingCart className="text-amber-400" size={20} />
-                  <h3 className="text-lg font-bold text-white">سلة المشتريات ({totalItems})</h3>
+                  <h3 className="text-lg font-bold text-white">
+                    {language === "ar" ? `سلة المشتريات (${totalItems})` : `Shopping Cart (${totalItems})`}
+                  </h3>
                 </div>
                 <button
                   onClick={() => setShowCartDrawer(false)}
@@ -293,8 +318,12 @@ export function StoreNavbar({ onSearch }: { onSearch?: (q: string) => void }) {
               {items.length === 0 ? (
                 <div className="flex-1 flex flex-col items-center justify-center text-center p-8 text-slate-400">
                   <ShoppingCart size={48} className="opacity-20 mb-3 text-amber-400" />
-                  <p className="font-bold text-white text-base">السلة فارغة حالياً</p>
-                  <p className="text-xs text-slate-400 mt-1">تصفح المنتجات وأضف ما يعجبك إلى السلة فوراً</p>
+                  <p className="font-bold text-white text-base">
+                    {language === "ar" ? "السلة فارغة حالياً" : "Your cart is currently empty"}
+                  </p>
+                  <p className="text-xs text-slate-400 mt-1">
+                    {language === "ar" ? "تصفح المنتجات وأضف ما يعجبك إلى السلة فوراً" : "Browse products and add your favorites to the cart"}
+                  </p>
                 </div>
               ) : (
                 <div className="flex-1 overflow-y-auto divide-y divide-slate-800 py-4 space-y-3">
@@ -311,12 +340,14 @@ export function StoreNavbar({ onSearch }: { onSearch?: (q: string) => void }) {
                         />
                       ) : (
                         <div className="w-16 h-16 rounded-xl bg-slate-900 flex items-center justify-center text-xs text-slate-600 shrink-0">
-                          لا صورة
+                          {language === "ar" ? "لا صورة" : "No image"}
                         </div>
                       )}
                       <div className="flex-1 min-w-0">
                         <p className="text-xs font-semibold text-white truncate">{item.name}</p>
-                        <p className="text-xs font-bold text-amber-400 mt-1">{item.price.toLocaleString()} ر.س</p>
+                        <p className="text-xs font-bold text-amber-400 mt-1">
+                          {item.price.toLocaleString()} {language === "ar" ? "ر.س" : "SAR"}
+                        </p>
                         <div className="flex items-center gap-2 mt-2">
                           <button
                             onClick={() => updateQuantity(item.id, -1)}
@@ -336,7 +367,7 @@ export function StoreNavbar({ onSearch }: { onSearch?: (q: string) => void }) {
                       <button
                         onClick={() => removeFromCart(item.id)}
                         className="text-red-400/80 hover:text-red-400 p-1.5 cursor-pointer"
-                        title="حذف الصنف"
+                        title={language === "ar" ? "حذف الصنف" : "Remove item"}
                       >
                         <Trash2 size={16} />
                       </button>
@@ -348,8 +379,12 @@ export function StoreNavbar({ onSearch }: { onSearch?: (q: string) => void }) {
               {items.length > 0 && (
                 <div className="pt-4 border-t border-slate-800 space-y-3 mt-auto">
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-slate-400">الإجمالي الفرعي:</span>
-                    <span className="font-black text-amber-400 text-lg">{subtotal.toLocaleString()} ر.س</span>
+                    <span className="text-slate-400">
+                      {language === "ar" ? "الإجمالي الفرعي:" : "Subtotal:"}
+                    </span>
+                    <span className="font-black text-amber-400 text-lg">
+                      {subtotal.toLocaleString()} {language === "ar" ? "ر.س" : "SAR"}
+                    </span>
                   </div>
                   <button
                     onClick={() => {
@@ -358,7 +393,9 @@ export function StoreNavbar({ onSearch }: { onSearch?: (q: string) => void }) {
                     }}
                     className="w-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-black py-3.5 rounded-xl shadow-lg shadow-amber-500/20 text-sm transition-all cursor-pointer flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-[0.98]"
                   >
-                    <span>متابعة إتمام الشراء والدفع 🚀</span>
+                    <span>
+                      {language === "ar" ? "متابعة إتمام الشراء والدفع 🚀" : "Proceed to Checkout 🚀"}
+                    </span>
                   </button>
                 </div>
               )}
@@ -379,29 +416,33 @@ export function StoreNavbar({ onSearch }: { onSearch?: (q: string) => void }) {
 }
 
 export function StoreFooter() {
-  const { openRegisterModal } = useCustomerAuth();
+  const { language, dir } = useI18n();
 
   return (
-    <footer className="bg-slate-950 border-t border-slate-900 text-slate-400 text-xs py-14 px-4" dir="rtl">
+    <footer className="bg-slate-950 border-t border-slate-900 text-slate-400 text-xs py-14 px-4" dir={dir}>
       <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-8">
         <div className="space-y-3">
           <div className="flex items-center gap-3">
             <img
               src="/app-logo.png"
-              alt="عماد إكسبرس"
+              alt={language === "ar" ? "عماد إكسبرس" : "Emad Express"}
               className="w-12 h-12 rounded-2xl object-cover ring-2 ring-amber-500/40 shadow-lg shadow-amber-500/20"
             />
             <div>
-              <span className="font-black text-white text-base block">عماد إكسبرس</span>
+              <span className="font-black text-white text-base block">
+                {language === "ar" ? "عماد إكسبرس" : "Emad Express"}
+              </span>
               <span className="text-[10px] text-amber-400/80 font-bold tracking-wider">EMAD EXPRESS GLOBAL</span>
             </div>
           </div>
           <p className="text-slate-400 leading-relaxed text-xs">
-            منصتك العالمية الأولى للتسوق والدروب شيبينغ المباشر من علي إكسبرس، بأفضل الأسعار المصنعية، مع فحص آلي للمخزون وشحن مباشر وسريع.
+            {language === "ar"
+              ? "منصتك العالمية الأولى للتسوق والدروب شيبينغ المباشر من علي إكسبرس، بأفضل الأسعار المصنعية، مع فحص آلي للمخزون وشحن مباشر وسريع."
+              : "Your premier global dropshipping and retail platform directly connected with verified AliExpress manufacturers, featuring automated stock sync and express shipping."}
           </p>
           <div className="flex items-center gap-2 pt-2">
             <span className="bg-amber-500/10 text-amber-300 border border-amber-500/30 px-3 py-1 rounded-full text-[11px] font-bold">
-              ⭐️ ضمان الجودة والاسترجاع 100%
+              {language === "ar" ? "⭐️ ضمان الجودة والاسترجاع 100%" : "⭐️ 100% Quality & Return Guarantee"}
             </span>
           </div>
         </div>
@@ -409,23 +450,51 @@ export function StoreFooter() {
         <div>
           <h4 className="font-bold text-white text-sm mb-3.5 flex items-center gap-2">
             <span className="w-1.5 h-3.5 bg-amber-500 rounded-full" />
-            <span>أقسام المتجر الرئيسية</span>
+            <span>{language === "ar" ? "أقسام المتجر الرئيسية" : "Main Categories"}</span>
           </h4>
           <ul className="space-y-2.5">
-            <li><Link href="/?category=6" className="hover:text-amber-400 transition-colors">📱 هواتف ذكية وملحقاتها</Link></li>
-            <li><Link href="/?category=7" className="hover:text-amber-400 transition-colors">🎧 إلكترونيات وسماعات</Link></li>
-            <li><Link href="/?category=9" className="hover:text-amber-400 transition-colors">👗 أزياء وملابس نسائية</Link></li>
-            <li><Link href="/?category=10" className="hover:text-amber-400 transition-colors">👔 أزياء وملابس رجالية</Link></li>
-            <li><Link href="/?category=11" className="hover:text-amber-400 transition-colors">⌚ ساعات ومجوهرات فاخرة</Link></li>
-            <li><Link href="/?category=12" className="hover:text-amber-400 transition-colors">👟 حقائب وأحذية رياضية</Link></li>
-            <li><Link href="/?category=13" className="hover:text-amber-400 transition-colors">🏠 المنزل والمطبخ والحديقة</Link></li>
+            <li>
+              <Link href="/?category=3" className="hover:text-amber-400 transition-colors">
+                📱 {language === "ar" ? "هواتف ذكية وإكسسوارات" : "Smartphones & Accessories"}
+              </Link>
+            </li>
+            <li>
+              <Link href="/?category=12" className="hover:text-amber-400 transition-colors">
+                🎧 {language === "ar" ? "أجهزة إلكترونية استهلاكية" : "Consumer Electronics"}
+              </Link>
+            </li>
+            <li>
+              <Link href="/?category=2" className="hover:text-amber-400 transition-colors">
+                👗 {language === "ar" ? "أزياء وموضة" : "Fashion & Style"}
+              </Link>
+            </li>
+            <li>
+              <Link href="/?category=13" className="hover:text-amber-400 transition-colors">
+                👔 {language === "ar" ? "أزياء وملابس رجالية" : "Men's Fashion"}
+              </Link>
+            </li>
+            <li>
+              <Link href="/?category=4" className="hover:text-amber-400 transition-colors">
+                ⌚ {language === "ar" ? "ساعات ومجوهرات" : "Watches & Jewelry"}
+              </Link>
+            </li>
+            <li>
+              <Link href="/?category=10" className="hover:text-amber-400 transition-colors">
+                👟 {language === "ar" ? "أحذية وحقائب" : "Shoes & Bags"}
+              </Link>
+            </li>
+            <li>
+              <Link href="/?category=5" className="hover:text-amber-400 transition-colors">
+                🏠 {language === "ar" ? "المنزل والمطبخ" : "Home & Kitchen"}
+              </Link>
+            </li>
           </ul>
         </div>
 
         <div>
           <h4 className="font-bold text-white text-sm mb-3.5 flex items-center gap-2">
             <span className="w-1.5 h-3.5 bg-amber-500 rounded-full" />
-            <span>خدمة العملاء والدعم</span>
+            <span>{language === "ar" ? "خدمة العملاء والدعم" : "Customer Support"}</span>
           </h4>
           <ul className="space-y-2.5">
             <li>
@@ -435,28 +504,46 @@ export function StoreFooter() {
                 rel="noreferrer"
                 className="text-emerald-400 hover:text-emerald-300 font-bold inline-flex items-center gap-1.5 transition-colors"
               >
-                <span>💬 خدمة العملاء عبر واتساب</span>
+                <span>{language === "ar" ? "💬 خدمة العملاء عبر واتساب" : "💬 WhatsApp Customer Support"}</span>
               </a>
             </li>
-            <li><Link href="/privacy-policy" className="hover:text-amber-400 transition-colors">🔒 سياسة الخصوصية والشروط</Link></li>
-            <li><span className="text-slate-400">⚡ شحن وتوصيل فوري مع تتبع لحظي</span></li>
-            <li><span className="text-slate-400">🛡️ حماية المشتريات والدفع الآمن</span></li>
+            <li>
+              <Link href="/privacy-policy" className="hover:text-amber-400 transition-colors">
+                🔒 {language === "ar" ? "سياسة الخصوصية والشروط" : "Privacy Policy & Terms"}
+              </Link>
+            </li>
+            <li>
+              <span className="text-slate-400">
+                ⚡ {language === "ar" ? "شحن وتوصيل فوري مع تتبع لحظي" : "Express Delivery & Real-time Tracking"}
+              </span>
+            </li>
+            <li>
+              <span className="text-slate-400">
+                🛡️ {language === "ar" ? "حماية المشتريات والدفع الآمن" : "Buyer Protection & Secure Payment"}
+              </span>
+            </li>
           </ul>
         </div>
 
         <div>
           <h4 className="font-bold text-white text-sm mb-3.5 flex items-center gap-2">
             <span className="w-1.5 h-3.5 bg-amber-500 rounded-full" />
-            <span>شحن وضمان 100%</span>
+            <span>{language === "ar" ? "شحن وضمان 100%" : "100% Quality & Shipping"}</span>
           </h4>
           <p className="text-slate-400 mb-3.5 text-xs leading-relaxed">
-            نوفر شحن دولي ومحلي سريع ومباشر، مع خيارات استبدال واسترجاع مضمونة وسياسة دفع آمنة تحمي حقوق المشتري بالكامل.
+            {language === "ar"
+              ? "نوفر شحن دولي ومحلي سريع ومباشر، مع خيارات استبدال واسترجاع مضمونة وسياسة دفع آمنة تحمي حقوق المشتري بالكامل."
+              : "We provide fast international and domestic direct shipping, guaranteed exchange/return policies, and secure payments."}
           </p>
           <div className="bg-slate-900 border border-slate-800 p-3 rounded-2xl flex items-center gap-2.5">
             <span className="text-xl">🚀</span>
             <div className="flex flex-col">
-              <span className="text-white font-bold text-xs">توصيل إلى باب البيت</span>
-              <span className="text-[10px] text-slate-400">تتبع الشحنة برقم التتبع فور الشحن</span>
+              <span className="text-white font-bold text-xs">
+                {language === "ar" ? "توصيل إلى باب البيت" : "Doorstep Delivery"}
+              </span>
+              <span className="text-[10px] text-slate-400">
+                {language === "ar" ? "تتبع الشحنة برقم التتبع فور الشحن" : "Track shipment instantly with tracking code"}
+              </span>
             </div>
           </div>
         </div>
@@ -465,7 +552,9 @@ export function StoreFooter() {
       {/* Trust & Payment Badges Ribbon */}
       <div className="max-w-7xl mx-auto border-t border-slate-900 mt-10 pt-6 flex flex-wrap items-center justify-between gap-4 text-[11px] text-slate-500">
         <div className="flex flex-wrap items-center gap-3">
-          <span className="text-slate-400 font-semibold">وسائل الدفع والشحن المعتمدة:</span>
+          <span className="text-slate-400 font-semibold">
+            {language === "ar" ? "وسائل الدفع والشحن المعتمدة:" : "Verified Payment & Shipping:"}
+          </span>
           <span className="bg-slate-900 px-2.5 py-1 rounded-md border border-slate-800 text-slate-300 font-bold">💳 مدى Mada</span>
           <span className="bg-slate-900 px-2.5 py-1 rounded-md border border-slate-800 text-slate-300 font-bold">💳 Visa / MasterCard</span>
           <span className="bg-slate-900 px-2.5 py-1 rounded-md border border-slate-800 text-slate-300 font-bold">🍏 Apple Pay</span>
@@ -473,7 +562,11 @@ export function StoreFooter() {
         </div>
 
         <div className="flex items-center gap-4">
-          <span>© 2026 جميع الحقوق محفوظة لمتجر <strong>عماد إكسبرس (Emad Express)</strong>.</span>
+          <span>
+            {language === "ar"
+              ? "© 2026 جميع الحقوق محفوظة لمتجر عماد إكسبرس (Emad Express)."
+              : "© 2026 All Rights Reserved. Emad Express Global Store."}
+          </span>
         </div>
       </div>
     </footer>
