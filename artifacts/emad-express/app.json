@@ -46,7 +46,16 @@
         }
       ],
       "expo-font",
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "enableProguardInReleaseBuilds": true,
+            "extraProguardRules": "-keep class com.facebook.react.** { *; }\n-keep class com.swmansion.reanimated.** { *; }\n-dontwarn com.facebook.react.**"
+          }
+        }
+      ]
     ],
     "owner": "emadexperss",
     "extra": {
