@@ -19,7 +19,7 @@
       "buildNumber": "21",
       "infoPlist": {
         "NSAppTransportSecurity": {
-          "NSAllowsArbitraryLoads": true
+          "NSAllowsArbitraryLoads": false
         }
       }
     },
@@ -52,7 +52,8 @@
         {
           "android": {
             "enableProguardInReleaseBuilds": true,
-            "extraProguardRules": "-keep class com.facebook.react.** { *; }\n-keep class com.swmansion.reanimated.** { *; }\n-dontwarn com.facebook.react.**"
+            "extraProguardRules": "-keep class com.facebook.react.** { *; }\n-keep class com.swmansion.reanimated.** { *; }\n-dontwarn com.facebook.react.**\n-assumenosideeffects class android.util.Log { public static boolean isLoggable(java.lang.String, int); public static int v(...); public static int d(...); public static int i(...); }\n-keepattributes *Annotation*,Signature,InnerClasses,EnclosingMethod",
+            "usesCleartextTraffic": false
           }
         }
       ]

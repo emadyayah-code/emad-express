@@ -46,3 +46,13 @@ export const uploadRateLimiter = rateLimitFn({
   message: { success: false, message: "تم تجاوز عدد عمليات الرفع المسموح بها" },
   keyGenerator: getClientIp,
 });
+
+export const orderRateLimiter = rateLimitFn({
+  windowMs: 60 * 1000, // 1 minute
+  max: 15, // max 15 order creation attempts per minute per IP
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: "يرجى الانتظار قليلاً قبل إرسال طلب جديد" },
+  keyGenerator: getClientIp,
+});
+

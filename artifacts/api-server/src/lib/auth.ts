@@ -1,4 +1,4 @@
-import { createHmac, randomBytes } from "crypto";
+import { createHmac, randomBytes, timingSafeEqual } from "crypto";
 import bcrypt from "bcryptjs";
 import type { Request, Response, NextFunction } from "express";
 import { env } from "./env";
@@ -41,7 +41,9 @@ export function verifyToken(token: string): SessionPayload | null {
     const [body, sig] = token.split(".");
     if (!body || !sig) return null;
     const expected = createHmac("sha256", SECRET).update(body).digest("base64url");
-    if (sig !== expected) return null;
+    const sigBuf = Buffer.from(sig);
+    const expBuf = Buffer.from(expected);
+    if (sigBuf.length !== expBuf.length || !timingSafeEqual(sigBuf, expBuf)) return null;
     const payload: SessionPayload = JSON.parse(Buffer.from(body, "base64url").toString("utf8"));
     if (payload.exp && payload.exp < Date.now()) return null;
     return payload;

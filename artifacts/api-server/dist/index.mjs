@@ -86241,7 +86241,7 @@ import { mkdirSync } from "fs";
 
 // src/lib/auth.ts
 var import_bcryptjs = __toESM(require_bcryptjs(), 1);
-import { createHmac, randomBytes } from "crypto";
+import { createHmac, randomBytes, timingSafeEqual } from "crypto";
 
 // src/lib/env.ts
 var import_envalid = __toESM(require_dist3(), 1);
@@ -86311,7 +86311,9 @@ function verifyToken(token) {
     const [body, sig] = token.split(".");
     if (!body || !sig) return null;
     const expected = createHmac("sha256", SECRET).update(body).digest("base64url");
-    if (sig !== expected) return null;
+    const sigBuf = Buffer.from(sig);
+    const expBuf = Buffer.from(expected);
+    if (sigBuf.length !== expBuf.length || !timingSafeEqual(sigBuf, expBuf)) return null;
     const payload = JSON.parse(Buffer.from(body, "base64url").toString("utf8"));
     if (payload.exp && payload.exp < Date.now()) return null;
     return payload;
@@ -87428,6 +87430,16 @@ var uploadRateLimiter = rateLimitFn({
   standardHeaders: true,
   legacyHeaders: false,
   message: { success: false, message: "\u062A\u0645 \u062A\u062C\u0627\u0648\u0632 \u0639\u062F\u062F \u0639\u0645\u0644\u064A\u0627\u062A \u0627\u0644\u0631\u0641\u0639 \u0627\u0644\u0645\u0633\u0645\u0648\u062D \u0628\u0647\u0627" },
+  keyGenerator: getClientIp
+});
+var orderRateLimiter = rateLimitFn({
+  windowMs: 60 * 1e3,
+  // 1 minute
+  max: 15,
+  // max 15 order creation attempts per minute per IP
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: "\u064A\u0631\u062C\u0649 \u0627\u0644\u0627\u0646\u062A\u0638\u0627\u0631 \u0642\u0644\u064A\u0644\u0627\u064B \u0642\u0628\u0644 \u0625\u0631\u0633\u0627\u0644 \u0637\u0644\u0628 \u062C\u062F\u064A\u062F" },
   keyGenerator: getClientIp
 });
 
@@ -96738,7 +96750,7 @@ router2.post("/shipping/calculate", async (req, res, next) => {
     next(err);
   }
 });
-router2.post("/orders", validateBody(orderSchema), async (req, res, next) => {
+router2.post("/orders", orderRateLimiter, validateBody(orderSchema), async (req, res, next) => {
   try {
     const session = getSession(req);
     let customer = null;
@@ -100860,17 +100872,53 @@ function timeoutMiddleware(ms = 3e4) {
     next();
   };
 }
-function sanitizeInput(req, _res, next) {
-  if (req.query && typeof req.query === "object") {
-    try {
-      for (const key of Object.keys(req.query)) {
-        const val = req.query[key];
-        if (typeof val === "string") {
-          req.query[key] = val.replace(/[<>]/g, "");
-        }
+function cleanString(str2) {
+  return str2.replace(/\0/g, "").replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "").replace(/[<>]/g, "");
+}
+function sanitizeObject(obj, depth = 0) {
+  if (depth > 6 || !obj || typeof obj !== "object") return obj;
+  if (Array.isArray(obj)) {
+    for (let i = 0; i < obj.length; i++) {
+      if (typeof obj[i] === "string") {
+        obj[i] = cleanString(obj[i]);
+      } else if (typeof obj[i] === "object" && obj[i] !== null) {
+        sanitizeObject(obj[i], depth + 1);
       }
-    } catch {
     }
+    return obj;
+  }
+  for (const key of Object.keys(obj)) {
+    if (key === "__proto__" || key === "constructor" || key === "prototype") {
+      delete obj[key];
+      continue;
+    }
+    const val = obj[key];
+    if (typeof val === "string") {
+      if (key !== "password" && key !== "current_password" && key !== "new_password" && key !== "confirmPassword") {
+        obj[key] = cleanString(val);
+      }
+    } else if (typeof val === "object" && val !== null) {
+      sanitizeObject(val, depth + 1);
+    }
+  }
+  return obj;
+}
+function sanitizeInput(req, res, next) {
+  try {
+    res.setHeader("X-Content-Type-Options", "nosniff");
+    res.setHeader("X-Frame-Options", "DENY");
+    res.setHeader("X-XSS-Protection", "1; mode=block");
+    res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+    if (req.query && typeof req.query === "object") {
+      sanitizeObject(req.query);
+    }
+    if (req.body && typeof req.body === "object") {
+      sanitizeObject(req.body);
+    }
+    if (req.params && typeof req.params === "object") {
+      sanitizeObject(req.params);
+    }
+  } catch {
   }
   next();
 }
@@ -100913,6 +100961,7 @@ try {
 } catch {
 }
 var app = (0, import_express5.default)();
+app.disable("x-powered-by");
 if (env.TRUST_PROXY) {
   app.set("trust proxy", true);
 }

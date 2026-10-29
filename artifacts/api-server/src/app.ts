@@ -21,6 +21,7 @@ try {
 }
 
 const app: Express = express();
+app.disable("x-powered-by");
 
 // Trust proxy for accurate client IP behind reverse proxy
 if (env.TRUST_PROXY) {

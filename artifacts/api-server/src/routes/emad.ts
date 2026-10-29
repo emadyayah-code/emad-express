@@ -9,7 +9,7 @@ import { signToken, getSession, requireAuth, requireRole, hashPassword, verifyPa
 import { env } from "../lib/env";
 import { logger } from "../lib/logger";
 import { sendVerificationEmail, sendPasswordResetEmail, generateVerificationCode, getVerificationExpiry } from "../lib/email";
-import { authRateLimiter, uploadRateLimiter } from "../middlewares/rateLimiter";
+import { authRateLimiter, uploadRateLimiter, orderRateLimiter } from "../middlewares/rateLimiter";
 import { validateBody, validateParams } from "../middlewares/validate";
 import {
   loginSchema, registerSchema, productSchema, categorySchema, orderSchema,
@@ -1869,7 +1869,7 @@ router.post("/shipping/calculate", async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
-router.post("/orders", validateBody(orderSchema), async (req, res, next) => {
+router.post("/orders", orderRateLimiter, validateBody(orderSchema), async (req, res, next) => {
   try {
     const session = getSession(req);
     let customer: any = null;
