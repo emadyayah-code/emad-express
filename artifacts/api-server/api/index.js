@@ -87135,6 +87135,17 @@ var orderRateLimiter = rateLimitFn({
   message: { success: false, message: "\u064A\u0631\u062C\u0649 \u0627\u0644\u0627\u0646\u062A\u0638\u0627\u0631 \u0642\u0644\u064A\u0644\u0627\u064B \u0642\u0628\u0644 \u0625\u0631\u0633\u0627\u0644 \u0637\u0644\u0628 \u062C\u062F\u064A\u062F" },
   keyGenerator: getClientIp
 });
+var adminAuthRateLimiter = rateLimitFn({
+  windowMs: 15 * 60 * 1e3,
+  // 15 minutes
+  max: 5,
+  // max 5 attempts per 15 minutes for admin login
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: "\u062A\u0645 \u062A\u062C\u0627\u0648\u0632 \u0645\u062D\u0627\u0648\u0644\u0627\u062A \u0627\u0644\u062F\u062E\u0648\u0644 \u0627\u0644\u0645\u0633\u0645\u0648\u062D \u0628\u0647\u0627 \u0644\u0644\u0645\u062F\u064A\u0631. \u062A\u0645 \u062D\u0638\u0631 \u0627\u0644\u0645\u062D\u0627\u0648\u0644\u0627\u062A \u0645\u0624\u0642\u062A\u0627\u064B \u0644\u062D\u0645\u0627\u064A\u0629 \u0627\u0644\u062D\u0633\u0627\u0628" },
+  skipSuccessfulRequests: true,
+  keyGenerator: (req) => `${getClientIp(req)}_${(req.body?.email || "").toLowerCase()}`
+});
 
 // ../../node_modules/.pnpm/zod@3.25.76/node_modules/zod/v3/external.js
 var external_exports = {};
@@ -96374,9 +96385,13 @@ router2.post("/orders", orderRateLimiter, validateBody(orderSchema), async (req,
         if (prod.quantity < item.quantity) {
           return res.status(400).json({ success: false, message: `\u0627\u0644\u0643\u0645\u064A\u0629 \u063A\u064A\u0631 \u0645\u062A\u0648\u0641\u0631\u0629 \u0644\u0644\u0645\u0646\u062A\u062C ${item.product_name}. \u0627\u0644\u0645\u062A\u0627\u062D: ${prod.quantity}` });
         }
+        const authoritativePrice = Number(prod.price) || 0;
+        item.price = authoritativePrice;
+        item.product_name = prod.name;
+        item.total = parseFloat((authoritativePrice * Number(item.quantity)).toFixed(2));
       }
     }
-    const subtotal = items.reduce((s, i) => s + (i.total || i.price * i.quantity || 0), 0);
+    const subtotal = items.reduce((s, i) => s + (Number(i.price) * Number(i.quantity) || 0), 0);
     const orderCurrency = currency || customer?.preferred_currency || "SAR";
     const shippingCalc = await calculateAliExpressShipping({
       subtotal,
@@ -100486,6 +100501,13 @@ app.use((req, res, next) => {
   }
   next();
 });
+app.use((req, res, next) => {
+  const lowerUrl = req.url.toLowerCase();
+  if (lowerUrl.includes("/.env") || lowerUrl.includes("/.git") || lowerUrl.includes("/package.json") || lowerUrl.includes("/tsconfig") || lowerUrl.includes("/node_modules")) {
+    return res.status(403).json({ success: false, message: "\u0645\u0645\u0646\u0648\u0639 \u0627\u0644\u0648\u0635\u0648\u0644" });
+  }
+  next();
+});
 app.get("/api", (_req, res) => res.json({
   success: true,
   service: "emad-express-api",
@@ -100504,9 +100526,10 @@ app.use(helmetFn({
       styleSrc: ["'self'", "'unsafe-inline'", "https:"],
       scriptSrc: ["'self'"],
       imgSrc: ["'self'", "data:", "https:"],
-      connectSrc: ["'self'"],
+      connectSrc: ["'self'", "https:"],
       fontSrc: ["'self'", "https:"],
       objectSrc: ["'none'"],
+      frameAncestors: ["'none'"],
       upgradeInsecureRequests: []
     }
   },

@@ -37,6 +37,21 @@ app.use((req, res, next) => {
   next();
 });
 
+// Block sensitive file and path scanning attempts
+app.use((req, res, next) => {
+  const lowerUrl = req.url.toLowerCase();
+  if (
+    lowerUrl.includes("/.env") ||
+    lowerUrl.includes("/.git") ||
+    lowerUrl.includes("/package.json") ||
+    lowerUrl.includes("/tsconfig") ||
+    lowerUrl.includes("/node_modules")
+  ) {
+    return res.status(403).json({ success: false, message: "ممنوع الوصول" });
+  }
+  next();
+});
+
 // Quick top-level health and API checks
 app.get("/api", (_req, res) => res.json({
   success: true,
@@ -60,9 +75,10 @@ app.use(helmetFn({
       styleSrc: ["'self'", "'unsafe-inline'", "https:"],
       scriptSrc: ["'self'"],
       imgSrc: ["'self'", "data:", "https:"],
-      connectSrc: ["'self'"],
+      connectSrc: ["'self'", "https:"],
       fontSrc: ["'self'", "https:"],
       objectSrc: ["'none'"],
+      frameAncestors: ["'none'"],
       upgradeInsecureRequests: [],
     },
   },

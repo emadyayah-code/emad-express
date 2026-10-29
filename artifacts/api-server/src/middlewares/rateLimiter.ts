@@ -56,3 +56,14 @@ export const orderRateLimiter = rateLimitFn({
   keyGenerator: getClientIp,
 });
 
+export const adminAuthRateLimiter = rateLimitFn({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // max 5 attempts per 15 minutes for admin login
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: "تم تجاوز محاولات الدخول المسموح بها للمدير. تم حظر المحاولات مؤقتاً لحماية الحساب" },
+  skipSuccessfulRequests: true,
+  keyGenerator: (req: any) => `${getClientIp(req)}_${(req.body?.email || "").toLowerCase()}`,
+});
+
+

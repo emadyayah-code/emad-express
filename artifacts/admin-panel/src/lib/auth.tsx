@@ -53,6 +53,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
+  // Inactivity auto-logout after 20 minutes of no user interaction
+  useEffect(() => {
+    if (!user) return;
+    const INACTIVITY_TIMEOUT_MS = 20 * 60 * 1000; // 20 minutes
+    let timer: NodeJS.Timeout | number;
+
+    const resetTimer = () => {
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        logout();
+      }, INACTIVITY_TIMEOUT_MS);
+    };
+
+    const events = ["mousedown", "mousemove", "keydown", "scroll", "touchstart"];
+    events.forEach((ev) => window.addEventListener(ev, resetTimer, { passive: true }));
+    resetTimer();
+
+    return () => {
+      clearTimeout(timer);
+      events.forEach((ev) => window.removeEventListener(ev, resetTimer));
+    };
+  }, [user]);
+
   async function login(email: string, password: string) {
     setLoading(true);
     try {

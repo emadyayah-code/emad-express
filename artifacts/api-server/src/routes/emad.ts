@@ -9,7 +9,7 @@ import { signToken, getSession, requireAuth, requireRole, hashPassword, verifyPa
 import { env } from "../lib/env";
 import { logger } from "../lib/logger";
 import { sendVerificationEmail, sendPasswordResetEmail, generateVerificationCode, getVerificationExpiry } from "../lib/email";
-import { authRateLimiter, uploadRateLimiter, orderRateLimiter } from "../middlewares/rateLimiter";
+import { authRateLimiter, uploadRateLimiter, orderRateLimiter, adminAuthRateLimiter } from "../middlewares/rateLimiter";
 import { validateBody, validateParams } from "../middlewares/validate";
 import {
   loginSchema, registerSchema, productSchema, categorySchema, orderSchema,
@@ -1961,10 +1961,16 @@ router.post("/orders", orderRateLimiter, validateBody(orderSchema), async (req, 
         if (prod.quantity < item.quantity) {
           return res.status(400).json({ success: false, message: `الكمية غير متوفرة للمنتج ${item.product_name}. المتاح: ${prod.quantity}` });
         }
+
+        // Anti-tampering: enforce authoritative price and name from database
+        const authoritativePrice = Number(prod.price) || 0;
+        item.price = authoritativePrice;
+        item.product_name = prod.name;
+        item.total = parseFloat((authoritativePrice * Number(item.quantity)).toFixed(2));
       }
     }
 
-    const subtotal = items.reduce((s: number, i: any) => s + (i.total || i.price * i.quantity || 0), 0);
+    const subtotal = items.reduce((s: number, i: any) => s + (Number(i.price) * Number(i.quantity) || 0), 0);
     const orderCurrency = currency || customer?.preferred_currency || "SAR";
 
     // AliExpress Shipping Calculation (Yemen DHL 529 SAR exclusively, Global Choice Free >= 100 SAR else 15 SAR, Premium 45 SAR)
