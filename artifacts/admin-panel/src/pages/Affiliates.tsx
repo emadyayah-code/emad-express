@@ -164,23 +164,29 @@ export default function Affiliates() {
               <button onClick={() => setAddModal(false)}><X size={18} className="text-gray-400" /></button>
             </div>
             <form
+              noValidate
               onSubmit={e => {
                 e.preventDefault();
                 setErrorMsg("");
                 const nameTrimmed = form.name.trim();
-                const emailTrimmed = form.email.trim().toLowerCase();
+                const cleanEmail = form.email
+                  .replace(/['"`‘’“”]/g, "")
+                  .replace(/[\u200B-\u200D\uFEFF\u200E\u200F\u202A-\u202E]/g, "")
+                  .replace(/\s+/g, "")
+                  .toLowerCase();
+
                 if (!nameTrimmed) {
                   setErrorMsg("يرجى كتابة الاسم الكامل للمسوق");
                   return;
                 }
-                if (!emailTrimmed || !emailTrimmed.includes("@") || !emailTrimmed.includes(".")) {
+                if (!cleanEmail || !cleanEmail.includes("@") || !cleanEmail.includes(".")) {
                   setErrorMsg("يرجى إدخال بريد إلكتروني صحيح (مثال: name@example.com)");
                   return;
                 }
                 createMut.mutate({
                   ...form,
                   name: nameTrimmed,
-                  email: emailTrimmed,
+                  email: cleanEmail,
                   phone: form.phone.trim(),
                 });
               }}
@@ -208,15 +214,24 @@ export default function Affiliates() {
               <div>
                 <label className="text-sm font-medium text-gray-700">البريد الإلكتروني</label>
                 <input
-                  type="email"
+                  type="text"
+                  inputMode="email"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck={false}
                   dir="ltr"
                   placeholder="name@example.com"
                   value={form.email}
                   onChange={e => {
                     setErrorMsg("");
-                    setForm({ ...form, email: e.target.value });
+                    const sanitized = e.target.value
+                      .replace(/['"`‘’“”]/g, "")
+                      .replace(/[\u200B-\u200D\uFEFF\u200E\u200F\u202A-\u202E]/g, "")
+                      .replace(/\s+/g, "")
+                      .toLowerCase();
+                    setForm({ ...form, email: sanitized });
                   }}
-                  className="w-full mt-1 border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-amber-400 text-left"
+                  className="w-full mt-1 border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-amber-400 text-left font-mono"
                   required
                 />
               </div>

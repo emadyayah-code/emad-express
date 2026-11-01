@@ -191,10 +191,16 @@ export default function Vendors() {
               <button onClick={() => setAddModal(false)}><X size={18} className="text-gray-400" /></button>
             </div>
             <form
+              noValidate
               onSubmit={e => {
                 e.preventDefault();
                 setErrorMsg("");
-                const emailTrimmed = form.email.trim().toLowerCase();
+                const emailTrimmed = form.email
+                  .replace(/['"`‘’“”]/g, "")
+                  .replace(/[\u200B-\u200D\uFEFF\u200E\u200F\u202A-\u202E]/g, "")
+                  .replace(/\s+/g, "")
+                  .toLowerCase();
+
                 if (!emailTrimmed.includes("@") || !emailTrimmed.includes(".")) {
                   setErrorMsg("يرجى إدخال بريد إلكتروني صحيح");
                   return;
@@ -220,7 +226,7 @@ export default function Vendors() {
                 {[
                   { label: "اسم المتجر", key: "store_name", span: 2 },
                   { label: "اسم المسؤول", key: "name" },
-                  { label: "البريد الإلكتروني", key: "email", type: "email", dir: "ltr" },
+                  { label: "البريد الإلكتروني", key: "email", type: "text", dir: "ltr" },
                   { label: "الهاتف", key: "phone", dir: "ltr" },
                   { label: "نسبة العمولة %", key: "commission_rate", type: "number" },
                   { label: "العنوان", key: "address", span: 2 },
@@ -233,7 +239,15 @@ export default function Vendors() {
                       value={(form as any)[key]}
                       onChange={e => {
                         setErrorMsg("");
-                        setForm({ ...form, [key]: type === "number" ? parseFloat(e.target.value) || 0 : e.target.value });
+                        let val = e.target.value;
+                        if (key === "email") {
+                          val = val
+                            .replace(/['"`‘’“”]/g, "")
+                            .replace(/[\u200B-\u200D\uFEFF\u200E\u200F\u202A-\u202E]/g, "")
+                            .replace(/\s+/g, "")
+                            .toLowerCase();
+                        }
+                        setForm({ ...form, [key]: type === "number" ? parseFloat(val) || 0 : val });
                       }}
                       className="w-full mt-1 border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-amber-400"
                       required={key !== "phone" && key !== "address"}
