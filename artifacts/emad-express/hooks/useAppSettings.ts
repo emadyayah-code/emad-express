@@ -16,6 +16,13 @@ export interface AppSettings {
   about_ar: string;
   about_en: string;
   app_version: string;
+  latest_version?: string;
+  min_version?: string;
+  update_url?: string;
+  update_title?: string;
+  update_notes?: string;
+  force_update?: boolean;
+  update_enabled?: boolean;
   default_currency: string;
   google_ads_enabled: boolean;
   admob_app_id_android?: string;
@@ -35,7 +42,14 @@ const DEFAULTS: AppSettings = {
   address_en: "Yemen, Taiz, Jamal Street",
   about_ar: "منصة تسوق إلكتروني متخصصة في توفير أحدث الأجهزة الإلكترونية والهواتف الذكية بأفضل الأسعار.",
   about_en: "An e-commerce platform specializing in the latest electronic devices at the best prices.",
-  app_version: "18.0.1",
+  app_version: "18.0.4",
+  latest_version: "18.0.4",
+  min_version: "1.0.0",
+  update_url: "https://play.google.com/store/apps/details?id=com.emadexpress.app",
+  update_title: "تحديث جديد متوفر للتطبيق 🚀",
+  update_notes: "يتوفر إصدار جديد يحتوي على تحسينات في السرعة والأداء وتجربة الشراء وإصلاحات مهمة.",
+  force_update: false,
+  update_enabled: true,
   default_currency: "SAR",
   google_ads_enabled: true,
 };

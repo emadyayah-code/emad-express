@@ -97217,12 +97217,63 @@ router2.get("/app-settings", async (_req, res, next) => {
       support_whatsapp: cfg["whatsapp_number"] || cfg["support_whatsapp"] || "772223645",
       support_phone: cfg["support_phone"] || "772223645",
       support_email: cfg["support_email"] || "support@emadexpress.com",
-      app_version: "2.0.0"
+      app_version: cfg["app_latest_version"] || cfg["app_version"] || "18.0.4",
+      latest_version: cfg["app_latest_version"] || cfg["app_version"] || "18.0.4",
+      min_version: cfg["app_min_version"] || "1.0.0",
+      update_url: cfg["app_update_url"] || "https://play.google.com/store/apps/details?id=com.emadexpress.app",
+      update_title: cfg["app_update_title"] || "\u062A\u062D\u062F\u064A\u062B \u062C\u062F\u064A\u062F \u0645\u062A\u0648\u0641\u0631 \u0644\u0644\u062A\u0637\u0628\u064A\u0642 \u{1F680}",
+      update_notes: cfg["app_update_notes"] || "\u064A\u062A\u0648\u0641\u0631 \u0625\u0635\u062F\u0627\u0631 \u062C\u062F\u064A\u062F \u064A\u062D\u062A\u0648\u064A \u0639\u0644\u0649 \u062A\u062D\u0633\u064A\u0646\u0627\u062A \u0641\u064A \u0627\u0644\u0633\u0631\u0639\u0629 \u0648\u0627\u0644\u0623\u062F\u0627\u0621 \u0648\u062A\u062C\u0631\u0628\u0629 \u0627\u0644\u0634\u0631\u0627\u0621 \u0648\u0625\u0635\u0644\u0627\u062D\u0627\u062A \u0645\u0647\u0645\u0629.",
+      force_update: cfg["app_force_update"] === "true",
+      update_enabled: cfg["app_update_enabled"] !== "false"
     };
     return res.json({
       success: true,
       data: responseData,
       ...responseData
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+function compareAppSemver(v1, v2) {
+  const clean = (v) => (v || "").replace(/^v/i, "").split(/[-+]/)[0];
+  const parts1 = clean(v1).split(".").map((n) => parseInt(n, 10) || 0);
+  const parts2 = clean(v2).split(".").map((n) => parseInt(n, 10) || 0);
+  const maxLen = Math.max(parts1.length, parts2.length);
+  for (let i = 0; i < maxLen; i++) {
+    const p1 = parts1[i] ?? 0;
+    const p2 = parts2[i] ?? 0;
+    if (p1 > p2) return 1;
+    if (p1 < p2) return -1;
+  }
+  return 0;
+}
+router2.get(["/app-update", "/check-update"], async (req, res, next) => {
+  try {
+    const currentVersion = req.query.current_version || req.query.v || "1.0.0";
+    const settings = await db.select().from(platform_settings);
+    const cfg = {};
+    settings.forEach((s) => cfg[s.key] = s.value);
+    const latestVersion = cfg["app_latest_version"] || cfg["app_version"] || "18.0.4";
+    const minVersion = cfg["app_min_version"] || "1.0.0";
+    const updateUrl = cfg["app_update_url"] || "https://play.google.com/store/apps/details?id=com.emadexpress.app";
+    const updateTitle = cfg["app_update_title"] || "\u062A\u062D\u062F\u064A\u062B \u062C\u062F\u064A\u062F \u0645\u062A\u0648\u0641\u0631 \u0644\u0644\u062A\u0637\u0628\u064A\u0642 \u{1F680}";
+    const updateNotes = cfg["app_update_notes"] || "\u064A\u062A\u0648\u0641\u0631 \u0625\u0635\u062F\u0627\u0631 \u062C\u062F\u064A\u062F \u064A\u062D\u062A\u0648\u064A \u0639\u0644\u0649 \u062A\u062D\u0633\u064A\u0646\u0627\u062A \u0641\u064A \u0627\u0644\u0633\u0631\u0639\u0629 \u0648\u0627\u0644\u0623\u062F\u0627\u0621 \u0648\u062A\u062C\u0631\u0628\u0629 \u0627\u0644\u0634\u0631\u0627\u0621 \u0648\u0625\u0635\u0644\u0627\u062D\u0627\u062A \u0645\u0647\u0645\u0629.";
+    const forceUpdate = cfg["app_force_update"] === "true";
+    const updateEnabled = cfg["app_update_enabled"] !== "false";
+    const hasUpdate = updateEnabled && compareAppSemver(latestVersion, currentVersion) > 0;
+    const isForced = hasUpdate && (forceUpdate || compareAppSemver(minVersion, currentVersion) > 0);
+    return res.json({
+      success: true,
+      has_update: hasUpdate,
+      is_forced: isForced,
+      latest_version: latestVersion,
+      min_version: minVersion,
+      current_version: currentVersion,
+      update_url: updateUrl,
+      title: updateTitle,
+      notes: updateNotes,
+      force_update: isForced
     });
   } catch (err) {
     next(err);

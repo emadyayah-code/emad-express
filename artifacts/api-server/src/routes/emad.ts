@@ -2371,13 +2371,68 @@ router.get("/app-settings", async (_req, res, next) => {
       support_whatsapp: cfg["whatsapp_number"] || cfg["support_whatsapp"] || "772223645",
       support_phone: cfg["support_phone"] || "772223645",
       support_email: cfg["support_email"] || "support@emadexpress.com",
-      app_version: "2.0.0",
+      app_version: cfg["app_latest_version"] || cfg["app_version"] || "18.0.4",
+      latest_version: cfg["app_latest_version"] || cfg["app_version"] || "18.0.4",
+      min_version: cfg["app_min_version"] || "1.0.0",
+      update_url: cfg["app_update_url"] || "https://play.google.com/store/apps/details?id=com.emadexpress.app",
+      update_title: cfg["app_update_title"] || "تحديث جديد متوفر للتطبيق 🚀",
+      update_notes: cfg["app_update_notes"] || "يتوفر إصدار جديد يحتوي على تحسينات في السرعة والأداء وتجربة الشراء وإصلاحات مهمة.",
+      force_update: cfg["app_force_update"] === "true",
+      update_enabled: cfg["app_update_enabled"] !== "false",
     };
 
     return res.json({
       success: true,
       data: responseData,
       ...responseData,
+    });
+  } catch (err) { next(err); }
+});
+
+function compareAppSemver(v1: string, v2: string): number {
+  const clean = (v: string) => (v || "").replace(/^v/i, "").split(/[-+]/)[0];
+  const parts1 = clean(v1).split(".").map((n) => parseInt(n, 10) || 0);
+  const parts2 = clean(v2).split(".").map((n) => parseInt(n, 10) || 0);
+  const maxLen = Math.max(parts1.length, parts2.length);
+  for (let i = 0; i < maxLen; i++) {
+    const p1 = parts1[i] ?? 0;
+    const p2 = parts2[i] ?? 0;
+    if (p1 > p2) return 1;
+    if (p1 < p2) return -1;
+  }
+  return 0;
+}
+
+// ========== APP UPDATE CHECK ENDPOINT ==========
+router.get(["/app-update", "/check-update"], async (req, res, next) => {
+  try {
+    const currentVersion = (req.query.current_version as string) || (req.query.v as string) || "1.0.0";
+    const settings = await db.select().from(platform_settings);
+    const cfg: Record<string, string> = {};
+    settings.forEach((s) => (cfg[s.key] = s.value));
+
+    const latestVersion = cfg["app_latest_version"] || cfg["app_version"] || "18.0.4";
+    const minVersion = cfg["app_min_version"] || "1.0.0";
+    const updateUrl = cfg["app_update_url"] || "https://play.google.com/store/apps/details?id=com.emadexpress.app";
+    const updateTitle = cfg["app_update_title"] || "تحديث جديد متوفر للتطبيق 🚀";
+    const updateNotes = cfg["app_update_notes"] || "يتوفر إصدار جديد يحتوي على تحسينات في السرعة والأداء وتجربة الشراء وإصلاحات مهمة.";
+    const forceUpdate = cfg["app_force_update"] === "true";
+    const updateEnabled = cfg["app_update_enabled"] !== "false";
+
+    const hasUpdate = updateEnabled && compareAppSemver(latestVersion, currentVersion) > 0;
+    const isForced = hasUpdate && (forceUpdate || compareAppSemver(minVersion, currentVersion) > 0);
+
+    return res.json({
+      success: true,
+      has_update: hasUpdate,
+      is_forced: isForced,
+      latest_version: latestVersion,
+      min_version: minVersion,
+      current_version: currentVersion,
+      update_url: updateUrl,
+      title: updateTitle,
+      notes: updateNotes,
+      force_update: isForced,
     });
   } catch (err) { next(err); }
 });

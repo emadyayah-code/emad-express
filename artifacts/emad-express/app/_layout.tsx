@@ -20,6 +20,7 @@ import { LanguageProvider } from "@/context/LanguageContext";
 import { CurrencyProvider } from "@/context/CurrencyContext";
 import { FavoritesProvider } from "@/context/FavoritesContext";
 import { AddressProvider } from "@/context/AddressContext";
+import { UpdateModal } from "@/components/UpdateModal";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -74,6 +75,7 @@ export default function RootLayout() {
                       <GestureHandlerRootView style={{ flex: 1 }}>
                         <KeyboardProvider>
                           <RootLayoutNav />
+                          <UpdateModal />
                         </KeyboardProvider>
                       </GestureHandlerRootView>
                     </CartProvider>

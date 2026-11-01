@@ -2,7 +2,7 @@ import { useState, type ReactElement } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth";
 import { api } from "@/lib/api";
-import { User, Lock, Plus, Trash2, Edit2, X, Check, Shield, Smartphone, Phone, Facebook, Twitter, MapPin, Info, CreditCard } from "lucide-react";
+import { User, Lock, Plus, Trash2, Edit2, X, Check, Shield, Smartphone, Phone, Facebook, Twitter, MapPin, Info, CreditCard, ArrowUpCircle, ExternalLink, Zap, AlertTriangle, Sparkles } from "lucide-react";
 
 const ROLE_LABELS: Record<string, string> = {
   admin: "مدير عام",
@@ -392,6 +392,237 @@ const APP_FIELDS = [
   { key: "about_en",       label: "عن التطبيق (إنجليزي)", icon: <Info size={15} />, placeholder: "App description in English...", dir: "ltr", multiline: true },
 ];
 
+function AppUpdatesTab() {
+  const qc = useQueryClient();
+  const { data: stored = {}, isLoading } = useQuery({
+    queryKey: ["app-settings"],
+    queryFn: () => api.get("/admin/platform-settings"),
+  });
+
+  const defaults: Record<string, string> = {
+    app_latest_version: "18.0.4",
+    app_min_version: "1.0.0",
+    app_update_url: "https://play.google.com/store/apps/details?id=com.emadexpress.app",
+    app_update_title: "تحديث جديد متوفر لتطبيق عماد إكسبرس 🚀",
+    app_update_notes: "يتوفر إصدار جديد يحتوي على تحسينات في السرعة والأداء وتجربة الشراء وإصلاحات مهمة.",
+    app_force_update: "false",
+    app_update_enabled: "true",
+  };
+
+  const mergedData: Record<string, string> = { ...defaults, ...(stored as any) };
+  const [form, setForm] = useState<Record<string, string>>({});
+  const [msg, setMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
+
+  const currentVal = (key: string) => form[key] ?? mergedData[key] ?? defaults[key];
+
+  const isEnabled = currentVal("app_update_enabled") !== "false";
+  const isForced = currentVal("app_force_update") === "true";
+
+  const saveMut = useMutation({
+    mutationFn: () => api.post("/admin/platform-settings", { ...mergedData, ...form }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["app-settings"] });
+      setMsg({ type: "ok", text: "تم نشر إعدادات التحديث بنجاح! سيتم إشعار مستخدمي التطبيق تلقائياً ✓" });
+      setTimeout(() => setMsg(null), 4000);
+    },
+    onError: (e: any) => setMsg({ type: "err", text: e.message || "حدث خطأ أثناء الحفظ" }),
+  });
+
+  const inp = "w-full px-4 py-3 rounded-xl text-white text-sm outline-none border transition-all";
+  const inpStyle = { background: "rgba(255,255,255,0.05)", borderColor: "rgba(245,158,11,0.2)" };
+
+  if (isLoading) return <div className="text-white/40 text-center py-10">جارٍ التحميل...</div>;
+
+  return (
+    <div className="max-w-3xl space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-amber-500/10">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <ArrowUpCircle size={20} className="text-amber-400" />
+            <p className="text-white font-bold text-lg">إدارة التحديثات التلقائية لتطبيق الجوال</p>
+          </div>
+          <p className="text-white/50 text-xs">
+            عند رفع إصدار جديد على Google Play أو App Store أو رابط مباشر، سيظهر للمستخدم تلقائياً إشعار التحديث داخل التطبيق.
+          </p>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => setForm((f) => ({ ...f, app_update_enabled: isEnabled ? "false" : "true" }))}
+          className={`px-4 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer flex items-center gap-2 ${
+            isEnabled
+              ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/40"
+              : "bg-red-500/20 text-red-400 border-red-500/40"
+          }`}
+        >
+          <span className={`w-2 h-2 rounded-full ${isEnabled ? "bg-emerald-400 animate-pulse" : "bg-red-400"}`} />
+          {isEnabled ? "تنبيه التحديثات: مُفعّل ✓" : "تنبيه التحديثات: معطّل ✕"}
+        </button>
+      </div>
+
+      {msg && (
+        <div className={`px-4 py-3 rounded-xl text-sm font-medium ${msg.type === "ok" ? "bg-green-500/20 text-green-400 border border-green-500/30" : "bg-red-500/20 text-red-400 border border-red-500/30"}`}>
+          {msg.text}
+        </div>
+      )}
+
+      {/* Version Numbers Row */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label className="text-white/70 text-xs font-bold mb-1.5 flex items-center gap-1.5">
+            <Sparkles size={14} className="text-amber-400" /> رقم أحدث إصدار متوفر (Latest Version)
+          </label>
+          <input
+            className={inp}
+            style={inpStyle}
+            dir="ltr"
+            placeholder="مثال: 18.0.4"
+            value={currentVal("app_latest_version")}
+            onChange={(e) => setForm((f) => ({ ...f, app_latest_version: e.target.value.trim() }))}
+          />
+          <p className="text-white/40 text-[11px] mt-1">يُشعر المستخدم بالتحديث فور كون هذا الرقم أعلى من إصداره الحالي</p>
+        </div>
+
+        <div>
+          <label className="text-white/70 text-xs font-bold mb-1.5 flex items-center gap-1.5">
+            <Shield size={14} className="text-red-400" /> أدنى إصدار مسموح به (Min Version)
+          </label>
+          <input
+            className={inp}
+            style={inpStyle}
+            dir="ltr"
+            placeholder="مثال: 18.0.0"
+            value={currentVal("app_min_version")}
+            onChange={(e) => setForm((f) => ({ ...f, app_min_version: e.target.value.trim() }))}
+          />
+          <p className="text-white/40 text-[11px] mt-1">أي مستخدم لديه إصدار أقل من هذا الرقم سيُجبر على التحديث فوراً</p>
+        </div>
+      </div>
+
+      {/* Force Update Option */}
+      <div className="bg-white/5 border border-amber-500/20 rounded-2xl p-4">
+        <label className="text-white font-bold text-xs mb-2 block">نوع التحديث للمستخدمين:</label>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <button
+            type="button"
+            onClick={() => setForm((f) => ({ ...f, app_force_update: "false" }))}
+            className={`p-3 rounded-xl border text-right transition-all cursor-pointer ${
+              !isForced
+                ? "bg-amber-500/20 border-amber-500 text-amber-300"
+                : "bg-black/20 border-white/10 text-white/50 hover:text-white"
+            }`}
+          >
+            <p className="font-bold text-xs">تحديث اختياري (موصى به) 🌟</p>
+            <p className="text-[11px] opacity-75 mt-0.5">يمكن للمستخدم الضغط على "لاحقاً" والاستمرار في استخدام التطبيق</p>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setForm((f) => ({ ...f, app_force_update: "true" }))}
+            className={`p-3 rounded-xl border text-right transition-all cursor-pointer ${
+              isForced
+                ? "bg-red-500/20 border-red-500 text-red-300"
+                : "bg-black/20 border-white/10 text-white/50 hover:text-white"
+            }`}
+          >
+            <p className="font-bold text-xs flex items-center gap-1">
+              <AlertTriangle size={14} /> تحديث إجباري صارم ⚠️
+            </p>
+            <p className="text-[11px] opacity-75 mt-0.5">يُقفل التطبيق ولا يمكن فتحه حتى يتم التحديث (للإصدارات الحساسة)</p>
+          </button>
+        </div>
+      </div>
+
+      {/* Store / Download URL */}
+      <div>
+        <label className="text-white/70 text-xs font-bold mb-1.5 flex items-center gap-1.5">
+          <ExternalLink size={14} className="text-blue-400" /> رابط التحديث على المتجر أو تحميل APK
+        </label>
+        <input
+          className={inp}
+          style={inpStyle}
+          dir="ltr"
+          placeholder="https://play.google.com/store/apps/details?id=com.emadexpress.app"
+          value={currentVal("app_update_url")}
+          onChange={(e) => setForm((f) => ({ ...f, app_update_url: e.target.value.trim() }))}
+        />
+        <p className="text-white/40 text-[11px] mt-1">الرابط الذي يُفتح للمستخدم فور الضغط على "تحديث التطبيق الآن"</p>
+      </div>
+
+      {/* Update Title */}
+      <div>
+        <label className="text-white/70 text-xs font-bold mb-1.5 flex items-center gap-1.5">
+          <Info size={14} className="text-amber-400" /> عنوان رسالة التحديث
+        </label>
+        <input
+          className={inp}
+          style={inpStyle}
+          placeholder="تحديث جديد متوفر لتطبيق عماد إكسبرس 🚀"
+          value={currentVal("app_update_title")}
+          onChange={(e) => setForm((f) => ({ ...f, app_update_title: e.target.value }))}
+        />
+      </div>
+
+      {/* Release Notes */}
+      <div>
+        <label className="text-white/70 text-xs font-bold mb-1.5 flex items-center gap-1.5">
+          <Zap size={14} className="text-amber-400" /> ما الجديد في هذا التحديث (Changelog / Release Notes)
+        </label>
+        <textarea
+          rows={4}
+          className={inp + " resize-none leading-relaxed"}
+          style={{ ...inpStyle, fontFamily: "inherit" } as any}
+          placeholder="اكتب هنا الميزات الجديدة والتحسينات، مثلاً:
+- تسريع تصفح المنتجات بنسبة 50%
+- إضافة بوابات دفع جديدة
+- إصلاح مشاكل الإشعارات"
+          value={currentVal("app_update_notes")}
+          onChange={(e) => setForm((f) => ({ ...f, app_update_notes: e.target.value }))}
+        />
+      </div>
+
+      {/* Live Preview Box */}
+      <div className="bg-gradient-to-br from-black/60 to-slate-900/60 border border-amber-500/20 rounded-2xl p-5">
+        <p className="text-xs font-bold text-amber-400 mb-3 flex items-center gap-1.5">
+          📱 معاينة فورية: كيف سيظهر الإشعار للمستخدمين داخل التطبيق؟
+        </p>
+        <div className="max-w-sm mx-auto bg-[#18181b] border border-amber-500/30 rounded-2xl p-5 text-center shadow-xl space-y-3">
+          <div className="w-12 h-12 rounded-full bg-amber-500/20 text-amber-400 mx-auto flex items-center justify-center">
+            <ArrowUpCircle size={28} />
+          </div>
+          <div className="flex items-center justify-center gap-2 text-xs">
+            <span className="px-2 py-0.5 rounded bg-white/10 text-white/50">الحالي: v18.0.3</span>
+            <span>←</span>
+            <span className="px-2 py-0.5 rounded bg-amber-500/20 text-amber-400 font-bold">الجديد: v{currentVal("app_latest_version")}</span>
+          </div>
+          <h4 className="font-bold text-white text-sm">{currentVal("app_update_title")}</h4>
+          <p className="text-white/60 text-xs leading-relaxed whitespace-pre-line text-right bg-black/30 p-3 rounded-xl border border-white/5">
+            {currentVal("app_update_notes")}
+          </p>
+          <div className="space-y-1.5 pt-1">
+            <div className="w-full py-2.5 rounded-xl bg-amber-500 text-black font-bold text-xs flex items-center justify-center gap-1.5">
+              <ArrowUpCircle size={14} /> تحديث التطبيق الآن
+            </div>
+            {!isForced && (
+              <div className="w-full py-2 rounded-xl text-white/40 text-xs">لاحقاً، ذكرني غداً</div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Save Button */}
+      <button
+        onClick={() => saveMut.mutate()}
+        disabled={saveMut.isPending}
+        className="w-full py-3.5 rounded-xl font-bold text-black transition-opacity hover:opacity-90 flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-amber-500/20"
+        style={{ background: "linear-gradient(135deg,#f59e0b,#d97706)" }}
+      >
+        {saveMut.isPending ? "جارٍ نشر التحديث..." : <><Check size={18} /> حفظ ونشر التحديث لجميع المستخدمين فوراً</>}
+      </button>
+    </div>
+  );
+}
+
 function PaymentGatewaysTab() {
   const qc = useQueryClient();
   const [msg, setMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
@@ -587,11 +818,12 @@ const SETTINGS_TABS = [
   { key: "profile", label: "الملف الشخصي", icon: User },
   { key: "gateways", label: "بوابات الدفع (PayPal & Cards)", icon: CreditCard },
   { key: "app", label: "إعدادات التطبيق", icon: Smartphone },
+  { key: "updates", label: "تحديثات التطبيق (App Updates)", icon: ArrowUpCircle },
   { key: "employees", label: "الموظفون والصلاحيات", icon: Shield },
 ];
 
 export default function Settings() {
-  const [tab, setTab] = useState<"profile" | "gateways" | "app" | "employees">("profile");
+  const [tab, setTab] = useState<"profile" | "gateways" | "app" | "updates" | "employees">("profile");
   const card = { background: "rgba(255,255,255,0.02)", border: "1px solid rgba(245,158,11,0.12)", borderRadius: 20 };
 
   return (
@@ -623,6 +855,7 @@ export default function Settings() {
         {tab === "profile" && <ProfileTab />}
         {tab === "gateways" && <PaymentGatewaysTab />}
         {tab === "app" && <AppSettingsTab />}
+        {tab === "updates" && <AppUpdatesTab />}
         {tab === "employees" && <EmployeesTab />}
       </div>
     </div>

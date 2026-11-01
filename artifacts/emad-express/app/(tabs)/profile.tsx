@@ -9,8 +9,10 @@ import { useLanguage, LANGUAGES, Lang } from "@/context/LanguageContext";
 import { useCurrency, CURRENCIES, CurrencyCode } from "@/context/CurrencyContext";
 import { useAppSettings } from "@/hooks/useAppSettings";
 import { UI_LABELS } from "@/lib/i18n";
+import { CURRENT_APP_VERSION, compareAppVersions } from "@/constants/version";
+import { UpdateModal } from "@/components/UpdateModal";
 
-const APP_VERSION = "18.0.3";
+const APP_VERSION = CURRENT_APP_VERSION;
 
 function MenuItem({ icon, label, onPress, danger, rightEl }: { icon: string; label: string; onPress: () => void; danger?: boolean; rightEl?: React.ReactNode }) {
   const colors = useColors();
@@ -210,6 +212,23 @@ export default function ProfileScreen() {
   const [showCurrency, setShowCurrency] = useState(false);
   const [showLanguage, setShowLanguage] = useState(false);
   const [showAbout, setShowAbout] = useState(false);
+  const [showManualUpdate, setShowManualUpdate] = useState(false);
+  const settings = useAppSettings();
+
+  function handleCheckUpdate() {
+    const latest = settings.latest_version || settings.app_version || CURRENT_APP_VERSION;
+    const hasNew = compareAppVersions(latest, CURRENT_APP_VERSION) > 0;
+    if (hasNew) {
+      setShowManualUpdate(true);
+    } else {
+      Alert.alert(
+        language === "ar" ? "تطبيقك محدث ✓" : "App is Up to Date ✓",
+        language === "ar"
+          ? `أنت تستخدم بالفعل أحدث إصدار متوفر (v${CURRENT_APP_VERSION}). لا توجد تحديثات جديدة حالياً.`
+          : `You are currently using the latest version (v${CURRENT_APP_VERSION}). No updates available.`
+      );
+    }
+  }
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
   const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
@@ -275,6 +294,10 @@ export default function ProfileScreen() {
           <Text style={{ color: colors.mutedForeground, fontSize: 13 }}>{t.profile.about || "About Us"}</Text>
         </TouchableOpacity>
         <Text style={{ color: colors.border }}>•</Text>
+        <TouchableOpacity onPress={handleCheckUpdate}>
+          <Text style={{ color: "#f59e0b", fontSize: 13, fontWeight: "600" }}>{language === "ar" ? "تحديث التطبيق" : "Updates"}</Text>
+        </TouchableOpacity>
+        <Text style={{ color: colors.border }}>•</Text>
         <TouchableOpacity onPress={() => router.push("/privacy-policy")}>
           <Text style={{ color: colors.primary, fontSize: 13, fontWeight: "600" }}>{t.profile.privacy_policy || (language === "ar" ? "سياسة الخصوصية" : "Privacy Policy")}</Text>
         </TouchableOpacity>
@@ -295,6 +318,7 @@ export default function ProfileScreen() {
       <CurrencyModal visible={showCurrency} onClose={() => setShowCurrency(false)} />
       <LanguageModal visible={showLanguage} onClose={() => setShowLanguage(false)} />
       <AboutModal visible={showAbout} onClose={() => setShowAbout(false)} />
+      <UpdateModal forceVisible={showManualUpdate} onCloseManual={() => setShowManualUpdate(false)} />
 
       <View style={[styles.header, { paddingTop: topPad + 16, backgroundColor: colors.card }]}>
         <Text style={[styles.title, { color: colors.foreground }]}>{t.profile.title}</Text>
@@ -321,6 +345,16 @@ export default function ProfileScreen() {
             <MenuItem icon="globe"       label={t.profile.language}   rightEl={<LangBadge />}     onPress={() => setShowLanguage(true)} />
             <MenuItem icon="dollar-sign" label={(UI_LABELS.currency as any)[language] || UI_LABELS.currency.en} rightEl={<CurrencyBadge />} onPress={() => setShowCurrency(true)} />
             <MenuItem icon="shield"      label={(UI_LABELS.privacyPolicy as any)[language] || UI_LABELS.privacyPolicy.en} onPress={() => router.push("/privacy-policy")} />
+            <MenuItem
+              icon="arrow-up-circle"
+              label={language === "ar" ? "التحقق من وجود تحديثات" : "Check for Updates"}
+              rightEl={
+                <View style={[styles.badge, { backgroundColor: "rgba(245,158,11,0.15)", borderColor: "rgba(245,158,11,0.3)" }]}>
+                  <Text style={{ color: "#f59e0b", fontSize: 12, fontWeight: "700" }}>v{CURRENT_APP_VERSION}</Text>
+                </View>
+              }
+              onPress={handleCheckUpdate}
+            />
             <MenuItem icon="info"        label={(t.profile as any).about || "About Us"}            onPress={() => setShowAbout(true)} />
             <MenuItem icon="log-out"     label={t.profile.logout}                                 onPress={handleLogout} danger />
 
