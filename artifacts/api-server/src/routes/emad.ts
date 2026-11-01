@@ -1177,9 +1177,24 @@ router.get("/admin/vendors", requireAuth, requireRole("admin", "manager"), async
 router.post("/admin/vendors", requireAuth, requireRole("admin", "manager"), validateBody(vendorSchema), async (req, res, next) => {
   try {
     const b = req.body;
-    const [v] = await db.insert(vendors).values({ store_name: b.store_name, name: b.name, email: b.email, phone: b.phone || "", address: b.address || "", commission_rate: b.commission_rate, balance: 0, is_approved: false }).returning();
+    const cleanEmail = String(b.email || "").trim().toLowerCase();
+    const [v] = await db.insert(vendors).values({
+      store_name: b.store_name.trim(),
+      name: b.name.trim(),
+      email: cleanEmail,
+      phone: b.phone ? b.phone.trim() : "",
+      address: b.address ? b.address.trim() : "",
+      commission_rate: b.commission_rate,
+      balance: 0,
+      is_approved: false
+    }).returning();
     return res.json({ success: true, data: v });
-  } catch (err) { next(err); }
+  } catch (err: any) {
+    if (err.code === "23505" || err.message?.includes("unique constraint") || err.message?.includes("duplicate key")) {
+      return res.status(409).json({ success: false, message: "البريد الإلكتروني مسجل بالفعل لبائع آخر" });
+    }
+    next(err);
+  }
 });
 
 router.post("/admin/vendors/:id/approve", requireAuth, requireRole("admin", "manager"), validateParams(idParamSchema), async (req, res, next) => {
@@ -3981,10 +3996,49 @@ router.get("/admin/affiliates", requireAuth, requireRole("admin", "manager", "sa
 router.post("/admin/affiliates", requireAuth, requireRole("admin", "manager"), validateBody(affiliateSchema), async (req, res, next) => {
   try {
     const b = req.body;
+    const cleanEmail = String(b.email || "").trim().toLowerCase();
+
+    // Check if an affiliate with this email already exists
+    const existing = await db.select().from(affiliates).where(eq(affiliates.email, cleanEmail));
+    if (existing.length > 0) {
+      const aff = existing[0];
+      if (aff.deleted_at) {
+        // Was previously deleted: reactivate and update with new details
+        const code = b.code || aff.code || `AFF${Date.now().toString(36).toUpperCase()}`;
+        const [reactivated] = await db.update(affiliates).set({
+          name: b.name.trim(),
+          phone: b.phone ? b.phone.trim() : "",
+          code,
+          commission_rate: b.commission_rate,
+          is_active: true,
+          deleted_at: null,
+        }).where(eq(affiliates.id, aff.id)).returning();
+        return res.status(200).json({ success: true, data: reactivated, message: "تمت إعادة تفعيل المسوق بنجاح" });
+      } else {
+        return res.status(400).json({ success: false, message: "هذا البريد الإلكتروني مسجل بالفعل لمسوق آخر" });
+      }
+    }
+
     const code = b.code || `AFF${Date.now().toString(36).toUpperCase()}`;
-    const [a] = await db.insert(affiliates).values({ name: b.name, email: b.email.trim().toLowerCase(), phone: b.phone || "", code, commission_rate: b.commission_rate, balance: 0, total_earned: 0, total_clicks: 0, total_conversions: 0, is_active: true }).returning();
+    const [a] = await db.insert(affiliates).values({
+      name: b.name.trim(),
+      email: cleanEmail,
+      phone: b.phone ? b.phone.trim() : "",
+      code,
+      commission_rate: b.commission_rate,
+      balance: 0,
+      total_earned: 0,
+      total_clicks: 0,
+      total_conversions: 0,
+      is_active: true,
+    }).returning();
     return res.status(201).json({ success: true, data: a });
-  } catch (err: any) { if (err.message?.includes("unique constraint")) return res.status(409).json({ success: false, message: "البريد أو الكود مستخدم بالفعل" }); next(err); }
+  } catch (err: any) {
+    if (err.code === "23505" || err.message?.includes("unique constraint") || err.message?.includes("duplicate key")) {
+      return res.status(409).json({ success: false, message: "البريد الإلكتروني أو كود الإحالة مستخدم بالفعل" });
+    }
+    next(err);
+  }
 });
 
 router.put("/admin/affiliates/:id", requireAuth, requireRole("admin", "manager"), validateParams(idParamSchema), async (req, res, next) => {

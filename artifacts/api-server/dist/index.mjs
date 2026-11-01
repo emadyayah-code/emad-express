@@ -91534,7 +91534,7 @@ function validateParams(schema) {
 }
 
 // src/validation/schemas.ts
-var emailSchema = external_exports.string().email("\u0628\u0631\u064A\u062F \u0625\u0644\u0643\u062A\u0631\u0648\u0646\u064A \u063A\u064A\u0631 \u0635\u0627\u0644\u062D").max(255);
+var emailSchema = external_exports.string().trim().toLowerCase().email("\u0635\u064A\u063A\u0629 \u0627\u0644\u0628\u0631\u064A\u062F \u0627\u0644\u0625\u0644\u0643\u062A\u0631\u0648\u0646\u064A \u063A\u064A\u0631 \u0635\u062D\u064A\u062D\u0629").max(255);
 var phoneSchema = external_exports.string().max(30).optional().nullable().or(external_exports.literal(""));
 var passwordSchema = external_exports.string().min(6, "\u0643\u0644\u0645\u0629 \u0627\u0644\u0645\u0631\u0648\u0631 \u064A\u062C\u0628 \u0623\u0646 \u062A\u0643\u0648\u0646 6 \u0623\u062D\u0631\u0641 \u0639\u0644\u0649 \u0627\u0644\u0623\u0642\u0644").max(128, "\u0643\u0644\u0645\u0629 \u0627\u0644\u0645\u0631\u0648\u0631 \u0637\u0648\u064A\u0644\u0629 \u062C\u062F\u0627\u064B");
 var loginSchema = external_exports.object({
@@ -95727,9 +95727,22 @@ router2.get("/admin/vendors", requireAuth, requireRole("admin", "manager"), asyn
 router2.post("/admin/vendors", requireAuth, requireRole("admin", "manager"), validateBody(vendorSchema), async (req, res, next) => {
   try {
     const b = req.body;
-    const [v] = await db.insert(vendors).values({ store_name: b.store_name, name: b.name, email: b.email, phone: b.phone || "", address: b.address || "", commission_rate: b.commission_rate, balance: 0, is_approved: false }).returning();
+    const cleanEmail = String(b.email || "").trim().toLowerCase();
+    const [v] = await db.insert(vendors).values({
+      store_name: b.store_name.trim(),
+      name: b.name.trim(),
+      email: cleanEmail,
+      phone: b.phone ? b.phone.trim() : "",
+      address: b.address ? b.address.trim() : "",
+      commission_rate: b.commission_rate,
+      balance: 0,
+      is_approved: false
+    }).returning();
     return res.json({ success: true, data: v });
   } catch (err) {
+    if (err.code === "23505" || err.message?.includes("unique constraint") || err.message?.includes("duplicate key")) {
+      return res.status(409).json({ success: false, message: "\u0627\u0644\u0628\u0631\u064A\u062F \u0627\u0644\u0625\u0644\u0643\u062A\u0631\u0648\u0646\u064A \u0645\u0633\u062C\u0644 \u0628\u0627\u0644\u0641\u0639\u0644 \u0644\u0628\u0627\u0626\u0639 \u0622\u062E\u0631" });
+    }
     next(err);
   }
 });
@@ -98837,11 +98850,43 @@ router2.get("/admin/affiliates", requireAuth, requireRole("admin", "manager", "s
 router2.post("/admin/affiliates", requireAuth, requireRole("admin", "manager"), validateBody(affiliateSchema), async (req, res, next) => {
   try {
     const b = req.body;
+    const cleanEmail = String(b.email || "").trim().toLowerCase();
+    const existing = await db.select().from(affiliates).where(eq(affiliates.email, cleanEmail));
+    if (existing.length > 0) {
+      const aff = existing[0];
+      if (aff.deleted_at) {
+        const code2 = b.code || aff.code || `AFF${Date.now().toString(36).toUpperCase()}`;
+        const [reactivated] = await db.update(affiliates).set({
+          name: b.name.trim(),
+          phone: b.phone ? b.phone.trim() : "",
+          code: code2,
+          commission_rate: b.commission_rate,
+          is_active: true,
+          deleted_at: null
+        }).where(eq(affiliates.id, aff.id)).returning();
+        return res.status(200).json({ success: true, data: reactivated, message: "\u062A\u0645\u062A \u0625\u0639\u0627\u062F\u0629 \u062A\u0641\u0639\u064A\u0644 \u0627\u0644\u0645\u0633\u0648\u0642 \u0628\u0646\u062C\u0627\u062D" });
+      } else {
+        return res.status(400).json({ success: false, message: "\u0647\u0630\u0627 \u0627\u0644\u0628\u0631\u064A\u062F \u0627\u0644\u0625\u0644\u0643\u062A\u0631\u0648\u0646\u064A \u0645\u0633\u062C\u0644 \u0628\u0627\u0644\u0641\u0639\u0644 \u0644\u0645\u0633\u0648\u0642 \u0622\u062E\u0631" });
+      }
+    }
     const code = b.code || `AFF${Date.now().toString(36).toUpperCase()}`;
-    const [a] = await db.insert(affiliates).values({ name: b.name, email: b.email.trim().toLowerCase(), phone: b.phone || "", code, commission_rate: b.commission_rate, balance: 0, total_earned: 0, total_clicks: 0, total_conversions: 0, is_active: true }).returning();
+    const [a] = await db.insert(affiliates).values({
+      name: b.name.trim(),
+      email: cleanEmail,
+      phone: b.phone ? b.phone.trim() : "",
+      code,
+      commission_rate: b.commission_rate,
+      balance: 0,
+      total_earned: 0,
+      total_clicks: 0,
+      total_conversions: 0,
+      is_active: true
+    }).returning();
     return res.status(201).json({ success: true, data: a });
   } catch (err) {
-    if (err.message?.includes("unique constraint")) return res.status(409).json({ success: false, message: "\u0627\u0644\u0628\u0631\u064A\u062F \u0623\u0648 \u0627\u0644\u0643\u0648\u062F \u0645\u0633\u062A\u062E\u062F\u0645 \u0628\u0627\u0644\u0641\u0639\u0644" });
+    if (err.code === "23505" || err.message?.includes("unique constraint") || err.message?.includes("duplicate key")) {
+      return res.status(409).json({ success: false, message: "\u0627\u0644\u0628\u0631\u064A\u062F \u0627\u0644\u0625\u0644\u0643\u062A\u0631\u0648\u0646\u064A \u0623\u0648 \u0643\u0648\u062F \u0627\u0644\u0625\u062D\u0627\u0644\u0629 \u0645\u0633\u062A\u062E\u062F\u0645 \u0628\u0627\u0644\u0641\u0639\u0644" });
+    }
     next(err);
   }
 });

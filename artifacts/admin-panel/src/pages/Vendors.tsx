@@ -13,6 +13,8 @@ export default function Vendors() {
   const [stripeData, setStripeData] = useState<any>(null);
   const [stripeLoading, setStripeLoading] = useState(false);
 
+  const [errorMsg, setErrorMsg] = useState("");
+
   const { data, isLoading } = useQuery({
     queryKey: ["vendors", search, filterStatus],
     queryFn: () => api.get(`/admin/vendors?search=${encodeURIComponent(search)}&status=${filterStatus}&per_page=50`),
@@ -29,7 +31,15 @@ export default function Vendors() {
   });
   const createMut = useMutation({
     mutationFn: (d: any) => api.post("/admin/vendors", d),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["vendors"] }); setAddModal(false); },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["vendors"] });
+      setAddModal(false);
+      setForm({ store_name: "", name: "", email: "", phone: "", address: "", commission_rate: 10 });
+      setErrorMsg("");
+    },
+    onError: (err: any) => {
+      setErrorMsg(err.message || "حدث خطأ أثناء إضافة البائع");
+    },
   });
 
   const vendors = data?.data || [];
@@ -38,7 +48,7 @@ export default function Vendors() {
     <div className="space-y-5">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-800">البائعون</h1>
-        <button onClick={() => setAddModal(true)} className="flex items-center gap-2 bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+        <button onClick={() => { setErrorMsg(""); setAddModal(true); }} className="flex items-center gap-2 bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
           <Plus size={16} /> إضافة بائع
         </button>
       </div>
@@ -180,31 +190,62 @@ export default function Vendors() {
               <h3 className="font-semibold text-gray-800">إضافة بائع جديد</h3>
               <button onClick={() => setAddModal(false)}><X size={18} className="text-gray-400" /></button>
             </div>
-            <form onSubmit={e => { e.preventDefault(); createMut.mutate(form); }} className="p-5 space-y-4">
+            <form
+              onSubmit={e => {
+                e.preventDefault();
+                setErrorMsg("");
+                const emailTrimmed = form.email.trim().toLowerCase();
+                if (!emailTrimmed.includes("@") || !emailTrimmed.includes(".")) {
+                  setErrorMsg("يرجى إدخال بريد إلكتروني صحيح");
+                  return;
+                }
+                createMut.mutate({
+                  ...form,
+                  store_name: form.store_name.trim(),
+                  name: form.name.trim(),
+                  email: emailTrimmed,
+                  phone: form.phone.trim(),
+                  address: form.address.trim(),
+                });
+              }}
+              className="p-5 space-y-4"
+            >
+              {errorMsg && (
+                <div className="p-3 bg-red-50 border border-red-200 text-red-600 rounded-xl text-xs flex items-center gap-2">
+                  <span className="font-bold">⚠️</span>
+                  <span>{errorMsg}</span>
+                </div>
+              )}
               <div className="grid grid-cols-2 gap-4">
                 {[
                   { label: "اسم المتجر", key: "store_name", span: 2 },
                   { label: "اسم المسؤول", key: "name" },
-                  { label: "البريد الإلكتروني", key: "email", type: "email" },
-                  { label: "الهاتف", key: "phone" },
+                  { label: "البريد الإلكتروني", key: "email", type: "email", dir: "ltr" },
+                  { label: "الهاتف", key: "phone", dir: "ltr" },
                   { label: "نسبة العمولة %", key: "commission_rate", type: "number" },
                   { label: "العنوان", key: "address", span: 2 },
-                ].map(({ label, key, type = "text", span }) => (
+                ].map(({ label, key, type = "text", span, dir }) => (
                   <div key={key} className={span === 2 ? "col-span-2" : ""}>
                     <label className="text-sm font-medium text-gray-700">{label}</label>
                     <input
                       type={type}
+                      dir={dir}
                       value={(form as any)[key]}
-                      onChange={e => setForm({ ...form, [key]: type === "number" ? parseFloat(e.target.value) : e.target.value })}
+                      onChange={e => {
+                        setErrorMsg("");
+                        setForm({ ...form, [key]: type === "number" ? parseFloat(e.target.value) || 0 : e.target.value });
+                      }}
                       className="w-full mt-1 border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-amber-400"
-                      required
+                      required={key !== "phone" && key !== "address"}
                     />
                   </div>
                 ))}
               </div>
               <div className="flex gap-3 pt-2">
                 <button type="button" onClick={() => setAddModal(false)} className="flex-1 border border-gray-200 text-gray-600 py-2.5 rounded-lg text-sm font-medium hover:bg-gray-50">إلغاء</button>
-                <button type="submit" className="flex-1 bg-amber-500 hover:bg-amber-600 text-white py-2.5 rounded-lg text-sm font-medium">إضافة</button>
+                <button type="submit" disabled={createMut.isPending} className="flex-1 bg-amber-500 hover:bg-amber-600 text-white py-2.5 rounded-lg text-sm font-medium disabled:opacity-60">
+                  {createMut.isPending ? "جارٍ الإضافة..." : "إضافة البائع"}
+                </button>
               </div>
             </form>
           </div>

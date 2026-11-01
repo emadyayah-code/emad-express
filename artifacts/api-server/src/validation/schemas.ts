@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const emailSchema = z.string().email("بريد إلكتروني غير صالح").max(255);
+export const emailSchema = z.string().trim().toLowerCase().email("صيغة البريد الإلكتروني غير صحيحة").max(255);
 
 export const phoneSchema = z.string().max(30).optional().nullable().or(z.literal(""));
 

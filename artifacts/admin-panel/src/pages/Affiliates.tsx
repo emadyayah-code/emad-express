@@ -10,6 +10,7 @@ export default function Affiliates() {
   const [statsModal, setStatsModal] = useState<any>(null);
   const [form, setForm] = useState({ name: "", email: "", phone: "", commission_rate: 5 });
   const [copied, setCopied] = useState("");
+  const [errorMsg, setErrorMsg] = useState("");
 
   const { data, isLoading } = useQuery({
     queryKey: ["affiliates", search],
@@ -22,7 +23,16 @@ export default function Affiliates() {
 
   const createMut = useMutation({
     mutationFn: (d: any) => api.post("/admin/affiliates", d),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["affiliates"] }); qc.invalidateQueries({ queryKey: ["affiliates-stats"] }); setAddModal(false); setForm({ name: "", email: "", phone: "", commission_rate: 5 }); },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["affiliates"] });
+      qc.invalidateQueries({ queryKey: ["affiliates-stats"] });
+      setAddModal(false);
+      setForm({ name: "", email: "", phone: "", commission_rate: 5 });
+      setErrorMsg("");
+    },
+    onError: (err: any) => {
+      setErrorMsg(err.message || "حدث خطأ أثناء إضافة المسوق");
+    },
   });
   const deleteMut = useMutation({
     mutationFn: (id: number) => api.delete(`/admin/affiliates/${id}`),
@@ -47,7 +57,7 @@ export default function Affiliates() {
     <div className="space-y-5">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-800">نظام العمولات والمسوقين</h1>
-        <button onClick={() => setAddModal(true)} className="flex items-center gap-2 bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+        <button onClick={() => { setErrorMsg(""); setAddModal(true); }} className="flex items-center gap-2 bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
           <Plus size={16} /> إضافة مسوّق
         </button>
       </div>
@@ -153,32 +163,98 @@ export default function Affiliates() {
               <h3 className="font-semibold text-gray-800">إضافة مسوّق جديد</h3>
               <button onClick={() => setAddModal(false)}><X size={18} className="text-gray-400" /></button>
             </div>
-            <form onSubmit={e => { e.preventDefault(); createMut.mutate(form); }} className="p-5 space-y-4">
-              {[
-                { label: "الاسم الكامل", key: "name" },
-                { label: "البريد الإلكتروني", key: "email", type: "email" },
-                { label: "الهاتف", key: "phone" },
-                { label: "نسبة العمولة %", key: "commission_rate", type: "number" },
-              ].map(({ label, key, type = "text" }) => (
-                <div key={key}>
-                  <label className="text-sm font-medium text-gray-700">{label}</label>
-                  <input
-                    type={type}
-                    step={type === "number" ? "0.1" : undefined}
-                    value={(form as any)[key]}
-                    onChange={e => setForm({ ...form, [key]: type === "number" ? parseFloat(e.target.value) : e.target.value })}
-                    className="w-full mt-1 border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-amber-400"
-                    required={key !== "phone"}
-                  />
+            <form
+              onSubmit={e => {
+                e.preventDefault();
+                setErrorMsg("");
+                const nameTrimmed = form.name.trim();
+                const emailTrimmed = form.email.trim().toLowerCase();
+                if (!nameTrimmed) {
+                  setErrorMsg("يرجى كتابة الاسم الكامل للمسوق");
+                  return;
+                }
+                if (!emailTrimmed || !emailTrimmed.includes("@") || !emailTrimmed.includes(".")) {
+                  setErrorMsg("يرجى إدخال بريد إلكتروني صحيح (مثال: name@example.com)");
+                  return;
+                }
+                createMut.mutate({
+                  ...form,
+                  name: nameTrimmed,
+                  email: emailTrimmed,
+                  phone: form.phone.trim(),
+                });
+              }}
+              className="p-5 space-y-4"
+            >
+              {errorMsg && (
+                <div className="p-3 bg-red-50 border border-red-200 text-red-600 rounded-xl text-xs flex items-center gap-2">
+                  <span className="font-bold text-sm">⚠️</span>
+                  <span>{errorMsg}</span>
                 </div>
-              ))}
-              <p className="text-xs text-gray-400 bg-amber-50 p-2 rounded-lg">
-                سيُنشأ كود إحالة فريد تلقائياً. كل طلب يأتي عبر رابط المسوّق يُحتسب له عمولة.
+              )}
+
+              <div>
+                <label className="text-sm font-medium text-gray-700">الاسم الكامل</label>
+                <input
+                  type="text"
+                  placeholder="مثال: أحمد محمد"
+                  value={form.name}
+                  onChange={e => setForm({ ...form, name: e.target.value })}
+                  className="w-full mt-1 border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-amber-400"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-gray-700">البريد الإلكتروني</label>
+                <input
+                  type="email"
+                  dir="ltr"
+                  placeholder="name@example.com"
+                  value={form.email}
+                  onChange={e => {
+                    setErrorMsg("");
+                    setForm({ ...form, email: e.target.value });
+                  }}
+                  className="w-full mt-1 border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-amber-400 text-left"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-gray-700">الهاتف (اختياري)</label>
+                <input
+                  type="text"
+                  dir="ltr"
+                  placeholder="مثال: 0501234567"
+                  value={form.phone}
+                  onChange={e => setForm({ ...form, phone: e.target.value })}
+                  className="w-full mt-1 border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-amber-400 text-left"
+                />
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-gray-700">نسبة العمولة %</label>
+                <input
+                  type="number"
+                  step="0.1"
+                  min="0"
+                  max="100"
+                  value={form.commission_rate}
+                  onChange={e => setForm({ ...form, commission_rate: parseFloat(e.target.value) || 0 })}
+                  className="w-full mt-1 border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-amber-400"
+                  required
+                />
+              </div>
+
+              <p className="text-xs text-gray-400 bg-amber-50 p-2.5 rounded-lg border border-amber-100/60 leading-relaxed">
+                💡 سيُنشأ كود إحالة فريد تلقائياً. كل طلب يأتي عبر رابط أو كود المسوّق يُحتسب له عمولة تلقائياً.
               </p>
+
               <div className="flex gap-3 pt-2">
                 <button type="button" onClick={() => setAddModal(false)} className="flex-1 border border-gray-200 text-gray-600 py-2.5 rounded-lg text-sm font-medium hover:bg-gray-50">إلغاء</button>
                 <button type="submit" disabled={createMut.isPending} className="flex-1 bg-amber-500 hover:bg-amber-600 text-white py-2.5 rounded-lg text-sm font-medium disabled:opacity-60">
-                  {createMut.isPending ? "جارٍ الإضافة..." : "إضافة"}
+                  {createMut.isPending ? "جارٍ الإضافة..." : "إضافة المسوق"}
                 </button>
               </div>
             </form>
