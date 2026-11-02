@@ -26,7 +26,7 @@ function buildApiUrl(method: string, params: Record<string, string>, creds: AliE
   const timestamp = `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())} ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}:${pad(d.getUTCSeconds())}`;
   
   const baseParams: Record<string, string> = {
-    app_key: (creds.appKey || "540456").trim(),
+    app_key: (creds.appKey || "555548").trim(),
     timestamp,
     sign_method: "md5",
     v: "2.0",
@@ -34,7 +34,7 @@ function buildApiUrl(method: string, params: Record<string, string>, creds: AliE
     method,
     ...params,
   };
-  const sign = generateSign(baseParams, (creds.appSecret || "VKz8Ppc40dGMXGbcLyjXRxBhrXw3itnT").trim());
+  const sign = generateSign(baseParams, (creds.appSecret || "WLqFlGAOCfvn4uyS0RmXmwjAR9uvU4qZ").trim());
   baseParams.sign = sign;
 
   const url = new URL(ALIEXPRESS_API_URL);

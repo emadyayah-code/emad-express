@@ -4723,14 +4723,14 @@ router.get("/admin/dropship/bulk-import/jobs", requireAuth, requireRole("admin",
 async function getAliExpressCreds(): Promise<AliExpressCredentials> {
   try {
     const rows = await db.select().from(platform_settings).where(eq(platform_settings.key, "aliexpress_app_key"));
-    const appKey = rows[0]?.value || process.env.ALIEXPRESS_APP_KEY || "540456";
+    const appKey = rows[0]?.value || process.env.ALIEXPRESS_APP_KEY || "555548";
     const secretRows = await db.select().from(platform_settings).where(eq(platform_settings.key, "aliexpress_app_key_secret"));
-    const appSecret = secretRows[0]?.value || process.env.ALIEXPRESS_APP_KEY_SECRET || "VKz8Ppc40dGMXGbcLyjXRxBhrXw3itnT";
+    const appSecret = secretRows[0]?.value || process.env.ALIEXPRESS_APP_KEY_SECRET || "WLqFlGAOCfvn4uyS0RmXmwjAR9uvU4qZ";
     const trackRows = await db.select().from(platform_settings).where(eq(platform_settings.key, "aliexpress_tracking_id"));
-    const trackingId = trackRows[0]?.value || process.env.ALIEXPRESS_TRACKING_ID || "default";
+    const trackingId = trackRows[0]?.value || process.env.ALIEXPRESS_TRACKING_ID || "Default";
     return { appKey, appSecret, trackingId };
   } catch {
-    return { appKey: "540456", appSecret: "VKz8Ppc40dGMXGbcLyjXRxBhrXw3itnT", trackingId: "default" };
+    return { appKey: "555548", appSecret: "WLqFlGAOCfvn4uyS0RmXmwjAR9uvU4qZ", trackingId: "Default" };
   }
 }
 

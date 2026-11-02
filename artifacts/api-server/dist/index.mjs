@@ -91671,7 +91671,7 @@ function buildApiUrl(method, params, creds) {
   const pad = (n) => String(n).padStart(2, "0");
   const timestamp2 = `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())} ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}:${pad(d.getUTCSeconds())}`;
   const baseParams = {
-    app_key: (creds.appKey || "540456").trim(),
+    app_key: (creds.appKey || "555548").trim(),
     timestamp: timestamp2,
     sign_method: "md5",
     v: "2.0",
@@ -91679,7 +91679,7 @@ function buildApiUrl(method, params, creds) {
     method,
     ...params
   };
-  const sign = generateSign(baseParams, (creds.appSecret || "VKz8Ppc40dGMXGbcLyjXRxBhrXw3itnT").trim());
+  const sign = generateSign(baseParams, (creds.appSecret || "WLqFlGAOCfvn4uyS0RmXmwjAR9uvU4qZ").trim());
   baseParams.sign = sign;
   const url2 = new URL(ALIEXPRESS_API_URL);
   Object.entries(baseParams).forEach(([k, v]) => url2.searchParams.set(k, v));
@@ -99500,14 +99500,14 @@ router2.get("/admin/dropship/bulk-import/jobs", requireAuth, requireRole("admin"
 async function getAliExpressCreds2() {
   try {
     const rows = await db.select().from(platform_settings).where(eq(platform_settings.key, "aliexpress_app_key"));
-    const appKey = rows[0]?.value || process.env.ALIEXPRESS_APP_KEY || "540456";
+    const appKey = rows[0]?.value || process.env.ALIEXPRESS_APP_KEY || "555548";
     const secretRows = await db.select().from(platform_settings).where(eq(platform_settings.key, "aliexpress_app_key_secret"));
-    const appSecret = secretRows[0]?.value || process.env.ALIEXPRESS_APP_KEY_SECRET || "VKz8Ppc40dGMXGbcLyjXRxBhrXw3itnT";
+    const appSecret = secretRows[0]?.value || process.env.ALIEXPRESS_APP_KEY_SECRET || "WLqFlGAOCfvn4uyS0RmXmwjAR9uvU4qZ";
     const trackRows = await db.select().from(platform_settings).where(eq(platform_settings.key, "aliexpress_tracking_id"));
-    const trackingId = trackRows[0]?.value || process.env.ALIEXPRESS_TRACKING_ID || "default";
+    const trackingId = trackRows[0]?.value || process.env.ALIEXPRESS_TRACKING_ID || "Default";
     return { appKey, appSecret, trackingId };
   } catch {
-    return { appKey: "540456", appSecret: "VKz8Ppc40dGMXGbcLyjXRxBhrXw3itnT", trackingId: "default" };
+    return { appKey: "555548", appSecret: "WLqFlGAOCfvn4uyS0RmXmwjAR9uvU4qZ", trackingId: "Default" };
   }
 }
 router2.get("/admin/dropship/aliexpress/:productId", requireAuth, requireRole("admin", "manager"), validateParams(idParamSchema), async (req, res, next) => {
