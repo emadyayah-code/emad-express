@@ -87,7 +87,18 @@ async function saveProduct(
       return "skipped";
     }
 
-    const realStock = rawStock && rawStock > 0 ? rawStock : (35 + (Math.abs(parseInt(String(sourceId), 10) || 1) % 95));
+    if ((rawStock !== undefined && rawStock <= 0) || price <= 0) {
+      job.skipped++;
+      job.processed = job.imported + job.skipped + job.failed;
+      return "skipped";
+    }
+
+    const realStock = rawStock && rawStock > 0 ? rawStock : 0;
+    if (realStock <= 0) {
+      job.skipped++;
+      job.processed = job.imported + job.skipped + job.failed;
+      return "skipped";
+    }
     const ourPrice = parseFloat((price * (1 + job.marginPercent / 100)).toFixed(2));
     const matchedCategoryId = await matchCategoryId(`${name} ${categoryName || ""}`);
 

@@ -149,6 +149,23 @@ export default function Dropshipping() {
     }
   };
 
+  const [purgingZero, setPurgingZero] = useState(false);
+
+  const handlePurgeZeroStock = async () => {
+    setPurgingZero(true);
+    try {
+      const res = await api.post("/admin/dropship/purge-zero-stock", {});
+      qc.invalidateQueries({ queryKey: ["dropship-products"] });
+      qc.invalidateQueries({ queryKey: ["products"] });
+      setCleanSuccess(res.message || "تم تنظيف وحذف كافة المنتجات المصفرة بنجاح!");
+      setTimeout(() => setCleanSuccess(""), 6000);
+    } catch (e: any) {
+      alert(e?.message || "فشل حذف المنتجات المصفرة");
+    } finally {
+      setPurgingZero(false);
+    }
+  };
+
   const dpList = dropProducts?.data || [];
   const searchList = searchResults?.results || [];
 
@@ -170,6 +187,13 @@ export default function Dropshipping() {
             className="flex items-center gap-1.5 bg-amber-500 hover:bg-amber-600 text-black px-3.5 py-2 rounded-xl text-xs font-bold transition-all shadow-md cursor-pointer disabled:opacity-50"
           >
             {syncingStock ? <><Loader2 size={14} className="animate-spin" /> جارٍ المزامنة...</> : <>🔄 مزامنة المخزون والأسعار مع علي إكسبرس</>}
+          </button>
+          <button
+            onClick={handlePurgeZeroStock}
+            disabled={purgingZero}
+            className="flex items-center gap-1.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer disabled:opacity-50"
+          >
+            {purgingZero ? <><Loader2 size={14} className="animate-spin" /> جارٍ الحذف...</> : <><Trash2 size={14} /> حذف المنتجات المصفّرة فوراً</>}
           </button>
           <button
             onClick={() => setCleanModalOpen(true)}
