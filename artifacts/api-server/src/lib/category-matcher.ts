@@ -1,5 +1,8 @@
 import { db, categories } from "@workspace/db";
 import { isNull } from "drizzle-orm";
+import { fastClassifyText } from "./category-rules";
+
+export { fastClassifyText };
 
 let categoryCache: { id: number; name_ar: string; name_en: string }[] | null = null;
 let lastCacheTime = 0;
@@ -668,9 +671,15 @@ export async function matchCategoryId(
     }
   }
 
-  // 3. Multi-layer intelligent semantic scoring
+  // 3. Multi-layer intelligent semantic scoring across all 24 categories
+  const fastResult = fastClassifyText(text);
+  if (fastResult.bestId && fastResult.score >= 20 && cats.some(c => c.id === fastResult.bestId)) {
+    return fastResult.bestId;
+  }
+
+  // 4. Secondary fallback scoring
   const t = (text || "").toLowerCase();
-  let bestCategoryId = 5; // Default: Home & Kitchen
+  let bestCategoryId = fastResult.bestId || 1; // Default: 1 (Electronics) or balanced
   let maxScore = 0;
 
   for (const rule of CATEGORY_RULES) {
@@ -717,5 +726,5 @@ export async function matchCategoryId(
   const verifiedCat = cats.find(c => c.id === bestCategoryId);
   if (verifiedCat) return verifiedCat.id;
 
-  return cats.find(c => c.id === 5)?.id || cats[0]?.id || 5;
+  return cats[0]?.id || 1;
 }

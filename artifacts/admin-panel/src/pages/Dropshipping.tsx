@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
-import { Search, Globe, Settings, Package, ExternalLink, Download, X, AlertCircle, CheckCircle, Link2, Loader2, Play, Pause, RotateCcw, BarChart3, TrendingUp, Database, Trash2, Zap } from "lucide-react";
+import { Search, Globe, Settings, Package, ExternalLink, Download, X, AlertCircle, CheckCircle, Link2, Loader2, Play, Pause, RotateCcw, BarChart3, TrendingUp, Database, Trash2, Zap, Sparkles } from "lucide-react";
 
 const PLATFORMS = [
   { id: "aliexpress", name: "علي إكسبرس", flag: "🇨🇳", color: "text-red-600 bg-red-50", apiKey: "aliexpress_app_key" },
@@ -21,8 +21,8 @@ export default function Dropshipping() {
   const [browseList, setBrowseList] = useState<any[]>([]);
   const [importModal, setImportModal] = useState<any>(null);
   const [settingsForm, setSettingsForm] = useState<Record<string, string>>({
-    aliexpress_app_key: "540456",
-    aliexpress_app_key_secret: "VKz8Ppc40dGMXGbcLyjXRxBhrXw3itnT",
+    aliexpress_app_key: "555548",
+    aliexpress_app_key_secret: "WLqFlGAOCfvn4uyS0RmXmwjAR9uvU4qZ",
     aliexpress_tracking_id: "default",
     aliexpress_commission_rate: "10",
   });
@@ -166,6 +166,26 @@ export default function Dropshipping() {
     }
   };
 
+  const [reorganizingCats, setReorganizingCats] = useState(false);
+
+  const handleReorganizeCategories = async () => {
+    if (!confirm("هل تريد إعادة فحص وتوزيع جميع منتجات المتجر وتصنيفها على أقسامها الـ 24 الصحيحة بدقة ذكية؟")) return;
+    setReorganizingCats(true);
+    try {
+      const res = await api.post("/admin/categories/reorganize", {});
+      qc.invalidateQueries({ queryKey: ["dropship-products"] });
+      qc.invalidateQueries({ queryKey: ["categories-admin"] });
+      qc.invalidateQueries({ queryKey: ["categories"] });
+      qc.invalidateQueries({ queryKey: ["products"] });
+      setCleanSuccess(res.message || "تمت إعادة تصنيف وتوزيع المنتجات على الفئات بنجاح!");
+      setTimeout(() => setCleanSuccess(""), 8000);
+    } catch (e: any) {
+      alert(e?.message || "فشلت إعادة التصنيف");
+    } finally {
+      setReorganizingCats(false);
+    }
+  };
+
   const dpList = dropProducts?.data || [];
   const searchList = searchResults?.results || [];
 
@@ -180,6 +200,14 @@ export default function Dropshipping() {
             className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white px-3.5 py-2 rounded-xl text-xs font-bold transition-all shadow-md cursor-pointer disabled:opacity-50"
           >
             {runningAutoImport ? <><Loader2 size={14} className="animate-spin" /> جارٍ جلب 500 منتج...</> : <><Zap size={14} /> جلب فوري (500 منتج من جميع الأقسام)</>}
+          </button>
+          <button
+            onClick={handleReorganizeCategories}
+            disabled={reorganizingCats}
+            className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-2 rounded-xl text-xs font-bold transition-all shadow-md cursor-pointer disabled:opacity-50"
+            title="إعادة توزيع جميع منتجات المتجر على الأقسام الـ 24 بدقة"
+          >
+            {reorganizingCats ? <><Loader2 size={14} className="animate-spin" /> جارٍ فرز وتوزيع الفئات...</> : <><Sparkles size={14} /> 🎯 إعادة توزيع المنتجات على الفئات</>}
           </button>
           <button
             onClick={handleSyncStock}

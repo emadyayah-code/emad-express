@@ -835,7 +835,7 @@ router.delete("/admin/categories/:id", requireAuth, requireRole("admin", "manage
   } catch (err) { next(err); }
 });
 
-router.post("/admin/categories/reorganize", requireAuth, requireRole("admin", "manager"), async (_req, res, next) => {
+router.post(["/admin/categories/reorganize", "/admin/dropship/reorganize-categories"], requireAuth, requireRole("admin", "manager"), async (_req, res, next) => {
   try {
     const allProds = await db.select({
       id: products.id,
@@ -846,7 +846,7 @@ router.post("/admin/categories/reorganize", requireAuth, requireRole("admin", "m
     }).from(products).where(isNull(products.deleted_at));
 
     let updatedCount = 0;
-    const chunkSize = 200;
+    const chunkSize = 150;
 
     for (let i = 0; i < allProds.length; i += chunkSize) {
       const chunk = allProds.slice(i, i + chunkSize);
@@ -860,11 +860,31 @@ router.post("/admin/categories/reorganize", requireAuth, requireRole("admin", "m
       }));
     }
 
+    clearProductsCache();
+
+    // Fetch updated breakdown
+    const client = await pool.connect();
+    let categoryCounts: any[] = [];
+    try {
+      const catRes = await client.query(`
+        SELECT c.id, c.name_ar, c.name_en, c.icon, COUNT(p.id) as count
+        FROM categories c
+        LEFT JOIN products p ON p.category_id = c.id AND p.deleted_at IS NULL AND p.quantity > 0
+        WHERE c.deleted_at IS NULL
+        GROUP BY c.id, c.name_ar, c.name_en, c.icon
+        ORDER BY c.id ASC
+      `);
+      categoryCounts = catRes.rows;
+    } finally {
+      client.release();
+    }
+
     return res.json({
       success: true,
-      message: `تم بنجاح إعادة فرز وتوزيع ${updatedCount} منتج على أقسامها الصحيحة من أصل ${allProds.length} منتج!`,
+      message: `تم بنجاح إعادة فرز وتوزيع ${updatedCount} منتج على أقسامها الصحيحة بدقة عالية من أصل ${allProds.length} منتج!`,
       totalScanned: allProds.length,
       totalUpdated: updatedCount,
+      categories: categoryCounts,
     });
   } catch (err) { next(err); }
 });
