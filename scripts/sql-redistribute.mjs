@@ -13,26 +13,26 @@ const CATEGORY_PRIORITY = [
   9,  // Automotive
   20, // Cameras & Drones
   22, // Hair & Wigs
-  4,  // Watches & Jewelry
   10, // Shoes & Bags
+  8,  // Toys, Kids & Dolls
+  13, // Men's Fashion (BEFORE 2!)
+  4,  // Watches & Jewelry (pure watches & jewelry)
   3,  // Smartphones & Accessories
   11, // Computers & Office Tech
   16, // Security & Protection
   15, // Lighting & Lamps
   14, // Tools & Home Improvement
   7,  // Sports & Outdoors
-  8,  // Toys & Kids
   6,  // Health & Beauty
   21, // Smart Home
   18, // Office & School Supplies
   19, // Furniture
   23, // Events & Party
   24, // Arts & Crafts
-  2,  // Women's Fashion
-  13, // Men's Fashion
   1,  // General Electronics
   12, // Consumer Electronics
-  5   // Home & Kitchen
+  2,  // Women's & General Fashion (AFTER 13, 22, 10, 8!)
+  5   // Home & Kitchen (AFTER EVERYTHING!)
 ];
 
 async function run() {

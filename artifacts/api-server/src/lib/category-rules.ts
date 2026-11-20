@@ -129,20 +129,20 @@ export const RAW_RULES: CategoryRuleItem[] = [
       "ساعة نسائ", "غطاء حماية للساعة", "حامل شحن للساعة", "حزام ساعة", "سوار ساعة", "كفر ساعة",
       "حزام حامي الساعة", "حامي الساعة الذكية", "لساعة garmin", "حامل شحن بلاستيكي للساعات", "حامل شحن بلاستيكي ثابت للساعات",
       "خاتم فضة", "خاتم ذهب", "قلادة فضة", "قلادة ذهب", "سوار معصم", "أقراط أذن",
-      "نظارات شمسية مربعة", "نظارات شمسية فاخرة", "نظارات شمسية أنيقة", "نظارات شمسية مستقطبة", "نظارات شمسية",
+      "مويسانيتي", "خواتم الخطبة", "زركون", "خواتم فضة استرليني",
       "wrist watch", "quartz watch", "automatic watch", "smartwatch", "smart watch", "watch case",
-      "watch strap", "watch band", "watch charger", "silver ring", "gold necklace", "tennis bracelet", "sunglasses"
+      "watch strap", "watch band", "watch charger", "silver ring", "gold necklace", "tennis bracelet"
     ],
     phrases: [
       "ساعة يد", "ساعة كوارتز", "ساعة ذكية", "حزام ساعة", "غطاء حماية للساعة", "حامل شحن للساعات",
-      "حامي الساعة", "خاتم فضة", "خاتم ذهب", "قلادة فضة", "سوار يد", "أقراط أذن", "نظارات شمسية", "نظارات شمسيه",
+      "حامي الساعة", "خاتم فضة", "خاتم ذهب", "قلادة فضة", "سوار يد", "أقراط أذن", "خواتم الخطبة",
       "wrist watch", "quartz watch", "watch strap", "watch band", "smartwatch", "silver ring",
-      "gold necklace", "sunglasses men", "sunglasses women"
+      "gold necklace"
     ],
     words: [
       "ساعة", "ساعات", "خاتم", "خواتم", "سوار", "أساور", "قلادة", "قلائد", "مجوهرات", "أقراط",
       "قرط", "دبلة", "بروش", "حلق", "سلسال", "watch", "watches", "quartz", "necklace", "bracelet",
-      "earrings", "pendant", "jewellery", "jewelry", "sunglasses"
+      "earrings", "pendant", "jewellery", "jewelry"
     ]
   },
 
@@ -182,9 +182,12 @@ export const RAW_RULES: CategoryRuleItem[] = [
       "جمبسوت نسائ", "ملابس سباحة نسائ", "مايوه نسائ", "بكيني نسائ", "حمالة صدر", "أزياء كوسبلاي",
       "طقم نسائي", "بدلة نسائية", "ليوبارد طباعة", "دنيم سترة", "سترة شتوية للنساء", "سترة دينم مخملية",
       "خمر ليوبارد طباعة الدنيم معطف", "التطريز شرابة الدنيم سترة معطف", "أزياء الكوسبلاي القديمة",
+      "نظارات شمسية نسائية", "نظارات شمسية عصرية", "نظارات شمسية ريترو", "نظارات شمسية مربعة",
+      "نظارات شمسية مستطيلة", "نظارات شمسية دائرية", "نظارات شمسية Y2K", "نظارات شمسية جديدة للنساء",
       "dress", "dresses", "gown", "skirt", "skirts", "blouse", "blouses", "lingerie",
       "corset", "nightgown", "women coat", "women jacket", "denim jacket women", "women jeans",
       "women pants", "women sweater", "women cardigan", "women blazer", "women pajamas",
+      "women sunglasses", "sunglasses women",
       "zoki", "elfsack", "shein", "toleen", "huhugirl", "chaquet", "chaqueta", "cosplay costume"
     ],
     phrases: [
@@ -192,13 +195,14 @@ export const RAW_RULES: CategoryRuleItem[] = [
       "جاكيت نسائي", "بنطلون جينز", "ملابس نسائية", "أزياء نسائية", "أزياء سيدات", "بلوزة صيفية",
       "كارديجان صوف", "بيجامة حرير", "ملابس داخلية نسائية", "حمالات صدر", "ملابس سباحة",
       "فستان سهرة", "فستان صيفي", "فستان قصير", "فستان طويل", "طبعة ليوبارد", "أزياء تنكرية",
+      "نظارات شمسية نسائية", "نظارات شمسية عصرية", "نظارات شمسية كلاسيكية", "نظارات شمسية",
       "أزياء الكوسبلاي", "سترة مخملية", "دنيم معطف",
       "women jacket", "women coat", "denim jacket", "casual dress", "evening dress", "women trousers",
       "women hoodie", "women blouse", "women clothes", "party dress", "y2k style"
     ],
     words: [
       "فستان", "فساتين", "تنورة", "تنانير", "بلوزة", "بلوزات", "عباية", "عبايات", "قفطان",
-      "سترة", "معطف", "جاكيت", "توب", "لانجري", "كورسيه", "كارديجان", "كنزة", "جمبسوت",
+      "لانجري", "كورسيه", "كارديجان", "كنزة", "جمبسوت",
       "بكيني", "سيدات", "المرأة", "نسائي", "نسائية", "بناتي", "dress", "dresses", "skirt",
       "blouse", "jacket", "coat", "sweater", "cardigan", "blazer", "corset", "lingerie",
       "pajamas", "pyjamas", "jumpsuit", "swimwear", "bikini", "leggings", "women", "ladies"
@@ -210,20 +214,22 @@ export const RAW_RULES: CategoryRuleItem[] = [
     id: 13,
     name: "أزياء وملابس رجالية",
     strong: [
-      "قميص رجالي", "بنطلون رجالي", "جينز رجالي", "جاكيت رجالي", "معطف رجالي", "سترة رجالية",
+      "قميص رجالي", "بنطلون رجالي", "جينز رجالي", "جاكيت رجالي", "جاكت رجالي", "معطف رجالي", "سترة رجالية",
       "بدلة رجالية", "هودي رجالي", "سويت شيرت رجالي", "شورت رجالي", "ملابس نوم رجالي", "بيجامة رجالي",
       "ملابس داخلية رجالي", "شماغ", "بشت", "ثوب رجالي", "ملابس رجالي", "أزياء رجالية", "طقم رجالي",
-      "طقم قميص وبنطلون خفيف الوزن للرجال",
+      "طقم قميص وبنطلون خفيف الوزن للرجال", "سترة جلدية حقيقية الرجال", "معطف فرو الأغنام الطبيعي رجل",
+      "طقم رياضي رجالي", "ملابس للرجال", "نظارات شمسية للرجال", "نظارات شمسية رجالية", "نظارات رجالية",
       "men shirt", "men pants", "men jeans", "men jacket", "men coat", "men suit", "men blazer",
-      "men hoodie", "men shorts", "men underwear", "men clothing"
+      "men hoodie", "men shorts", "men underwear", "men clothing", "men sunglasses"
     ],
     phrases: [
       "قميص رجالي", "بنطلون رجالي", "جينز رجالي", "جاكيت رجالي", "بدلة رجالي", "ملابس رجالية",
       "هودي رجالي", "معطف رجالي", "شورت رجالي", "تيشيرت رجالي", "طقم رجالي", "لرجال باللونين",
+      "ملابس للرجال", "للرجال", "نظارات رجالية", "نظارات شمسية للرجال",
       "men shirt", "men pants", "men jacket", "men suit", "men hoodie", "men shorts"
     ],
     words: [
-      "رجالي", "شماغ", "بشت", "ثوب"
+      "رجالي", "للرجال", "شماغ", "بشت", "ثوب"
     ]
   },
 
