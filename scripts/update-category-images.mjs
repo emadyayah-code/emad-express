@@ -163,13 +163,14 @@ async function run() {
     await client.query("SET default_transaction_read_only = off;");
 
     for (const item of CATEGORY_IMAGE_MAP) {
+      const cleanImageUrl = item.image.split("?")[0];
       await client.query(
         `UPDATE categories 
          SET image = $1, icon = $2 
          WHERE id = $3;`,
-        [item.image, item.icon, item.id]
+        [cleanImageUrl, item.icon, item.id]
       );
-      console.log(`Updated Category ${item.id}: "${item.name_ar}" with icon ${item.icon}`);
+      console.log(`Updated Category ${item.id}: "${item.name_ar}" with icon ${item.icon} -> ${cleanImageUrl}`);
     }
 
     console.log("\nAll 24 category images and icons updated successfully!");

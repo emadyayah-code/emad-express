@@ -95945,9 +95945,8 @@ function getOptimizedImageUrl(url2, size = "card") {
   }
   if (clean.includes("images.unsplash.com")) {
     const width = size === "thumb" ? 220 : size === "card" ? 350 : 640;
-    const cleanUrl = clean.replace(/[?&]w=\d+/, "").replace(/[?&]q=\d+/, "");
-    const separator = cleanUrl.includes("?") ? "&" : "?";
-    return `${cleanUrl}${separator}w=${width}&q=80&auto=format`;
+    const base = clean.split("?")[0];
+    return `${base}?w=${width}&auto=format&fit=crop&q=80`;
   }
   return clean;
 }
@@ -97843,6 +97842,9 @@ router2.get("/categories", async (req, res, next) => {
       const name = cleanCat ? cleanCat[requestLang] || cleanCat.en : c.name_ar || c.name_en;
       return {
         ...c,
+        image: c.image,
+        image_url: c.image,
+        imageUrl: c.image,
         name,
         name_ar: cleanCat?.ar || c.name_ar,
         name_en: cleanCat?.en || c.name_en,
@@ -97853,7 +97855,7 @@ router2.get("/categories", async (req, res, next) => {
       };
     });
     const result = { success: true, data };
-    setCachedProducts(cacheKey, result, 600);
+    setCachedProducts(cacheKey, result, 60);
     res.setHeader("X-Cache", "MISS");
     res.setHeader("Cache-Control", "public, max-age=300, stale-while-revalidate=600");
     return res.json(result);

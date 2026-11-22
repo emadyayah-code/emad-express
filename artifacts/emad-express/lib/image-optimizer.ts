@@ -40,9 +40,8 @@ export function getOptimizedImageUrl(url?: string | null, size: ImageSize = "car
   // 3. Unsplash images
   if (clean.includes("images.unsplash.com")) {
     const width = size === "thumb" ? 220 : size === "card" ? 350 : 640;
-    const cleanUrl = clean.replace(/[?&]w=\d+/, "").replace(/[?&]q=\d+/, "");
-    const separator = cleanUrl.includes("?") ? "&" : "?";
-    return `${cleanUrl}${separator}w=${width}&q=80&auto=format`;
+    const base = clean.split("?")[0];
+    return `${base}?w=${width}&auto=format&fit=crop&q=80`;
   }
 
   return clean;
