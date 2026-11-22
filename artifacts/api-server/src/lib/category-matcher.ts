@@ -189,19 +189,22 @@ export const CATEGORY_RULES: CategoryRule[] = [
     strongKeywords: [
       "فستان", "فساتين", "تنورة", "تنانير", "عباية", "عبايات", "بلوزة", "بلوزات", "لانجري",
       "قميص نوم", "روب نوم", "كورسيه", "حورية البحر", "فستان ماكسي", "فستان سهرة", "فستان صيفي",
+      "نظارات شمسية", "نظارة شمسية", "نظارات عصرية", "إطار نظارة", "نظارات نسائية",
       "dress", "dresses", "gown", "gowns", "skirt", "skirts", "blouse", "blouses", "lingerie",
-      "corset", "maxi dress", "summer dress", "evening dress", "nightgown", "toleen", "huhugirl"
+      "corset", "maxi dress", "summer dress", "evening dress", "nightgown", "toleen", "huhugirl",
+      "sunglasses", "sunglass", "eyewear"
     ],
     phrases: [
       "فستان نسائ", "فستان أنيق", "فستان قصير", "فستان طويل", "فستان صيفي", "فستان سهرة", "ملابس نسائ",
       "طبعة زهور", "مكشوف الكتفين", "بدون أكمام", "ياقة مربعة", "حمالات بدون أكمام", "أكمام فقاعية",
       "عصري للنساء", "للسيدات", "حفلات بوهو", "أزياء شاطئية", "دانتيل شفاف", "حرير خالص",
+      "نظارات شمسية", "نظارة شمسية", "نظارات نسائية", "نظارات حماية", "نظارات كلاسيكية",
       "women dress", "summer dress", "boho dress", "party dress", "floral dress", "sleeveless dress",
-      "women skirt", "women blouse", "women shirt", "casual dress", "elegant dress"
+      "women skirt", "women blouse", "women shirt", "casual dress", "elegant dress", "fashion sunglasses"
     ],
     words: [
-      "فستان", "فساتين", "عباية", "تنورة", "بلوزة", "لانجري", "كورسيه", "نسائية", "نسائي", "للسيدات",
-      "dress", "dresses", "abaya", "skirt", "blouse", "women", "ladies"
+      "فستان", "فساتين", "عباية", "تنورة", "بلوزة", "لانجري", "كورسيه", "نسائية", "نسائي", "للسيدات", "نظارة", "نظارات",
+      "dress", "dresses", "abaya", "skirt", "blouse", "women", "ladies", "sunglasses", "eyewear"
     ]
   },
 
@@ -297,13 +300,13 @@ export const CATEGORY_RULES: CategoryRule[] = [
     categoryName: "أزياء وملابس رجالية",
     strongKeywords: [
       "قميص رجالي", "بنطلون رجالي", "هودي رجالي", "جاكيت رجالي", "بدلة رجالية", "معطف رجالي",
-      "سروال رجالي", "تيشرت رجالي", "شورت رجالي", "شماغ رجالي", "ثوب رجالي",
-      "men shirt", "men hoodie", "men jacket", "men pants", "men suit", "men blazer"
+      "سروال رجالي", "تيشرت رجالي", "شورت رجالي", "شماغ رجالي", "ثوب رجالي", "نظارات رجالية", "نظارات شمسية للرجال",
+      "men shirt", "men hoodie", "men jacket", "men pants", "men suit", "men blazer", "men sunglasses"
     ],
     phrases: [
       "قميص رجالي", "بنطلون رجالي", "هودي رجالي", "جاكيت رجالي", "بدلة رجالية", "ملابس رجالي",
-      "سروال رجالي", "معطف رجالي", "تي شيرت رجالي", "ملابس داخلية رجالية",
-      "men shirt", "men pants", "men hoodie", "men jacket", "men suit", "men blazer", "men t-shirt"
+      "سروال رجالي", "معطف رجالي", "تي شيرت رجالي", "ملابس داخلية رجالية", "نظارات شمسية رجالية", "نظارات للرجال",
+      "men shirt", "men pants", "men hoodie", "men jacket", "men suit", "men blazer", "men t-shirt", "men sunglasses"
     ],
     words: [
       "رجالي", "هودي", "هوديز", "سروال", "بشت", "شماغ", "hoodie", "hoodies", "blazer"
@@ -651,18 +654,14 @@ export async function matchCategoryId(
   const cats = await getCategories();
   if (!cats.length) return null;
 
-  // 1. Check numeric category ID match if provided from AliExpress API
-  if (providedCatId && providedCatId > 0) {
-    if (ALI_NUMERIC_CAT_ID_MAP[String(providedCatId)]) {
-      const targetId = ALI_NUMERIC_CAT_ID_MAP[String(providedCatId)];
-      if (cats.some(c => c.id === targetId)) return targetId;
-    }
-    // If it's already a valid category ID in our DB
-    const directMatch = cats.find(c => c.id === providedCatId);
-    if (directMatch) return directMatch.id;
+  // 1. Priority #1: Multi-layer intelligent semantic scoring on the product title itself!
+  // The product title is the single most accurate, specific ground truth of what the item actually is.
+  const fastResult = fastClassifyText(text);
+  if (fastResult.bestId && fastResult.score >= 15 && cats.some(c => c.id === fastResult.bestId)) {
+    return fastResult.bestId;
   }
 
-  // 2. Direct match by AliExpress official category name
+  // 2. Priority #2: Direct match by AliExpress official category name (fallback if title was ambiguous)
   if (officialCatName) {
     const normOfficial = officialCatName.trim().toLowerCase();
     const mappedTargetId = ALI_OFFICIAL_CAT_ID_MAP[normOfficial];
@@ -671,10 +670,15 @@ export async function matchCategoryId(
     }
   }
 
-  // 3. Multi-layer intelligent semantic scoring across all 24 categories
-  const fastResult = fastClassifyText(text);
-  if (fastResult.bestId && fastResult.score >= 20 && cats.some(c => c.id === fastResult.bestId)) {
-    return fastResult.bestId;
+  // 3. Priority #3: Check numeric category ID match if provided from AliExpress API
+  if (providedCatId && providedCatId > 0) {
+    if (ALI_NUMERIC_CAT_ID_MAP[String(providedCatId)]) {
+      const targetId = ALI_NUMERIC_CAT_ID_MAP[String(providedCatId)];
+      if (cats.some(c => c.id === targetId)) return targetId;
+    }
+    // If it's already a valid category ID in our DB
+    const directMatch = cats.find(c => c.id === providedCatId);
+    if (directMatch) return directMatch.id;
   }
 
   // 4. Secondary fallback scoring

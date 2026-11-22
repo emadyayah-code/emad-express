@@ -94491,6 +94491,11 @@ var CATEGORY_RULES = [
       "\u0641\u0633\u062A\u0627\u0646 \u0645\u0627\u0643\u0633\u064A",
       "\u0641\u0633\u062A\u0627\u0646 \u0633\u0647\u0631\u0629",
       "\u0641\u0633\u062A\u0627\u0646 \u0635\u064A\u0641\u064A",
+      "\u0646\u0638\u0627\u0631\u0627\u062A \u0634\u0645\u0633\u064A\u0629",
+      "\u0646\u0638\u0627\u0631\u0629 \u0634\u0645\u0633\u064A\u0629",
+      "\u0646\u0638\u0627\u0631\u0627\u062A \u0639\u0635\u0631\u064A\u0629",
+      "\u0625\u0637\u0627\u0631 \u0646\u0638\u0627\u0631\u0629",
+      "\u0646\u0638\u0627\u0631\u0627\u062A \u0646\u0633\u0627\u0626\u064A\u0629",
       "dress",
       "dresses",
       "gown",
@@ -94506,7 +94511,10 @@ var CATEGORY_RULES = [
       "evening dress",
       "nightgown",
       "toleen",
-      "huhugirl"
+      "huhugirl",
+      "sunglasses",
+      "sunglass",
+      "eyewear"
     ],
     phrases: [
       "\u0641\u0633\u062A\u0627\u0646 \u0646\u0633\u0627\u0626",
@@ -94528,6 +94536,11 @@ var CATEGORY_RULES = [
       "\u0623\u0632\u064A\u0627\u0621 \u0634\u0627\u0637\u0626\u064A\u0629",
       "\u062F\u0627\u0646\u062A\u064A\u0644 \u0634\u0641\u0627\u0641",
       "\u062D\u0631\u064A\u0631 \u062E\u0627\u0644\u0635",
+      "\u0646\u0638\u0627\u0631\u0627\u062A \u0634\u0645\u0633\u064A\u0629",
+      "\u0646\u0638\u0627\u0631\u0629 \u0634\u0645\u0633\u064A\u0629",
+      "\u0646\u0638\u0627\u0631\u0627\u062A \u0646\u0633\u0627\u0626\u064A\u0629",
+      "\u0646\u0638\u0627\u0631\u0627\u062A \u062D\u0645\u0627\u064A\u0629",
+      "\u0646\u0638\u0627\u0631\u0627\u062A \u0643\u0644\u0627\u0633\u064A\u0643\u064A\u0629",
       "women dress",
       "summer dress",
       "boho dress",
@@ -94538,7 +94551,8 @@ var CATEGORY_RULES = [
       "women blouse",
       "women shirt",
       "casual dress",
-      "elegant dress"
+      "elegant dress",
+      "fashion sunglasses"
     ],
     words: [
       "\u0641\u0633\u062A\u0627\u0646",
@@ -94551,13 +94565,17 @@ var CATEGORY_RULES = [
       "\u0646\u0633\u0627\u0626\u064A\u0629",
       "\u0646\u0633\u0627\u0626\u064A",
       "\u0644\u0644\u0633\u064A\u062F\u0627\u062A",
+      "\u0646\u0638\u0627\u0631\u0629",
+      "\u0646\u0638\u0627\u0631\u0627\u062A",
       "dress",
       "dresses",
       "abaya",
       "skirt",
       "blouse",
       "women",
-      "ladies"
+      "ladies",
+      "sunglasses",
+      "eyewear"
     ]
   },
   // 4. Watches & Jewelry
@@ -94854,12 +94872,15 @@ var CATEGORY_RULES = [
       "\u0634\u0648\u0631\u062A \u0631\u062C\u0627\u0644\u064A",
       "\u0634\u0645\u0627\u063A \u0631\u062C\u0627\u0644\u064A",
       "\u062B\u0648\u0628 \u0631\u062C\u0627\u0644\u064A",
+      "\u0646\u0638\u0627\u0631\u0627\u062A \u0631\u062C\u0627\u0644\u064A\u0629",
+      "\u0646\u0638\u0627\u0631\u0627\u062A \u0634\u0645\u0633\u064A\u0629 \u0644\u0644\u0631\u062C\u0627\u0644",
       "men shirt",
       "men hoodie",
       "men jacket",
       "men pants",
       "men suit",
-      "men blazer"
+      "men blazer",
+      "men sunglasses"
     ],
     phrases: [
       "\u0642\u0645\u064A\u0635 \u0631\u062C\u0627\u0644\u064A",
@@ -94872,13 +94893,16 @@ var CATEGORY_RULES = [
       "\u0645\u0639\u0637\u0641 \u0631\u062C\u0627\u0644\u064A",
       "\u062A\u064A \u0634\u064A\u0631\u062A \u0631\u062C\u0627\u0644\u064A",
       "\u0645\u0644\u0627\u0628\u0633 \u062F\u0627\u062E\u0644\u064A\u0629 \u0631\u062C\u0627\u0644\u064A\u0629",
+      "\u0646\u0638\u0627\u0631\u0627\u062A \u0634\u0645\u0633\u064A\u0629 \u0631\u062C\u0627\u0644\u064A\u0629",
+      "\u0646\u0638\u0627\u0631\u0627\u062A \u0644\u0644\u0631\u062C\u0627\u0644",
       "men shirt",
       "men pants",
       "men hoodie",
       "men jacket",
       "men suit",
       "men blazer",
-      "men t-shirt"
+      "men t-shirt",
+      "men sunglasses"
     ],
     words: [
       "\u0631\u062C\u0627\u0644\u064A",
@@ -95793,13 +95817,9 @@ var CATEGORY_RULES = [
 async function matchCategoryId(text2, providedCatId, officialCatName) {
   const cats = await getCategories();
   if (!cats.length) return null;
-  if (providedCatId && providedCatId > 0) {
-    if (ALI_NUMERIC_CAT_ID_MAP[String(providedCatId)]) {
-      const targetId = ALI_NUMERIC_CAT_ID_MAP[String(providedCatId)];
-      if (cats.some((c) => c.id === targetId)) return targetId;
-    }
-    const directMatch = cats.find((c) => c.id === providedCatId);
-    if (directMatch) return directMatch.id;
+  const fastResult = fastClassifyText(text2);
+  if (fastResult.bestId && fastResult.score >= 15 && cats.some((c) => c.id === fastResult.bestId)) {
+    return fastResult.bestId;
   }
   if (officialCatName) {
     const normOfficial = officialCatName.trim().toLowerCase();
@@ -95808,9 +95828,13 @@ async function matchCategoryId(text2, providedCatId, officialCatName) {
       return mappedTargetId;
     }
   }
-  const fastResult = fastClassifyText(text2);
-  if (fastResult.bestId && fastResult.score >= 20 && cats.some((c) => c.id === fastResult.bestId)) {
-    return fastResult.bestId;
+  if (providedCatId && providedCatId > 0) {
+    if (ALI_NUMERIC_CAT_ID_MAP[String(providedCatId)]) {
+      const targetId = ALI_NUMERIC_CAT_ID_MAP[String(providedCatId)];
+      if (cats.some((c) => c.id === targetId)) return targetId;
+    }
+    const directMatch = cats.find((c) => c.id === providedCatId);
+    if (directMatch) return directMatch.id;
   }
   const t = (text2 || "").toLowerCase();
   let bestCategoryId = fastResult.bestId || 1;
