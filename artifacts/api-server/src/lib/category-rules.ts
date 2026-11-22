@@ -86,16 +86,18 @@ export const RAW_RULES: CategoryRuleItem[] = [
       "بطاقات الذاكرة sd", "بطاقة ذاكرة micro sd", "بطاقات ذاكرة sd", "فلاش ميموري usb", "قرص صلب ssd",
       "mechanical keyboard", "keyboard switches", "keycaps set", "gaming mouse", "laptop stand",
       "desk mouse pad", "mousepad large", "memory card sd", "micro sd card", "external ssd", "usb c hub",
-      "displayport", "display port", "كابل محول متوافق ذكر dp إلى أنثى hdmi", "محول dp", "كابل hdmi", "كابل محول", "لألعاب الكمبيوتر", "لأجهزة الكمبيوتر"
+      "displayport", "display port", "كابل محول متوافق ذكر dp إلى أنثى hdmi", "محول dp", "كابل hdmi", "كابل محول", "لألعاب الكمبيوتر", "لأجهزة الكمبيوتر",
+      "لوح كتابة إلكتروني", "أقراص الرسم الرقمي", "لوح رسم رقمي", "شاشة رسم", "لوحة رسم", "قلم رسم سلبي",
+      "huion", "ugee", "kamvas", "drawing tablet", "graphic tablet", "pen tablet"
     ],
     phrases: [
       "لوحة مفاتيح", "فأرة كمبيوتر", "ماوس ألعاب", "وسادة مكتب", "وسادة ماوس", "حامل لابتوب", "بطاقة ذاكرة",
       "بطاقات ذاكرة", "فلاش ميموري", "مفاتيح ميكانيكية", "تشحيم لوحة المفاتيح", "سدادات مفاتيح",
-      "كابل محول", "محول dp", "displayport", "display port", "hdmi",
-      "mechanical keyboard", "keyboard switch", "mouse pad", "desk pad", "laptop stand", "sd card", "memory card"
+      "كابل محول", "محول dp", "displayport", "display port", "hdmi", "لوح كتابة", "لوحة رسم", "أقراص الرسم",
+      "mechanical keyboard", "keyboard switch", "mouse pad", "desk pad", "laptop stand", "sd card", "memory card", "drawing tablet"
     ],
     words: [
-      "كمبيوتر", "لابتوب", "حاسوب", "كيبورد", "ماوس", "keyboard", "mousepad", "keycap", "keycaps"
+      "كمبيوتر", "لابتوب", "حاسوب", "كيبورد", "ماوس", "keyboard", "mousepad", "keycap", "keycaps", "huion", "ugee"
     ]
   },
 
@@ -126,21 +128,21 @@ export const RAW_RULES: CategoryRuleItem[] = [
     name: "ساعات ومجوهرات",
     strong: [
       "ساعة يد", "ساعات يد", "ساعة كوارتز", "ساعة أوتوماتيك", "ساعة ميكانيك", "ساعة رجالي",
-      "ساعة نسائ", "غطاء حماية للساعة", "حامل شحن للساعة", "حزام ساعة", "سوار ساعة", "كفر ساعة",
+      "ساعة نسائ", "ساعة كلاسيكية", "ساعة فاخرة", "غطاء حماية للساعة", "حامل شحن للساعة", "حزام ساعة", "سوار ساعة", "كفر ساعة",
       "حزام حامي الساعة", "حامي الساعة الذكية", "لساعة garmin", "حامل شحن بلاستيكي للساعات", "حامل شحن بلاستيكي ثابت للساعات",
       "خاتم فضة", "خاتم ذهب", "قلادة فضة", "قلادة ذهب", "سوار معصم", "أقراط أذن",
-      "مويسانيتي", "خواتم الخطبة", "زركون", "خواتم فضة استرليني",
+      "مويسانيتي", "خواتم الخطبة", "زركون", "خواتم فضة استرليني", "سلسال ذهب", "سلسال فضة",
       "wrist watch", "quartz watch", "automatic watch", "smartwatch", "smart watch", "watch case",
       "watch strap", "watch band", "watch charger", "silver ring", "gold necklace", "tennis bracelet"
     ],
     phrases: [
-      "ساعة يد", "ساعة كوارتز", "ساعة ذكية", "حزام ساعة", "غطاء حماية للساعة", "حامل شحن للساعات",
-      "حامي الساعة", "خاتم فضة", "خاتم ذهب", "قلادة فضة", "سوار يد", "أقراط أذن", "خواتم الخطبة",
+      "ساعة يد", "ساعة كوارتز", "ساعة ذكية", "ساعات يد", "حزام ساعة", "غطاء حماية للساعة", "حامل شحن للساعات",
+      "حامي الساعة", "خاتم فضة", "خاتم ذهب", "قلادة فضة", "سوار يد", "أقراط أذن", "خواتم الخطبة", "خواتم نسائية",
       "wrist watch", "quartz watch", "watch strap", "watch band", "smartwatch", "silver ring",
       "gold necklace"
     ],
     words: [
-      "ساعة", "ساعات", "خاتم", "خواتم", "سوار", "أساور", "قلادة", "قلائد", "مجوهرات", "أقراط",
+      "ساعات", "خاتم", "خواتم", "سوار", "أساور", "قلادة", "قلائد", "مجوهرات", "أقراط",
       "قرط", "دبلة", "بروش", "حلق", "سلسال", "watch", "watches", "quartz", "necklace", "bracelet",
       "earrings", "pendant", "jewellery", "jewelry"
     ]
@@ -152,21 +154,27 @@ export const RAW_RULES: CategoryRuleItem[] = [
     name: "أجهزة إلكترونية استهلاكية",
     strong: [
       "سماعات بلوتوث", "سماعة بلوتوث", "سماعات لاسلكية", "ايربودز", "سبيكر بلوتوث", "مكبر صوت بلوتوث",
-      "مكبر صوت محمول", "مكبر صوت لاسلكي", "ميكروفون لاسلكي", "نظارات شمسية ذكية مزودة بتقنية البلوتوث",
+      "مكبر صوت محمول", "مكبر صوت لاسلكي", "ميكروفون لاسلكي", "مايكروفون احترافي", "مايكروفون ديناميكي",
+      "مايكروفون ألعاب", "ميكروفون ألعاب", "مايكروفون للبودكاست", "ماونو", "maono", "fifine", "كاريوكي",
+      "يد تحكم ألعاب", "وحدة تحكم ألعاب", "لوحة ألعاب لاسلكية", "أذرع التحكم في ألعاب", "مقبض تحكم",
+      "مشبك تحكم لأجهزة xbox", "مشبك ألعاب محمول 8bitdo", "محول تحكم الألعاب", "عصا تحكم بتأثير القاعة",
+      "أزرار استبدال وحدة تحكم", "لوحة ألعاب لاسلكية لـ xbox", "نظارات شمسية ذكية مزودة بتقنية البلوتوث",
       "نظارات بلوتوث", "أغطية عصا التحكم", "محرك اهتزاز لوحدة التحكم", "عصا تحكم ألعاب", "قبضة وحدة التحكم",
       "أغطية عصا التحكم لجهاز إكس بوكس", "محرك الاهتزاز الأيسر والأيمن لجهاز", "شريط قبضة وحدة التحكم",
       "bluetooth earbuds", "wireless earbuds", "tws earbuds", "bluetooth speaker", "gaming headset",
-      "smart audio glasses", "thumb grip caps", "controller grip", "analog stick caps"
+      "gaming microphone", "podcast microphone", "gamepad wireless", "controller wireless", "xbox controller",
+      "ps5 controller", "smart audio glasses", "thumb grip caps", "controller grip", "analog stick caps"
     ],
     phrases: [
       "سماعات بلوتوث", "سماعة بلوتوث", "سماعات لاسلكية", "مكبر صوت", "سبيكر بلوتوث", "مكبر صوت محمول",
-      "ميكروفون لاسلكي", "نظارات ذكية", "سماعات قيمنق", "عصا التحكم", "وحدة تحكم ألعاب", "محرك الاهتزاز",
+      "ميكروفون لاسلكي", "مايكروفون", "ميكروفون", "مايك", "بودكاست", "نظارات ذكية", "سماعات قيمنق", "عصا التحكم",
+      "وحدة تحكم ألعاب", "يد تحكم", "لوحة ألعاب", "أذرع التحكم", "محرك الاهتزاز", "gamepad", "controller",
       "bluetooth speaker", "wireless earbuds", "tws earbuds", "gaming headset", "smart glasses",
       "thumb grips", "game controller"
     ],
     words: [
-      "سماعة", "سماعات", "سبيكر", "ميكروفون", "ايربودز", "earbuds", "earphone", "headphone", "speaker",
-      "headset", "microphone", "tws", "soundbar", "joystick", "gamepad"
+      "سماعة", "سماعات", "سبيكر", "ميكروفون", "مايكروفون", "مايك", "ايربودز", "بودكاست", "earbuds", "earphone", "headphone", "speaker",
+      "headset", "microphone", "tws", "soundbar", "joystick", "gamepad", "controller", "xbox", "ps5", "ps4"
     ]
   },
 
@@ -432,16 +440,20 @@ export const RAW_RULES: CategoryRuleItem[] = [
     strong: [
       "سيارة تحكم عن بعد rc", "مكعبات بناء أطفال", "دمية قطنية محشوة", "عربة أطفال قابلة للطي",
       "لهاية سيليكون أطفال", "حفاضات مواليد", "ملابس أطفال رضع", "سيارة تحكم عن بعد", "سيارات لعبة rc",
-      "سيارة سباق بتحكم عن بعد", "سيارة رالي رباعية الدفع", "سيارة بيج فوت", "نموذج لعبة سيارة سباق",
-      "wltoys", "rc car remote control", "building blocks kids", "plush doll toy", "baby stroller", "baby romper"
+      "شاحنة تحكم عن بعد", "شاحنة الوحش", "شاحنة مونستر", "شاحنة قصيرة", "شاحنات وحشية", "سيارة دريفت",
+      "سيارة سباق بتحكم عن بعد", "سيارة سباق صغيرة تعمل بالتحكم عن بعد", "سيارة تسلق كهربائية", "سيارة لعبة",
+      "لعبة للأطفال", "ألعاب للأطفال", "هدية للأولاد", "قطع غيار rc", "ترس محرك معدني", "محرك بدون فرشاة rc",
+      "wltoys", "mjx", "suchiyu", "rc car remote control", "building blocks kids", "plush doll toy", "baby stroller", "baby romper",
+      "monster truck", "rc truck", "rc buggy", "rc crawler", "remote control car"
     ],
     phrases: [
       "ملابس أطفال", "بيجامات أطفال", "طقم مواليد", "عربة أطفال", "حفاضات أطفال", "ألعاب أطفال",
-      "سيارة تحكم عن بعد", "سيارات لعبة rc", "سيارة درفت", "سيارة رالي", "بتحكم عن بعد",
-      "baby clothes", "baby stroller", "rc car", "building blocks", "remote control car"
+      "سيارة تحكم عن بعد", "شاحنة تحكم عن بعد", "شاحنة الوحش", "سيارات لعبة rc", "سيارة درفت", "سيارة رالي",
+      "بتحكم عن بعد", "التحكم عن بعد", "سيارة سباق", "سيارات تحكم عن بعد", "هدية للأولاد", "لعبة أطفال",
+      "baby clothes", "baby stroller", "rc car", "rc truck", "monster truck", "building blocks", "remote control car"
     ],
     words: [
-      "أطفال", "رضيع", "مواليد", "لهاية", "دمية", "wltoys", "baby", "infant", "toddler"
+      "أطفال", "طفل", "رضيع", "مواليد", "لهاية", "دمية", "wltoys", "mjx", "baby", "infant", "toddler", "toy", "toys"
     ]
   },
 

@@ -223,7 +223,7 @@ export const CATEGORY_RULES: CategoryRule[] = [
       "chronograph", "pagani design", "naviforce", "curren", "watch strap"
     ],
     words: [
-      "ساعة", "ساعات", "خاتم", "خواتم", "سوار", "أساور", "قلادة", "قلائد", "مجوهرات", "أقراط",
+      "ساعات", "خاتم", "خواتم", "سوار", "أساور", "قلادة", "قلائد", "مجوهرات", "أقراط",
       "قرط", "دبلة", "بروش", "حلق", "سلسال", "watch", "watches", "quartz", "necklace", "bracelet",
       "earrings", "pendant", "jewellery", "jewelry"
     ]
